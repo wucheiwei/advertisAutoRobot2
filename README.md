@@ -52,7 +52,7 @@ tools/
 這是「下一個指令就開始爬網站 + 寫 HTML」的入口。它會用 Claude Agent SDK 跑一個 agent:讀 `sources.md` → 用 WebSearch / WebFetch 研究互動手法 → 自己寫 `storage/<分類>/<slug>/index.html` → 跑 `verify.mjs` 自我驗證,直到 `ok: true`。
 
 ```bash
-# 前置:需 Node 18+(本機請用 nvm 切到 v24),且已登入 Claude Code 或設好 ANTHROPIC_API_KEY
+# 前置:需 Node 18+(本機請用 nvm 切到 v24),且已登入 Claude Code
 nvm use 24
 
 yarn factory                          # 產 1 個,主題/分類由 Claude 自己發想
