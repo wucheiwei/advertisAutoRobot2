@@ -106,7 +106,6 @@ node tools/verify.mjs storage/<分類>/<slug>/index.html
 | --- | --- | --- | --- |
 | `SESSION_SECRET` | 登入 session cookie 的 HMAC 簽章密鑰 | 可不設(會 fallback 到內建 dev 預設值) | **必填**:設一把隨機長字串 |
 | `FACTORY_MODEL` | `yarn factory` 使用的模型 | 選填,預設 `claude-opus-4-8` | — |
-| `ANTHROPIC_API_KEY` | `yarn factory` 認證(未登入 Claude Code 時) | 選填 | — |
 | `PORT` | server 埠號 | 選填,預設 `3000` | 通常由平台注入 |
 | `NODE_ENV` | 執行環境 | 選填 | `production` |
 
