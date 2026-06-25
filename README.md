@@ -81,7 +81,7 @@ node tools/factory.mjs [數量] [--category <分類>] [--idea "<主題>"]
 ### 驗證(必跑,直到 `ok: true`)
 
 ```bash
-# ⚠️ verify.mjs 用到 optional chaining,需 Node 18+(本機請用 nvm 切到 v24)
+# ⚠️ verify.mjs 用到 optional chaining)
 nvm use 24            # 或 export PATH="$HOME/.nvm/versions/node/v24.x.x/bin:$PATH"
 
 node tools/verify.mjs storage/<分類>/<slug>/index.html
@@ -97,6 +97,35 @@ node tools/verify.mjs storage/<分類>/<slug>/index.html
 ```
 
 > 範例:[`storage/Game-ad/cup-stack/`](storage/Game-ad/cup-stack/) — 雲頂咖啡「疊到雲端的咖啡塔」堆杯小遊戲。
+
+---
+
+## 環境變數
+
+| 變數 | 用途 | 本機開發 | 部署 / 正式環境 |
+| --- | --- | --- | --- |
+| `SESSION_SECRET` | 登入 session cookie 的 HMAC 簽章密鑰 | 可不設(會 fallback 到內建 dev 預設值) | **必填**:設一把隨機長字串 |
+| `FACTORY_MODEL` | `yarn factory` 使用的模型 | 選填,預設 `claude-opus-4-8` | — |
+| `ANTHROPIC_API_KEY` | `yarn factory` 認證(未登入 Claude Code 時) | 選填 | — |
+| `PORT` | server 埠號 | 選填,預設 `3000` | 通常由平台注入 |
+| `NODE_ENV` | 執行環境 | 選填 | `production` |
+
+> ⚠️ **`SESSION_SECRET` 部署時一定要自己在平台上設定。**
+> 程式在沒有這個環境變數時,會 fallback 到 [`src/auth/session.util.ts`](src/auth/session.util.ts) 裡寫死的預設值。
+> 這個預設值是公開在原始碼裡的,任何看得到 repo 的人都能用它偽造登入 cookie、繞過登入。
+> 本機開發用 fallback 沒關係,但**任何對外部署都務必設定一把只有你知道的隨機密鑰**。
+>
+> 本分支(`master`)主要供**本地開發**使用,所以程式不強制這個變數;若要拿去正式部署,請先補上 `SESSION_SECRET`。
+
+**在 Render 設定**:服務 → **Environment** 分頁 → **Add Environment Variable** → Key 填 `SESSION_SECRET`,值按 **Generate**(或自己貼一串夠長的亂碼)→ Save,會自動重新部署。
+
+**自己產一把隨機密鑰**:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+# 或
+openssl rand -base64 32
+```
 
 ---
 
