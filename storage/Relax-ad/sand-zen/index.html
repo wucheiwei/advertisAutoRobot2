@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>禪意沙盤 × ZENEN 冥想品牌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #1a1208;
+    font-family: 'Noto Sans TC', sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; min-height: 100vh;
+    overflow: hidden; touch-action: none;
+    user-select: none;
+  }
+  #header {
+    width:100%; text-align:center;
+    padding: 14px 16px 4px;
+    position:relative; z-index:10;
+  }
+  #header h1 {
+    font-size: clamp(18px,4vw,26px);
+    font-weight: 300; letter-spacing: 4px;
+    color: #e8c97a;
+  }
+  #header p { color: #9a7a50; font-size:11px; letter-spacing:2px; margin-top:2px; }
+  #tools {
+    display: flex; gap: 10px; justify-content: center;
+    padding: 8px 16px 6px; z-index:10;
+  }
+  .tool-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(232,201,122,0.3);
+    border-radius: 50px;
+    padding: 7px 16px;
+    font-size: 13px; color: #c9a860;
+    cursor: pointer; transition: all .2s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .tool-btn.active {
+    background: rgba(232,201,122,0.18);
+    border-color: #e8c97a;
+    color: #e8c97a;
+  }
+  .tool-btn:active { transform: scale(.93); }
+  #canvas-wrap {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding: 8px; width:100%;
+  }
+  #zen-canvas {
+    border-radius: 16px;
+    box-shadow: 0 0 40px rgba(232,201,122,0.12), inset 0 0 60px rgba(0,0,0,0.3);
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+    max-width: 100%;
+  }
+  #footer {
+    padding: 10px 20px 16px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; z-index:10;
+    width: 100%;
+  }
+  #peace-text {
+    color: #9a7a50; font-size: 11px; letter-spacing: 2px;
+    text-align: center; font-style: italic;
+    min-height: 16px;
+  }
+  .cta-btn {
+    background: linear-gradient(135deg,#e8c97a,#c8923a);
+    color:#1a1208; border:none;
+    font-size: 15px; font-weight: 700;
+    padding: 12px 32px; border-radius: 50px;
+    cursor: pointer; transition: transform .15s;
+    font-family: 'Noto Sans TC', sans-serif;
+    letter-spacing: 1px;
+  }
+  .cta-btn:active { transform: scale(.95); }
+  #overlay {
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background: rgba(15,10,5,0.93);
+    z-index:30; text-align:center; padding:24px;
+  }
+  #overlay h2 {
+    font-size:clamp(26px,7vw,46px); font-weight:300;
+    color:#e8c97a; letter-spacing:4px; margin-bottom:10px;
+  }
+  #overlay p { color:#9a7a50; font-size:14px; line-height:1.8; margin-bottom:22px; }
+  #overlay .start-btn {
+    background: linear-gradient(135deg,#e8c97a,#c8923a);
+    color:#1a1208; border:none; font-size:17px; font-weight:700;
+    padding:13px 36px; border-radius:50px; cursor:pointer;
+    transition:transform .15s; font-family:'Noto Sans TC',sans-serif;
+  }
+  #overlay .start-btn:active { transform:scale(.95); }
+  #stone-counter {
+    position:fixed; top:12px; right:16px;
+    background:rgba(232,201,122,0.1);
+    border:1px solid rgba(232,201,122,0.25);
+    border-radius:20px; padding:4px 14px;
+    color:#c9a860; font-size:12px;
+    z-index:20;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>禪 意 沙 盤</h1>
+  <p>ZENEN × 正念冥想</p>
+</div>
+<div id="tools">
+  <button class="tool-btn active" id="rakeBtn">🪴 耙紋</button>
+  <button class="tool-btn" id="stoneBtn">🪨 置石</button>
+  <button class="tool-btn" id="waveBtn">〰 波紋</button>
+  <button class="tool-btn" id="clearBtn">✨ 清空</button>
+</div>
+<div id="canvas-wrap">
+  <canvas id="zen-canvas"></canvas>
+</div>
+<div id="footer">
+  <div id="peace-text">靜心，感受此刻…</div>
+  <button class="cta-btn" id="ctaBtn">探索 ZENEN 冥想系列 →</button>
+</div>
+
+<div id="stone-counter">石頭 <span id="stone-count">0</span>/7</div>
+
+<!-- Intro overlay -->
+<div id="overlay">
+  <h2>禪意沙盤</h2>
+  <p>用指尖耙出沙紋<br>擺放石頭，創作你的禪意庭園<br><br><em style="color:#c9a860">慢，才是力量</em></p>
+  <button class="start-btn" id="startBtn">開始創作</button>
+</div>
+
+<script>
+const canvas = document.getElementById('zen-canvas');
+const ctx    = canvas.getContext('2d');
+
+let W, H;
+let tool = 'rake'; // rake | stone | wave
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+let stones = [];
+let stoneCount = 0;
+const MAX_STONES = 7;
+const stoneCountEl = document.getElementById('stone-count');
+const peaceText = document.getElementById('peace-text');
+
+const PEACE_PHRASES = [
+  '靜心，感受此刻…',
+  '每一道紋路，都是當下的印記',
+  '放下，便是自在',
+  '心靜則萬物靜',
+  '此刻，只有你與沙',
+  '簡單，是最深的智慧',
+  '呼吸，讓思緒如沙流動',
+];
+let phraseIdx = 0;
+
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  const maxW = Math.min(window.innerWidth - 16, 440);
+  const maxH = window.innerHeight - 200;
+  W = maxW;
+  H = Math.min(maxW * 1.2, maxH);
+
+  // Save existing image
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width  = W;
+  canvas.height = H;
+  drawBase();
+  // Restore stones
+  drawAllStones();
+}
+
+function drawBase() {
+  // Sand background
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, '#c4a46a');
+  grad.addColorStop(0.5, '#d4b47a');
+  grad.addColorStop(1, '#c0984e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Sand texture (fine noise)
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < 2000; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const r = Math.random() * 1.5;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#8a5a20';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ─── Tool: Rake ──────────────────────────────────────────────────────────────
+function drawRake(x, y, px, py) {
+  if (!isDrawing) return;
+  const dx = x - px, dy = y - py;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 1) return;
+
+  // Multiple parallel lines for rake effect
+  const tines = 5;
+  const spacing = 6;
+  const angle = Math.atan2(dy, dx) + Math.PI/2;
+  const cosa = Math.cos(angle), sina = Math.sin(angle);
+
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = '#a07828';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+
+  for (let i = 0; i < tines; i++) {
+    const offset = (i - (tines-1)/2) * spacing;
+    const ox = cosa * offset, oy = sina * offset;
+    ctx.beginPath();
+    ctx.moveTo(px + ox, py + oy);
+    ctx.lineTo(x + ox, y + oy);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Slightly lighten the rake path
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.strokeStyle = '#fff5d0';
+  ctx.lineWidth = tines * spacing;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─── Tool: Wave / Ripple ─────────────────────────────────────────────────────
+function drawWave(x, y) {
+  const rings = 5;
+  for (let r = 1; r <= rings; r++) {
+    ctx.save();
+    ctx.globalAlpha = 0.15 / r;
+    ctx.strokeStyle = '#a07828';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r*16, r*10, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ─── Tool: Stone ─────────────────────────────────────────────────────────────
+function placeStone(x, y) {
+  if (stoneCount >= MAX_STONES) {
+    peaceText.textContent = '已達最多 7 顆石頭，清空後可繼續';
+    return;
+  }
+  const r = 14 + Math.random() * 12;
+  const tilt = (Math.random() - 0.5) * 0.5;
+  stones.push({ x, y, r, tilt, shade: Math.floor(Math.random()*4) });
+  stoneCount++;
+  stoneCountEl.textContent = stoneCount;
+  drawStone(stones[stones.length-1]);
+
+  // Ripple around stone
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = '#a07828';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(x, y+r*0.4, r*1.6, r*0.6, tilt, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  phraseIdx = (phraseIdx+1) % PEACE_PHRASES.length;
+  peaceText.textContent = PEACE_PHRASES[phraseIdx];
+}
+
+function drawStone({ x, y, r, tilt, shade }) {
+  const shades = ['#5a5a5a','#4a4040','#606860','#505058'];
+  const highlights = ['#9a9a9a','#8a8080','#909890','#909098'];
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#2a1a00';
+  ctx.beginPath();
+  ctx.ellipse(2, r*0.55, r*0.9, r*0.3, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // Body
+  const grad = ctx.createRadialGradient(-r*0.25,-r*0.25,0, 0,0, r);
+  grad.addColorStop(0, highlights[shade]);
+  grad.addColorStop(1, shades[shade]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r*0.85, 0, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Highlight
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.ellipse(-r*0.25, -r*0.25, r*0.35, r*0.22, -0.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawAllStones() {
+  stones.forEach(drawStone);
+}
+
+// ─── Clear ───────────────────────────────────────────────────────────────────
+function clearCanvas() {
+  stones = [];
+  stoneCount = 0;
+  stoneCountEl.textContent = '0';
+  drawBase();
+  peaceText.textContent = '沙盤已清空，重新開始吧…';
+}
+
+// ─── Event handling ───────────────────────────────────────────────────────────
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  if (e.touches) {
+    return {
+      x: (e.touches[0].clientX - rect.left) * scaleX,
+      y: (e.touches[0].clientY - rect.top)  * scaleY,
+    };
+  }
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top)  * scaleY,
+  };
+}
+
+canvas.addEventListener('mousedown', e => {
+  const {x,y} = getPos(e);
+  isDrawing = true;
+  lastX = x; lastY = y;
+  if (tool === 'stone') placeStone(x,y);
+  if (tool === 'wave')  drawWave(x,y);
+});
+canvas.addEventListener('mousemove', e => {
+  if (!isDrawing) return;
+  const {x,y} = getPos(e);
+  if (tool === 'rake') drawRake(x,y,lastX,lastY);
+  lastX=x; lastY=y;
+});
+canvas.addEventListener('mouseup', () => { isDrawing = false; });
+canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const {x,y} = getPos(e);
+  isDrawing = true;
+  lastX=x; lastY=y;
+  if (tool === 'stone') placeStone(x,y);
+  if (tool === 'wave')  drawWave(x,y);
+}, {passive:false});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const {x,y} = getPos(e);
+  if (tool === 'rake') drawRake(x,y,lastX,lastY);
+  lastX=x; lastY=y;
+}, {passive:false});
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  isDrawing = false;
+}, {passive:false});
+
+// ─── Tool buttons ─────────────────────────────────────────────────────────────
+document.getElementById('rakeBtn').addEventListener('click', () => setTool('rake','rakeBtn'));
+document.getElementById('stoneBtn').addEventListener('click', () => setTool('stone','stoneBtn'));
+document.getElementById('waveBtn').addEventListener('click', () => setTool('wave','waveBtn'));
+document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+
+function setTool(t, btnId) {
+  tool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(btnId).classList.add('active');
+  canvas.style.cursor = t === 'stone' ? 'cell' : 'crosshair';
+  if (t === 'rake') peaceText.textContent = '拖曳以耙出紋路…';
+  if (t === 'stone') peaceText.textContent = '點擊放置石頭…';
+  if (t === 'wave') peaceText.textContent = '點擊掀起漣漪…';
+}
+
+document.getElementById('ctaBtn').addEventListener('click', () => {
+  alert('探索 ZENEN 冥想系列！感謝您的靜心創作 🪴');
+});
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('overlay').style.display = 'none';
+  resize();
+  drawBase();
+});
+
+window.addEventListener('resize', () => {
+  resize();
+});
+</script>
+</body>
+</html>

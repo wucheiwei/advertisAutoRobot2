@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mr. Oops 染色工坊 — 手作毛線體驗</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', 'Noto Serif TC', serif;
+    background: #f5efe6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .screen {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    animation: fadeIn 0.6s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── INTRO ── */
+  #screen-intro {
+    background: linear-gradient(160deg, #f9f3ea 0%, #ede0ce 100%);
+    text-align: center;
+    padding: 32px 24px;
+    gap: 0;
+  }
+  .intro-wool {
+    font-size: 72px;
+    margin-bottom: 8px;
+    animation: bobble 3s ease-in-out infinite;
+  }
+  @keyframes bobble {
+    0%,100% { transform: translateY(0) rotate(-2deg); }
+    50%      { transform: translateY(-8px) rotate(2deg); }
+  }
+  .brand-tag {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #b07c5a;
+    margin-bottom: 12px;
+  }
+  .intro-title {
+    font-size: clamp(26px, 6vw, 40px);
+    color: #5a3e2b;
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  .intro-sub {
+    font-size: clamp(14px, 3.5vw, 17px);
+    color: #8a6a52;
+    line-height: 1.7;
+    max-width: 340px;
+    margin: 0 auto 32px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #d4845a, #c0623c);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 15px 40px;
+    font-size: 17px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(192,98,60,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+  }
+  .btn-primary:hover  { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(192,98,60,0.4); }
+  .btn-primary:active { transform: translateY(1px);  box-shadow: 0 2px 8px rgba(192,98,60,0.3); }
+
+  /* ── WORKSHOP ── */
+  #screen-workshop {
+    background: linear-gradient(170deg, #f7efe3 0%, #ede1ce 100%);
+    padding: 16px 12px 20px;
+    gap: 0;
+    position: relative;
+  }
+  .workshop-header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .workshop-header h2 {
+    font-size: clamp(16px, 4vw, 22px);
+    color: #5a3e2b;
+    letter-spacing: 1px;
+  }
+  .workshop-header p {
+    font-size: 13px;
+    color: #9a7a62;
+    margin-top: 3px;
+  }
+  .layer-indicator {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin: 6px 0 2px;
+  }
+  .layer-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #d9ccc0;
+    transition: background 0.3s;
+  }
+  .layer-dot.filled { background: var(--col, #aaa); box-shadow: 0 0 5px var(--col, #aaa); }
+
+  .canvas-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 4vw, 28px);
+    flex: 1;
+    width: 100%;
+    max-width: 600px;
+  }
+  #yarnCanvas {
+    border-radius: 12px;
+    cursor: pointer;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+  .bucket-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  #bucketCanvas {
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .bucket-label {
+    font-size: 12px;
+    color: #8a6a52;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .palette-section {
+    width: 100%;
+    max-width: 480px;
+    margin-top: 10px;
+  }
+  .palette-label {
+    font-size: 12px;
+    color: #9a7a62;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .swatches {
+    display: flex;
+    gap: clamp(6px, 2vw, 10px);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .swatch {
+    width: clamp(36px, 9vw, 46px);
+    height: clamp(36px, 9vw, 46px);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .swatch:hover  { transform: scale(1.1); }
+  .swatch.active {
+    border-color: #5a3e2b;
+    transform: scale(1.15);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .swatch::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: rgba(255,255,255,0.9);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .swatch.active::after { opacity: 1; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-dye {
+    background: linear-gradient(135deg, #d4845a, #c0623c);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 13px 30px;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(192,98,60,0.35);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    letter-spacing: 1px;
+  }
+  .btn-dye:disabled { opacity: 0.45; cursor: default; transform: none; }
+  .btn-dye:not(:disabled):hover  { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(192,98,60,0.4); }
+  .btn-dye:not(:disabled):active { transform: translateY(1px); }
+  .btn-done {
+    background: linear-gradient(135deg, #8db87a, #6a9d56);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 13px 28px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(100,150,70,0.3);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    letter-spacing: 1px;
+  }
+  .btn-done:disabled { opacity: 0.35; cursor: default; transform: none; }
+  .btn-done:not(:disabled):hover  { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(100,150,70,0.4); }
+  .btn-done:not(:disabled):active { transform: translateY(1px); }
+
+  /* ── RESULT ── */
+  #screen-result {
+    background: linear-gradient(160deg, #f7efe3 0%, #ede1ce 100%);
+    padding: 32px 24px;
+    text-align: center;
+    gap: 0;
+  }
+  .result-title {
+    font-size: clamp(22px, 5.5vw, 32px);
+    color: #5a3e2b;
+    margin-bottom: 8px;
+  }
+  .result-sub {
+    font-size: 14px;
+    color: #9a7a62;
+    line-height: 1.7;
+    max-width: 320px;
+    margin: 0 auto 20px;
+  }
+  #resultCanvas {
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(90,62,43,0.2);
+    margin-bottom: 24px;
+  }
+  .result-colors {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .result-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #fff;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .btn-cta {
+    display: inline-block;
+    background: linear-gradient(135deg, #d4845a, #c0623c);
+    color: #fff;
+    text-decoration: none;
+    border: none;
+    border-radius: 40px;
+    padding: 16px 36px;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(192,98,60,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .btn-cta:hover  { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(192,98,60,0.45); }
+  .btn-cta:active { transform: translateY(1px); }
+  .btn-restart {
+    display: block;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: #b07c5a;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    margin: 0 auto;
+    opacity: 0.8;
+  }
+  .btn-restart:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN 1: INTRO ── -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-wool">🧶</div>
+  <div class="brand-tag">Mr. Oops 精紡毛線工廠</div>
+  <h1 class="intro-title">染色工坊<br>手作毛線體驗</h1>
+  <p class="intro-sub">
+    選一款你喜愛的顏色，<br>
+    將白毛線輕輕浸入染缸，<br>
+    親手染出專屬你的暖色調。
+  </p>
+  <button class="btn-primary" id="btnStart">開始染色</button>
+</div>
+
+<!-- ── SCREEN 2: WORKSHOP ── -->
+<div id="screen-workshop" class="screen">
+  <div class="workshop-header">
+    <h2>🪣 染色工坊</h2>
+    <p>選色 → 浸染（最多 3 層）→ 完成作品</p>
+  </div>
+  <div class="layer-indicator">
+    <div class="layer-dot" id="dot0"></div>
+    <div class="layer-dot" id="dot1"></div>
+    <div class="layer-dot" id="dot2"></div>
+  </div>
+  <div class="canvas-area">
+    <canvas id="yarnCanvas"></canvas>
+    <div class="bucket-area">
+      <canvas id="bucketCanvas"></canvas>
+      <div class="bucket-label" id="bucketLabel">← 選色</div>
+    </div>
+  </div>
+  <div class="palette-section">
+    <div class="palette-label">— 選擇染料顏色 —</div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="action-row">
+    <button class="btn-dye" id="btnDye" disabled>浸　染</button>
+    <button class="btn-done" id="btnDone" disabled>完成作品 ✓</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 3: RESULT ── -->
+<div id="screen-result" class="screen">
+  <h2 class="result-title">🎉 你的毛線染成了！</h2>
+  <p class="result-sub">每一縷都是獨一無二的手作溫度，找到更多這樣的精紡好線。</p>
+  <canvas id="resultCanvas"></canvas>
+  <div class="result-colors" id="resultColors"></div>
+  <button class="btn-cta" id="btnCTA">用我的配色選購毛線</button>
+  <button class="btn-restart" id="btnRestart">再染一次</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Palette ──────────────────────────────────────────────────────────────
+  const PALETTE = [
+    { name: '珊瑚紅',   hex: '#E8705A', shadow: '#c04a34' },
+    { name: '鼠尾草綠', hex: '#7FAF7D', shadow: '#518050' },
+    { name: '深海藍',   hex: '#4A6FA5', shadow: '#2d4f80' },
+    { name: '芥末黃',   hex: '#D4A843', shadow: '#a07c20' },
+    { name: '薰衣紫',   hex: '#9B7EC8', shadow: '#6d52a0' },
+    { name: '陶土橙',   hex: '#C4714A', shadow: '#9a4d28' },
+    { name: '薄荷綠',   hex: '#7DC8B0', shadow: '#4ea088' },
+    { name: '胭脂粉',   hex: '#E8A0B0', shadow: '#c0607a' },
+  ];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let selectedColor = null;   // index into PALETTE
+  let layers = [];            // [{color, progress, targetProgress}]
+  const MAX_LAYERS = 3;
+  let animating = false;
+  let animFrame = null;
+
+  // ── Canvas refs ───────────────────────────────────────────────────────────
+  const yarnCanvas   = document.getElementById('yarnCanvas');
+  const yarnCtx      = yarnCanvas.getContext('2d');
+  const bucketCanvas = document.getElementById('bucketCanvas');
+  const bucketCtx    = bucketCanvas.getContext('2d');
+  const resultCanvas = document.getElementById('resultCanvas');
+  const resultCtx    = resultCanvas.getContext('2d');
+
+  // ── Responsive sizing ─────────────────────────────────────────────────────
+  function calcSizes() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const usable = Math.min(vw * 0.56, vh * 0.36, 270);
+    const yarn = Math.max(160, usable);
+    const bucket = Math.max(70, Math.min(110, vw * 0.18));
+    return { yarn: Math.round(yarn), bucket: Math.round(bucket) };
+  }
+
+  function setupCanvases() {
+    const { yarn, bucket } = calcSizes();
+    const dpr = window.devicePixelRatio || 1;
+
+    yarnCanvas.width  = yarn * dpr;
+    yarnCanvas.height = yarn * dpr;
+    yarnCanvas.style.width  = yarn + 'px';
+    yarnCanvas.style.height = yarn + 'px';
+    yarnCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    bucketCanvas.width  = bucket * dpr;
+    bucketCanvas.height = (bucket * 1.2) * dpr;
+    bucketCanvas.style.width  = bucket + 'px';
+    bucketCanvas.style.height = (bucket * 1.2) + 'px';
+    bucketCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const rSize = Math.min(window.innerWidth * 0.75, 300);
+    resultCanvas.width  = rSize * dpr;
+    resultCanvas.height = rSize * dpr;
+    resultCanvas.style.width  = rSize + 'px';
+    resultCanvas.style.height = rSize + 'px';
+    resultCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // ── Yarn shape helpers ────────────────────────────────────────────────────
+  // Draws a figure-8 skein of loops onto ctx.
+  // cx,cy = center; rx,ry = outer radii of the oval skein
+  function drawYarnShape(ctx, cx, cy, rx, ry, fillColor, alpha) {
+    const loops = 8;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = fillColor;
+    for (let i = 0; i < loops; i++) {
+      const angle = (i / loops) * Math.PI * 2;
+      const ox = Math.cos(angle) * rx * 0.18;
+      const oy = Math.sin(angle) * ry * 0.22;
+      const lw = Math.max(2, rx * 0.08);
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.ellipse(cx + ox, cy + oy, rx * 0.72, ry * 0.55, angle * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawYarnBase(ctx, cx, cy, rx, ry) {
+    // cream-white base fill
+    ctx.save();
+    ctx.fillStyle = '#f5efe6';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx * 0.92, ry * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // shadow underneath
+    const grad = ctx.createRadialGradient(cx, cy + ry * 0.1, ry * 0.1, cx, cy, ry);
+    grad.addColorStop(0,   'rgba(90,62,43,0.06)');
+    grad.addColorStop(0.7, 'rgba(90,62,43,0.04)');
+    grad.addColorStop(1,   'rgba(90,62,43,0)');
+    ctx.save();
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + ry * 0.05, rx * 0.95, ry * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawYarnHighlight(ctx, cx, cy, rx, ry) {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(1.5, rx * 0.04);
+    ctx.beginPath();
+    ctx.ellipse(cx - rx * 0.12, cy - ry * 0.18, rx * 0.5, ry * 0.36, -0.3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── Full yarn render (workshop) ───────────────────────────────────────────
+  function renderYarn() {
+    const w = yarnCanvas.width / (window.devicePixelRatio || 1);
+    const h = yarnCanvas.height / (window.devicePixelRatio || 1);
+    const cx = w / 2, cy = h / 2;
+    const rx = w * 0.42, ry = h * 0.38;
+
+    yarnCtx.clearRect(0, 0, w, h);
+
+    // Background circle (workspace feel)
+    yarnCtx.save();
+    yarnCtx.fillStyle = '#ede1ce';
+    yarnCtx.beginPath();
+    yarnCtx.arc(cx, cy, Math.min(w, h) * 0.48, 0, Math.PI * 2);
+    yarnCtx.fill();
+    yarnCtx.restore();
+
+    // Decorative border
+    yarnCtx.save();
+    yarnCtx.strokeStyle = 'rgba(176,124,90,0.25)';
+    yarnCtx.lineWidth = 1.5;
+    yarnCtx.beginPath();
+    yarnCtx.arc(cx, cy, Math.min(w, h) * 0.47, 0, Math.PI * 2);
+    yarnCtx.stroke();
+    yarnCtx.restore();
+
+    drawYarnBase(yarnCtx, cx, cy, rx, ry);
+
+    // White base loops
+    drawYarnShape(yarnCtx, cx, cy, rx, ry, '#e8ddd0', 1.0);
+
+    // Dyed layers
+    layers.forEach(layer => {
+      if (layer.progress <= 0) return;
+      const alpha = Math.min(1, layer.progress * 1.4);
+      const p = layer.progress;
+
+      // Clipping to simulate spread from center outward
+      yarnCtx.save();
+      yarnCtx.beginPath();
+      // Spread from top to bottom (dip effect)
+      const spreadRy = ry * p;
+      yarnCtx.ellipse(cx, cy, rx * (0.5 + p * 0.5), spreadRy, 0, 0, Math.PI * 2);
+      yarnCtx.clip();
+      drawYarnShape(yarnCtx, cx, cy, rx, ry, layer.color.hex, alpha * 0.82);
+      yarnCtx.restore();
+    });
+
+    drawYarnHighlight(yarnCtx, cx, cy, rx, ry);
+
+    // Center knot
+    yarnCtx.save();
+    yarnCtx.fillStyle = '#d6c4b0';
+    yarnCtx.beginPath();
+    yarnCtx.ellipse(cx, cy, rx * 0.12, ry * 0.1, 0, 0, Math.PI * 2);
+    yarnCtx.fill();
+    yarnCtx.restore();
+  }
+
+  // ── Bucket render ─────────────────────────────────────────────────────────
+  function renderBucket(colorHex) {
+    const w = bucketCanvas.width / (window.devicePixelRatio || 1);
+    const h = bucketCanvas.height / (window.devicePixelRatio || 1);
+
+    bucketCtx.clearRect(0, 0, w, h);
+
+    const bx = w * 0.1;
+    const by = h * 0.22;
+    const bw = w * 0.8;
+    const bh = h * 0.70;
+    const topRx = bw * 0.5;
+    const topRy = bh * 0.12;
+    const botRx = bw * 0.38;
+
+    // Liquid fill
+    if (colorHex) {
+      const liqY = by + bh * 0.28;
+      const liqH = bh * 0.6;
+      bucketCtx.save();
+      // Clip to bucket trapezoid
+      bucketCtx.beginPath();
+      bucketCtx.moveTo(bx, by);
+      bucketCtx.lineTo(bx + bw, by);
+      bucketCtx.lineTo(bx + bw * 0.5 + botRx, by + bh);
+      bucketCtx.lineTo(bx + bw * 0.5 - botRx, by + bh);
+      bucketCtx.closePath();
+      bucketCtx.clip();
+      const liqGrad = bucketCtx.createLinearGradient(0, liqY, 0, liqY + liqH);
+      liqGrad.addColorStop(0, colorHex + 'cc');
+      liqGrad.addColorStop(1, colorHex + 'ff');
+      bucketCtx.fillStyle = liqGrad;
+      bucketCtx.fillRect(0, liqY, w, liqH + 20);
+      // Ripple lines
+      bucketCtx.globalAlpha = 0.25;
+      bucketCtx.strokeStyle = '#fff';
+      bucketCtx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) {
+        bucketCtx.beginPath();
+        const ry2 = liqH * 0.06;
+        bucketCtx.ellipse(w * 0.5, liqY + 8 + i * 11, bw * 0.28 * (1 - i * 0.12), ry2, 0, 0, Math.PI * 2);
+        bucketCtx.stroke();
+      }
+      bucketCtx.restore();
+    }
+
+    // Bucket body
+    bucketCtx.save();
+    const bucketGrad = bucketCtx.createLinearGradient(bx, 0, bx + bw, 0);
+    bucketGrad.addColorStop(0,   '#d4c4b0');
+    bucketGrad.addColorStop(0.4, '#e8ddd0');
+    bucketGrad.addColorStop(1,   '#c4b4a0');
+    bucketCtx.strokeStyle = bucketGrad;
+    bucketCtx.lineWidth = 3;
+    bucketCtx.beginPath();
+    bucketCtx.moveTo(bx, by);
+    bucketCtx.lineTo(bx + bw * 0.5 - botRx, by + bh);
+    bucketCtx.lineTo(bx + bw * 0.5 + botRx, by + bh);
+    bucketCtx.lineTo(bx + bw, by);
+    bucketCtx.stroke();
+    bucketCtx.restore();
+
+    // Top rim ellipse
+    bucketCtx.save();
+    bucketCtx.strokeStyle = '#c4b4a0';
+    bucketCtx.lineWidth = 3;
+    bucketCtx.fillStyle = colorHex ? (colorHex + '44') : 'rgba(232,221,208,0.5)';
+    bucketCtx.beginPath();
+    bucketCtx.ellipse(bx + bw * 0.5, by, topRx, topRy, 0, 0, Math.PI * 2);
+    bucketCtx.fill();
+    bucketCtx.stroke();
+    bucketCtx.restore();
+
+    // Handle
+    bucketCtx.save();
+    bucketCtx.strokeStyle = '#b0a090';
+    bucketCtx.lineWidth = 2.5;
+    bucketCtx.lineCap = 'round';
+    bucketCtx.beginPath();
+    bucketCtx.arc(bx + bw * 0.5, by - topRy * 0.5, bw * 0.3, Math.PI + 0.35, -0.35, false);
+    bucketCtx.stroke();
+    bucketCtx.restore();
+  }
+
+  // ── Result canvas render ──────────────────────────────────────────────────
+  function renderResult() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = resultCanvas.width / dpr;
+    const h = resultCanvas.height / dpr;
+    const cx = w / 2, cy = h / 2;
+    const rx = w * 0.42, ry = h * 0.38;
+
+    resultCtx.clearRect(0, 0, w, h);
+
+    // Warm background
+    const bg = resultCtx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(w, h) * 0.5);
+    bg.addColorStop(0, '#f7efe3');
+    bg.addColorStop(1, '#e8d8c4');
+    resultCtx.fillStyle = bg;
+    resultCtx.beginPath();
+    resultCtx.arc(cx, cy, Math.min(w, h) * 0.5, 0, Math.PI * 2);
+    resultCtx.fill();
+
+    drawYarnBase(resultCtx, cx, cy, rx, ry);
+
+    // White base
+    drawYarnShape(resultCtx, cx, cy, rx, ry, '#e8ddd0', 1.0);
+
+    // All layers at full progress
+    layers.forEach((layer, i) => {
+      // Stagger zones for tie-dye look
+      resultCtx.save();
+      if (layers.length === 1) {
+        // Full coverage
+        drawYarnShape(resultCtx, cx, cy, rx, ry, layer.color.hex, 0.82);
+      } else {
+        // Split into bands
+        const bandH = (ry * 2) / layers.length;
+        const bandTop = cy - ry + i * bandH;
+        // Soft gradient mask
+        const maskGrad = resultCtx.createLinearGradient(0, bandTop - bandH * 0.3, 0, bandTop + bandH * 1.3);
+        maskGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        maskGrad.addColorStop(0.25, 'rgba(0,0,0,1)');
+        maskGrad.addColorStop(0.75, 'rgba(0,0,0,1)');
+        maskGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+        resultCtx.beginPath();
+        resultCtx.rect(0, bandTop - bandH * 0.3, w, bandH * 1.6);
+        resultCtx.clip();
+        drawYarnShape(resultCtx, cx, cy, rx, ry, layer.color.hex, 0.80);
+      }
+      resultCtx.restore();
+    });
+
+    drawYarnHighlight(resultCtx, cx, cy, rx, ry);
+
+    // Center knot
+    resultCtx.save();
+    resultCtx.fillStyle = '#d6c4b0';
+    resultCtx.beginPath();
+    resultCtx.ellipse(cx, cy, rx * 0.12, ry * 0.1, 0, 0, Math.PI * 2);
+    resultCtx.fill();
+    resultCtx.restore();
+
+    // Sparkles
+    for (let s = 0; s < 12; s++) {
+      const angle = (s / 12) * Math.PI * 2;
+      const dist = Math.min(w, h) * (0.3 + (s % 3) * 0.06);
+      const sx = cx + Math.cos(angle) * dist;
+      const sy = cy + Math.sin(angle) * dist;
+      const sr = Math.max(1.5, 3 + Math.sin(s * 1.7) * 1.5);
+      resultCtx.save();
+      resultCtx.globalAlpha = 0.5 + Math.cos(s * 0.7) * 0.3;
+      resultCtx.fillStyle = '#fff8ee';
+      resultCtx.beginPath();
+      resultCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+      resultCtx.fill();
+      resultCtx.restore();
+    }
+  }
+
+  // ── Animation loop ────────────────────────────────────────────────────────
+  function animateLayer(layerIdx) {
+    const layer = layers[layerIdx];
+    if (!layer) { animating = false; updateButtons(); return; }
+
+    animating = true;
+    updateButtons();
+
+    const speed = 0.018;
+    function step() {
+      layer.progress = Math.min(1, layer.progress + speed);
+      renderYarn();
+      if (layer.progress < 1) {
+        animFrame = requestAnimationFrame(step);
+      } else {
+        animating = false;
+        updateButtons();
+        updateDots();
+      }
+    }
+    animFrame = requestAnimationFrame(step);
+  }
+
+  // ── UI helpers ────────────────────────────────────────────────────────────
+  function updateButtons() {
+    const btnDye  = document.getElementById('btnDye');
+    const btnDone = document.getElementById('btnDone');
+    btnDye.disabled  = animating || selectedColor === null || layers.length >= MAX_LAYERS;
+    btnDone.disabled = animating || layers.length === 0;
+  }
+
+  function updateDots() {
+    for (let i = 0; i < MAX_LAYERS; i++) {
+      const dot = document.getElementById('dot' + i);
+      if (layers[i]) {
+        dot.classList.add('filled');
+        dot.style.setProperty('--col', layers[i].color.hex);
+      } else {
+        dot.classList.remove('filled');
+        dot.style.removeProperty('--col');
+      }
+    }
+  }
+
+  function selectColor(idx) {
+    if (animating) return;
+    selectedColor = idx;
+    document.querySelectorAll('.swatch').forEach((el, i) => {
+      el.classList.toggle('active', i === idx);
+    });
+    renderBucket(PALETTE[idx].hex);
+    document.getElementById('bucketLabel').textContent = PALETTE[idx].name;
+    updateButtons();
+  }
+
+  // ── Build palette ─────────────────────────────────────────────────────────
+  function buildPalette() {
+    const container = document.getElementById('swatches');
+    PALETTE.forEach((col, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'swatch';
+      btn.style.background = col.hex;
+      btn.title = col.name;
+      btn.setAttribute('aria-label', col.name);
+      btn.addEventListener('click', () => selectColor(i));
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); selectColor(i); }, { passive: false });
+      container.appendChild(btn);
+    });
+  }
+
+  // ── Screens ───────────────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function resetWorkshop() {
+    layers = [];
+    selectedColor = null;
+    animating = false;
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+    document.getElementById('bucketLabel').textContent = '← 選色';
+    renderBucket(null);
+    renderYarn();
+    updateButtons();
+    updateDots();
+  }
+
+  function showResult() {
+    // Build color chips
+    const container = document.getElementById('resultColors');
+    container.innerHTML = '';
+    layers.forEach(layer => {
+      const chip = document.createElement('div');
+      chip.className = 'result-chip';
+      chip.style.background = layer.color.hex;
+      chip.textContent = layer.color.name;
+      container.appendChild(chip);
+    });
+    renderResult();
+    showScreen('screen-result');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function init() {
+    setupCanvases();
+    buildPalette();
+    renderBucket(null);
+    renderYarn();
+    updateButtons();
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      resetWorkshop();
+      showScreen('screen-workshop');
+    });
+
+    document.getElementById('btnDye').addEventListener('click', () => {
+      if (animating || selectedColor === null || layers.length >= MAX_LAYERS) return;
+      const color = PALETTE[selectedColor];
+      const newLayer = { color, progress: 0 };
+      layers.push(newLayer);
+      animateLayer(layers.length - 1);
+      updateDots();
+    });
+
+    document.getElementById('btnDone').addEventListener('click', () => {
+      if (animating || layers.length === 0) return;
+      showResult();
+    });
+
+    document.getElementById('btnCTA').addEventListener('click', () => {
+      // CTA — in a real ad this would link to the shop
+      const colorNames = layers.map(l => l.color.name).join('、');
+      alert('即將為你帶到 Mr. Oops 選購頁面！\n你的配色：' + colorNames);
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      showScreen('screen-workshop');
+      resetWorkshop();
+    });
+
+    window.addEventListener('resize', () => {
+      setupCanvases();
+      renderYarn();
+      renderBucket(selectedColor !== null ? PALETTE[selectedColor].hex : null);
+    });
+  }
+
+  init();
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

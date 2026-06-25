@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: advertise-agent
+    runtime: node
+    plan: free
+    # 部署機只「服務」本機產好並 commit 的頁面與封面,不需要 Puppeteer:
+    #   - PUPPETEER_SKIP_DOWNLOAD=true:安裝時不下載 Chromium(省時間/空間)
+    #   - SERVE_ONLY=1:啟動時略過封面重產與 storage 監看
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    startCommand: yarn start:prod
+    envVars:
+      - key: SERVE_ONLY
+        value: '1'
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: 'true'
+      - key: NODE_ENV
+        value: production

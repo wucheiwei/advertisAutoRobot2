@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>水管大挑戰 × PIPECO 淨水品牌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0b1e3d;
+    font-family: 'Noto Sans TC', sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; min-height: 100vh;
+    overflow: hidden; touch-action: manipulation;
+    user-select: none;
+  }
+  #header {
+    width:100%; text-align:center;
+    padding: 14px 16px 6px;
+    position: relative; z-index:10;
+  }
+  #header h1 {
+    font-size: clamp(18px,4.5vw,28px);
+    font-weight: 900;
+    background: linear-gradient(90deg,#4dd9ff,#00ffbb);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  #header p { color:#7ab3d4; font-size:12px; margin-top:2px; }
+  #info-row {
+    display:flex; gap:20px; justify-content:center;
+    font-size:13px; color:#aad4f0;
+    padding: 6px 0; z-index:10;
+  }
+  #info-row span strong { color:#4dd9ff; }
+  #board-wrap {
+    flex: 1;
+    display:flex; align-items:center; justify-content:center;
+    padding: 8px;
+    width:100%; max-width:460px;
+  }
+  #board {
+    display: grid;
+    gap: 3px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 0 30px rgba(77,217,255,0.15);
+  }
+  .cell {
+    width: 56px; height: 56px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: transform .1s;
+    overflow: hidden;
+  }
+  .cell:active { transform: scale(.92); }
+  .cell canvas {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+  }
+  #overlay {
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background: rgba(5,15,35,0.92);
+    z-index:30; text-align:center; padding:24px;
+  }
+  #overlay h2 {
+    font-size: clamp(26px,7vw,46px); font-weight:900;
+    background: linear-gradient(135deg,#4dd9ff,#00ffbb);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    line-height:1.1; margin-bottom:10px;
+  }
+  #overlay p { color:#aad4f0; font-size:14px; line-height:1.6; margin-bottom:20px; }
+  .btn {
+    background: linear-gradient(135deg,#4dd9ff,#00c8a0);
+    color:#0b1e3d; border:none; font-size:17px; font-weight:900;
+    padding:13px 36px; border-radius:50px; cursor:pointer;
+    transition: transform .15s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .btn:active { transform:scale(.95); }
+  .sub { margin-top:12px; font-size:12px; color:#5580a0; }
+  #win-overlay {
+    position:fixed; inset:0;
+    display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(5,20,40,0.95);
+    z-index:40; text-align:center; padding:24px;
+  }
+  #win-overlay h2 { font-size:clamp(22px,6vw,40px); font-weight:900; color:#4dd9ff; margin-bottom:8px; }
+  #win-overlay .msg { color:#c0e8ff; font-size:15px; margin-bottom:20px; line-height:1.6; }
+  #coupon {
+    background:#fff; color:#0b1e3d;
+    border-radius:14px; padding:18px 30px; margin-bottom:20px;
+    box-shadow:0 0 40px rgba(77,217,255,0.35);
+  }
+  #coupon .label { font-size:11px; letter-spacing:2px; opacity:.5; text-transform:uppercase; }
+  #coupon .code { font-size:clamp(26px,8vw,44px); font-weight:900; letter-spacing:4px; color:#0088cc; margin:4px 0; }
+  #coupon .desc { font-size:12px; opacity:.55; }
+  #level-indicator {
+    position:fixed; top:12px; right:16px;
+    background:rgba(77,217,255,0.15);
+    border:1px solid rgba(77,217,255,0.3);
+    border-radius:20px; padding:4px 14px;
+    color:#4dd9ff; font-size:13px; font-weight:700;
+    z-index:20;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>水管大挑戰</h1>
+  <p>旋轉管道，讓水流通！</p>
+</div>
+<div id="info-row">
+  <span>步數 <strong id="moves">0</strong></span>
+  <span>關卡 <strong id="lvl-display">1</strong> / 5</span>
+</div>
+<div id="board-wrap"><div id="board"></div></div>
+
+<div id="level-indicator">PIPECO 淨水</div>
+
+<!-- Start overlay -->
+<div id="overlay">
+  <h2>水管大挑戰</h2>
+  <p>點擊格子旋轉管道方向<br>讓水源💧 連通到終點⭐<br>完成 <strong style="color:#4dd9ff">5 關</strong>解鎖淨水器優惠！</p>
+  <button class="btn" id="startBtn">開始挑戰！</button>
+  <div class="sub">PIPECO 淨水品牌 × 夏日健康特賣</div>
+</div>
+
+<!-- Win overlay -->
+<div id="win-overlay">
+  <h2>🎉 全通了！</h2>
+  <div class="msg">你只用 <span id="total-moves">0</span> 步完成全部關卡！<br>解鎖 PIPECO 限定優惠：</div>
+  <div id="coupon">
+    <div class="label">專屬折扣碼</div>
+    <div class="code">PIPE25</div>
+    <div class="desc">濾水壺 75 折 · 滿 $1,200 加贈濾芯 · 限 72 小時</div>
+  </div>
+  <button class="btn" id="ctaBtn">立即選購 →</button>
+  <button class="btn" style="margin-top:10px;background:linear-gradient(135deg,#1a4060,#0d2d50);color:#4dd9ff;" id="retryBtn">再挑一次</button>
+</div>
+
+<script>
+// ─── Pipe types ────────────────────────────────────────────────────────────────
+// Each pipe has "connections": array of directions it connects to
+// Directions: 0=top, 1=right, 2=bottom, 3=left
+const PIPE_TYPES = {
+  // straight (─)
+  STRAIGHT: { connections: [1,3], canRotate: true },
+  // L-bend (└)
+  BEND: { connections: [0,1], canRotate: true },
+  // T-junction
+  TEE: { connections: [0,1,3], canRotate: true },
+  // cross (+)
+  CROSS: { connections: [0,1,2,3], canRotate: false },
+  // dead-end (cap)
+  CAP: { connections: [0], canRotate: true },
+};
+
+// ─── Level definitions ─────────────────────────────────────────────────────────
+// Grid: 4×4 or 5×5 cells. Each cell: { type, rotation, isSource, isDest }
+// rotation: number of 90° CW turns from default
+// connections after rotation: (dir + rotation) % 4
+
+const LEVELS = [
+  // Level 1 — 4×4, very easy
+  {
+    size: 4,
+    cells: [
+      // row 0
+      { t:'CAP',    r:2 }, { t:'STRAIGHT', r:0 }, { t:'STRAIGHT', r:0 }, { t:'CAP',    r:0, isSrc:true },
+      // row 1
+      { t:'BEND',   r:0 }, { t:'BEND',     r:3 }, { t:'BEND',     r:2 }, { t:'STRAIGHT',r:1 },
+      // row 2
+      { t:'STRAIGHT',r:1},{ t:'BEND',     r:1 }, { t:'BEND',     r:0 }, { t:'STRAIGHT',r:1 },
+      // row 3
+      { t:'CAP',    r:0 }, { t:'STRAIGHT', r:0 }, { t:'STRAIGHT', r:0 }, { t:'CAP',    r:2, isDst:true },
+    ],
+    // Shuffled rotations (offset each by some amount)
+    scramble: [1,3,0,2, 2,1,3,0, 0,2,1,3, 3,0,2,1],
+  },
+  // Level 2
+  {
+    size: 4,
+    cells: [
+      { t:'CAP',r:2,isSrc:true},{ t:'STRAIGHT',r:0},{ t:'BEND',r:3},{ t:'CAP',r:3},
+      { t:'STRAIGHT',r:1},{ t:'CROSS',r:0},{ t:'STRAIGHT',r:1},{ t:'BEND',r:2},
+      { t:'BEND',r:1},{ t:'STRAIGHT',r:0},{ t:'CROSS',r:0},{ t:'STRAIGHT',r:1},
+      { t:'CAP',r:0},{ t:'BEND',r:0},{ t:'STRAIGHT',r:0},{ t:'CAP',r:2,isDst:true},
+    ],
+    scramble: [2,1,3,0, 0,0,2,1, 3,2,0,1, 1,3,0,2],
+  },
+  // Level 3 — 4×4
+  {
+    size: 4,
+    cells: [
+      { t:'CAP',r:3,isSrc:true},{ t:'BEND',r:2},{ t:'STRAIGHT',r:1},{ t:'BEND',r:3},
+      { t:'STRAIGHT',r:1},{ t:'TEE',r:0},{ t:'BEND',r:1},{ t:'STRAIGHT',r:1},
+      { t:'STRAIGHT',r:1},{ t:'STRAIGHT',r:1},{ t:'TEE',r:2},{ t:'BEND',r:2},
+      { t:'BEND',r:0},{ t:'STRAIGHT',r:0},{ t:'STRAIGHT',r:0},{ t:'CAP',r:2,isDst:true},
+    ],
+    scramble: [3,0,1,2, 1,2,3,0, 0,3,1,2, 2,1,3,0],
+  },
+  // Level 4 — 5×5
+  {
+    size: 5,
+    cells: [
+      { t:'CAP',r:2,isSrc:true},{ t:'STRAIGHT',r:0},{ t:'BEND',r:3},{ t:'BEND',r:2},{ t:'CAP',r:3},
+      { t:'STRAIGHT',r:1},{ t:'BEND',r:2},{ t:'STRAIGHT',r:1},{ t:'STRAIGHT',r:1},{ t:'BEND',r:2},
+      { t:'BEND',r:1},{ t:'STRAIGHT',r:1},{ t:'TEE',r:0},{ t:'BEND',r:3},{ t:'STRAIGHT',r:1},
+      { t:'CAP',r:0},{ t:'BEND',r:0},{ t:'BEND',r:1},{ t:'STRAIGHT',r:0},{ t:'BEND',r:1},
+      { t:'CAP',r:3},{ t:'STRAIGHT',r:0},{ t:'STRAIGHT',r:0},{ t:'BEND',r:0},{ t:'CAP',r:2,isDst:true},
+    ],
+    scramble: [1,2,0,3,1, 3,0,2,1,0, 0,3,1,2,3, 2,1,3,0,2, 1,0,2,3,1],
+  },
+  // Level 5 — 5×5
+  {
+    size: 5,
+    cells: [
+      { t:'CAP',r:3,isSrc:true},{ t:'STRAIGHT',r:1},{ t:'STRAIGHT',r:1},{ t:'STRAIGHT',r:1},{ t:'BEND',r:2},
+      { t:'STRAIGHT',r:1},{ t:'CROSS',r:0},{ t:'BEND',r:2},{ t:'BEND',r:3},{ t:'STRAIGHT',r:1},
+      { t:'BEND',r:0},{ t:'STRAIGHT',r:0},{ t:'TEE',r:3},{ t:'STRAIGHT',r:0},{ t:'BEND',r:1},
+      { t:'CAP',r:0},{ t:'BEND',r:0},{ t:'STRAIGHT',r:0},{ t:'CROSS',r:0},{ t:'BEND',r:1},
+      { t:'CAP',r:3},{ t:'STRAIGHT',r:0},{ t:'BEND',r:0},{ t:'STRAIGHT',r:0},{ t:'CAP',r:2,isDst:true},
+    ],
+    scramble: [2,0,3,1,0, 1,0,2,3,1, 3,1,0,2,0, 0,2,1,0,3, 2,3,1,0,2],
+  },
+];
+
+// ─── Game state ─────────────────────────────────────────────────────────────────
+let currentLevel = 0;
+let moves = 0;
+let totalMoves = 0;
+let grid = [];   // array of {type, rotation, isSrc, isDst}
+let flowing = []; // set of flowing cell indices
+
+const boardEl = document.getElementById('board');
+const movesEl = document.getElementById('moves');
+const lvlEl   = document.getElementById('lvl-display');
+const overlay  = document.getElementById('overlay');
+const winOverlay = document.getElementById('win-overlay');
+const totalMovesEl = document.getElementById('total-moves');
+
+function getConnections(type, rotation) {
+  const base = PIPE_TYPES[type].connections;
+  return base.map(d => (d + rotation) % 4);
+}
+
+function connects(connA, connB, dir) {
+  // dir: direction from A to B (0=up,1=right,2=down,3=left)
+  // A must have dir in its connections, B must have opposite
+  const opp = (dir + 2) % 4;
+  return connA.includes(dir) && connB.includes(opp);
+}
+
+function buildGrid(levelDef) {
+  const { cells, scramble, size } = levelDef;
+  grid = cells.map((c, i) => ({
+    type: c.t,
+    rotation: (c.r + scramble[i]) % 4,
+    isSrc: !!c.isSrc,
+    isDst: !!c.isDst,
+    solvedRotation: c.r,
+  }));
+  return size;
+}
+
+function computeFlow() {
+  const size = LEVELS[currentLevel].size;
+  const srcIdx = grid.findIndex(c => c.isSrc);
+  const visited = new Set();
+  const queue = [srcIdx];
+  visited.add(srcIdx);
+  while (queue.length) {
+    const idx = queue.shift();
+    const row = Math.floor(idx / size);
+    const col = idx % size;
+    const conns = getConnections(grid[idx].type, grid[idx].rotation);
+    const neighbors = [
+      { dir:0, ni: idx-size }, // top
+      { dir:1, ni: idx+1 },    // right
+      { dir:2, ni: idx+size }, // bottom
+      { dir:3, ni: idx-1 },    // left
+    ];
+    for (const {dir, ni} of neighbors) {
+      if (ni < 0 || ni >= grid.length) continue;
+      const nrow = Math.floor(ni / size);
+      const ncol = ni % size;
+      // Prevent wrapping
+      if (dir === 1 && ncol === 0) continue;
+      if (dir === 3 && ncol === size-1) continue;
+      if (visited.has(ni)) continue;
+      const nconns = getConnections(grid[ni].type, grid[ni].rotation);
+      if (connects(conns, nconns, dir)) {
+        visited.add(ni);
+        queue.push(ni);
+      }
+    }
+  }
+  return visited;
+}
+
+function checkWin(flowSet) {
+  const dstIdx = grid.findIndex(c => c.isDst);
+  return flowSet.has(dstIdx);
+}
+
+// ─── Rendering ──────────────────────────────────────────────────────────────────
+const W = 56, H = 56;
+const PIPE_COLOR = '#4dd9ff';
+const FLOW_COLOR = '#00ffbb';
+const SRC_COLOR  = '#ffe94d';
+const DST_COLOR  = '#ff6eb4';
+
+function drawPipe(canvas, type, rotation, isFlowing, isSrc, isDst) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const r = Math.PI/2 * rotation;
+  const color = isFlowing ? FLOW_COLOR : PIPE_COLOR;
+  const thick = 8;
+
+  // Background circle for source/dest
+  if (isSrc || isDst) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, Math.PI*2);
+    ctx.fillStyle = isSrc ? 'rgba(255,233,77,0.18)' : 'rgba(255,110,180,0.18)';
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(r);
+  ctx.translate(-cx,-cy);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = thick;
+  ctx.lineCap = 'round';
+
+  const conns = PIPE_TYPES[type].connections;
+
+  // Draw each segment from center to edge
+  const dirs = [
+    [cx, cy, cx, 4],      // top
+    [cx, cy, W-4, cy],    // right
+    [cx, cy, cx, H-4],    // bottom
+    [cx, cy, 4, cy],      // left
+  ];
+
+  for (const d of conns) {
+    ctx.beginPath();
+    ctx.moveTo(dirs[d][0], dirs[d][1]);
+    ctx.lineTo(dirs[d][2], dirs[d][3]);
+    ctx.stroke();
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, thick/2, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.restore();
+
+  // Source / Dest icon
+  if (isSrc || isDst) {
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isSrc ? '💧' : '⭐', cx, cy);
+  }
+}
+
+function renderBoard() {
+  const size = LEVELS[currentLevel].size;
+  boardEl.style.gridTemplateColumns = `repeat(${size}, 56px)`;
+
+  // Rebuild cells
+  boardEl.innerHTML = '';
+  grid.forEach((cell, i) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    const cvs = document.createElement('canvas');
+    cvs.width = W; cvs.height = H;
+    div.appendChild(cvs);
+    div.addEventListener('click', () => rotateCell(i));
+    div.addEventListener('touchend', e => { e.preventDefault(); rotateCell(i); });
+    boardEl.appendChild(div);
+  });
+
+  updateBoard();
+}
+
+function updateBoard() {
+  flowing = computeFlow();
+  const cells = boardEl.querySelectorAll('.cell');
+  cells.forEach((div, i) => {
+    const cvs = div.querySelector('canvas');
+    const cell = grid[i];
+    drawPipe(cvs, cell.type, cell.rotation, flowing.has(i), cell.isSrc, cell.isDst);
+    // Glow if flowing
+    div.style.boxShadow = flowing.has(i)
+      ? '0 0 10px rgba(0,255,187,0.5)'
+      : '';
+    div.style.background = flowing.has(i)
+      ? 'rgba(0,255,187,0.08)'
+      : 'rgba(255,255,255,0.05)';
+  });
+
+  if (checkWin(flowing)) {
+    setTimeout(levelComplete, 400);
+  }
+}
+
+function rotateCell(idx) {
+  const cell = grid[idx];
+  if (cell.isSrc || cell.isDst) return;
+  if (PIPE_TYPES[cell.type].canRotate === false) return;
+  cell.rotation = (cell.rotation + 1) % 4;
+  moves++;
+  movesEl.textContent = moves;
+  updateBoard();
+}
+
+function levelComplete() {
+  totalMoves += moves;
+  currentLevel++;
+  lvlEl.textContent = currentLevel + 1;
+
+  if (currentLevel >= LEVELS.length) {
+    totalMovesEl.textContent = totalMoves;
+    winOverlay.style.display = 'flex';
+    return;
+  }
+
+  // Flash and load next level
+  boardEl.style.transition = 'opacity .3s';
+  boardEl.style.opacity = '0';
+  setTimeout(() => {
+    loadLevel(currentLevel);
+    boardEl.style.opacity = '1';
+  }, 350);
+}
+
+function loadLevel(idx) {
+  moves = 0;
+  movesEl.textContent = '0';
+  lvlEl.textContent = idx + 1;
+  buildGrid(LEVELS[idx]);
+  renderBoard();
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  overlay.style.display = 'none';
+  currentLevel = 0;
+  totalMoves = 0;
+  loadLevel(0);
+});
+
+document.getElementById('ctaBtn').addEventListener('click', () => {
+  alert('前往 PIPECO 官網！優惠碼：PIPE25');
+});
+
+document.getElementById('retryBtn').addEventListener('click', () => {
+  winOverlay.style.display = 'none';
+  overlay.style.display = 'flex';
+});
+
+// Adjust cell size for small screens
+function adjustCellSize() {
+  const vw = Math.min(window.innerWidth, 460);
+  const maxSize = LEVELS[currentLevel]?.size || 5;
+  const cellPx = Math.floor((vw - 32 - (maxSize-1)*3) / maxSize);
+  document.documentElement.style.setProperty('--cell', cellPx+'px');
+  document.querySelectorAll('.cell').forEach(c => {
+    c.style.width = cellPx+'px';
+    c.style.height = cellPx+'px';
+    c.querySelector('canvas').width = cellPx;
+    c.querySelector('canvas').height = cellPx;
+  });
+  if (grid.length) updateBoard();
+}
+window.addEventListener('resize', adjustCellSize);
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>嗶啵汽水｜膽量打氣大挑戰</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{--sky1:#fff4d6;--sky2:#ffd0e7;--ink:#3a2a4d;--pop:#ff5470;--mint:#23c4a8;--sun:#ffb627}
+  html,body{height:100%}
+  body{font-family:"Noto Sans TC",sans-serif;color:var(--ink);overflow:hidden;user-select:none;
+    background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 70%,#ffc0dd 100%)}
+  #app{position:relative;height:100dvh;max-width:520px;margin:0 auto;display:flex;flex-direction:column;
+    align-items:center;padding:12px 16px env(safe-area-inset-bottom) 16px}
+  .clouds{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .clouds i{position:absolute;background:rgba(255,255,255,.55);border-radius:50%;filter:blur(2px);
+    animation:drift linear infinite}
+  @keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(130vw)}}
+  header{position:relative;z-index:2;text-align:center;margin-top:2px}
+  .brand{font-family:"Fredoka";letter-spacing:2px;font-weight:700;color:var(--pop);font-size:14px}
+  h1{font-size:23px;font-weight:900;margin:1px 0}
+  .sub{font-size:12.5px;color:#6b5a78;line-height:1.5}
+  .hud{position:relative;z-index:2;display:flex;gap:8px;margin:9px 0 0}
+  .chip{background:rgba(255,255,255,.7);border:2px solid #fff;border-radius:999px;padding:6px 13px;
+    font-size:13px;font-weight:700;box-shadow:0 3px 0 rgba(0,0,0,.06)}
+  .chip b{color:var(--pop)}
+  .chip.bank b{color:var(--mint)}
+  #scene{position:relative;z-index:2;flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+  .balloon-wrap{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center}
+  .balloon{position:relative;width:140px;height:165px;border-radius:50% 50% 48% 48%;
+    background:radial-gradient(circle at 34% 30%,#fff8,#fff0 38%),
+      radial-gradient(circle at 50% 45%,var(--pop),#d6224a);
+    transform-origin:bottom center;transition:transform .12s cubic-bezier(.34,1.6,.5,1),background .25s;
+    box-shadow:inset -10px -14px 22px rgba(0,0,0,.18)}
+  .balloon::after{content:"";position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
+    border-left:9px solid transparent;border-right:9px solid transparent;border-top:13px solid #d6224a}
+  .balloon .mult{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:"Fredoka";font-weight:700;color:#fff;font-size:30px;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .string{width:2px;height:54px;background:rgba(58,42,77,.45)}
+  .wobble{animation:wob .35s ease}
+  @keyframes wob{0%,100%{transform:translateX(-50%) rotate(0)}25%{transform:translateX(-50%) rotate(3deg)}75%{transform:translateX(-50%) rotate(-3deg)}}
+  .pumpbase{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:120px;height:30px;
+    background:linear-gradient(#9b8bb0,#6e5d86);border-radius:8px 8px 4px 4px;z-index:1}
+  .stat{position:relative;z-index:2;text-align:center;height:22px;font-size:13.5px;font-weight:700;color:#7a4}
+  .pending{color:var(--sun)}
+  .controls{position:relative;z-index:2;display:flex;gap:12px;width:100%;margin:6px 0 2px}
+  .big-btn{flex:1;border:none;border-radius:18px;padding:16px 10px;font-family:"Noto Sans TC";
+    font-weight:900;font-size:17px;color:#fff;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.18);
+    transition:transform .06s}
+  .big-btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+  .big-btn:disabled{opacity:.4;box-shadow:none}
+  #pump{background:linear-gradient(#ff6f8a,var(--pop))}
+  #cash{background:linear-gradient(#3ad7bb,var(--mint))}
+  .cta-wrap{position:relative;z-index:2;width:100%;margin-top:6px}
+  .cta{display:block;width:100%;text-align:center;text-decoration:none;color:#fff;font-weight:900;
+    font-size:16px;padding:15px;border-radius:16px;background:linear-gradient(90deg,var(--sun),var(--pop));
+    box-shadow:0 6px 20px rgba(255,84,112,.4)}
+  .ov{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;
+    background:rgba(58,42,77,.55);backdrop-filter:blur(4px);padding:24px}
+  .ov.on{display:flex;animation:fade .3s}
+  @keyframes fade{from{opacity:0}}
+  .card{width:100%;max-width:340px;text-align:center;background:#fff;border-radius:24px;padding:26px 22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .card .big{font-size:48px}
+  .card h2{font-size:23px;margin:6px 0;color:var(--pop)}
+  .card p{font-size:14px;color:#6b5a78;line-height:1.6}
+  .coupon{margin:14px 0;border:2px dashed var(--sun);border-radius:14px;padding:12px;background:#fff8e8}
+  .coupon .tier{font-family:"Fredoka";font-size:20px;font-weight:700;color:var(--sun)}
+  .coupon .code{font-size:21px;font-weight:900;letter-spacing:2px;color:var(--ink)}
+  .toast{position:fixed;left:50%;top:120px;transform:translateX(-50%);z-index:8;background:rgba(58,42,77,.92);
+    color:#fff;font-size:13px;font-weight:700;padding:9px 16px;border-radius:999px;opacity:0;
+    transition:opacity .25s;pointer-events:none;white-space:nowrap}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="clouds" id="clouds"></div>
+<div id="app">
+  <header>
+    <div class="brand">BEPO · 嗶啵氣泡飲</div>
+    <h1>膽量打氣大挑戰 🎈</h1>
+    <div class="sub">每打一下氣，倍率就往上衝，但氣球隨時可能爆！<br>在爆掉前「收下倍率」，3 顆氣球累積最高分數換好禮。</div>
+  </header>
+  <div class="hud">
+    <div class="chip">氣球 <b id="ball">1</b>/3</div>
+    <div class="chip bank">已收 <b id="bank">0</b></div>
+  </div>
+
+  <div id="scene">
+    <div class="pumpbase"></div>
+    <div class="balloon-wrap" id="bwrap">
+      <div class="balloon" id="balloon"><div class="mult" id="mult">x1.0</div></div>
+      <div class="string"></div>
+    </div>
+  </div>
+
+  <div class="stat" id="stat">這顆待收：<span class="pending">0</span> 分</div>
+  <div class="controls">
+    <button class="big-btn" id="pump">打氣 +</button>
+    <button class="big-btn" id="cash">收下倍率</button>
+  </div>
+  <div class="cta-wrap">
+    <a class="cta" id="cta" href="#" onclick="return false">索取嗶啵買一送一券 🥤</a>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="card">
+    <div class="big" id="ovEmoji">🎉</div>
+    <h2 id="ovTitle">挑戰結束！</h2>
+    <p id="ovMsg"></p>
+    <div class="coupon">
+      <div class="tier" id="tier">銀級膽識</div>
+      <div>嗶啵汽水兌換碼</div>
+      <div class="code" id="code">BEPO-000</div>
+    </div>
+    <a class="cta" id="again" href="#" onclick="return false">再挑戰一次 🔁</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  // clouds
+  (function(){const c=document.getElementById('clouds');
+    for(let i=0;i<6;i++){const e=document.createElement('i');const s=60+Math.random()*120;
+      e.style.width=s+'px';e.style.height=(s*0.5)+'px';e.style.top=(Math.random()*55)+'%';
+      e.style.animationDuration=(28+Math.random()*26)+'s';e.style.animationDelay=(-Math.random()*30)+'s';
+      c.appendChild(e);}})();
+
+  const TOTAL_BALLOONS=3;
+  const balloonEl=document.getElementById('balloon');
+  const wrapEl=document.getElementById('bwrap');
+  const multEl=document.getElementById('mult');
+  const statEl=document.getElementById('stat');
+  const toastEl=document.getElementById('toast');
+  const pumpBtn=document.getElementById('pump');
+  const cashBtn=document.getElementById('cash');
+
+  let ball=1, bank=0, pumps=0, mult=1, popChance=0, pending=0, locked=false, ended=false;
+
+  function toast(t){toastEl.textContent=t;toastEl.classList.add('on');
+    clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.classList.remove('on'),1300);}
+
+  function colorFor(m){
+    // shift hue from pink -> orange -> red danger as multiplier grows
+    if(m<2) return ['#ff6f8a','#d6224a'];
+    if(m<3.2) return ['#ffa14d','#ff5470'];
+    if(m<4.6) return ['#ff7a3d','#e23a2e'];
+    return ['#ff5f3d','#b3160f'];
+  }
+  function paint(){
+    const scale=0.5+Math.min(pumps,18)*0.075;
+    wrapEl.style.transform=`translateX(-50%) scale(${scale.toFixed(3)})`;
+    const [a,b]=colorFor(mult);
+    balloonEl.style.background=
+      `radial-gradient(circle at 34% 30%,#fff8,#fff0 38%),radial-gradient(circle at 50% 45%,${a},${b})`;
+    multEl.textContent='x'+mult.toFixed(1);
+    statEl.innerHTML='這顆待收：<span class="pending">'+Math.round(pending)+'</span> 分'+
+      (popChance>0.35?'　⚠️ 緊繃！':'');
+  }
+
+  function resetBalloon(){
+    pumps=0;mult=1;popChance=0;pending=0;locked=false;
+    document.getElementById('ball').textContent=ball;
+    wrapEl.classList.remove('wobble');
+    paint();
+    pumpBtn.disabled=false;cashBtn.disabled=true;
+  }
+
+  function nextBalloonOrEnd(){
+    if(ball>=TOTAL_BALLOONS){ endGame(); return; }
+    ball++; resetBalloon();
+  }
+
+  function pump(){
+    if(locked||ended) return;
+    pumps++;
+    mult=+(mult+0.3+pumps*0.05).toFixed(2);
+    pending=100*mult;
+    // pop chance grows with pumps; first 2 pumps are safe (build confidence)
+    popChance=pumps<=2?0:Math.min(0.9,(pumps-2)*0.085);
+    cashBtn.disabled=false;
+    wrapEl.classList.remove('wobble');void wrapEl.offsetWidth;wrapEl.classList.add('wobble');
+    paint();
+    if(Math.random()<popChance){ popBalloon(); }
+  }
+
+  function popBalloon(){
+    locked=true;pending=0;
+    pumpBtn.disabled=true;cashBtn.disabled=true;
+    // pop visual
+    balloonEl.style.transition='transform .12s';
+    wrapEl.style.transform='translateX(-50%) scale(1.25)';
+    setTimeout(()=>{
+      wrapEl.style.opacity='0';
+      if(typeof confetti==='function')
+        confetti({particleCount:40,spread:120,startVelocity:55,scalar:.7,origin:{y:.5},
+          colors:['#d6224a','#ff6f8a','#ffb627']});
+    },80);
+    toast('💥 砰！這顆爆了，分數歸零');
+    setTimeout(()=>{ wrapEl.style.opacity='1';wrapEl.style.transition='';balloonEl.style.transition='';
+      nextBalloonOrEnd(); },1100);
+  }
+
+  function cashOut(){
+    if(locked||ended||pumps===0) return;
+    bank+=Math.round(pending);
+    document.getElementById('bank').textContent=bank;
+    locked=true;pumpBtn.disabled=true;cashBtn.disabled=true;
+    toast('💰 收下 '+Math.round(pending)+' 分！');
+    if(typeof confetti==='function')
+      confetti({particleCount:60,spread:70,origin:{y:.55},colors:['#23c4a8','#ffb627','#fff']});
+    setTimeout(nextBalloonOrEnd,950);
+  }
+
+  function endGame(){
+    ended=true;
+    let tier,emoji,code,msg;
+    if(bank>=900){tier='金級膽識王';emoji='👑';code='BEPO-GOLD';msg='穩住又敢衝，買一送一還送限定杯套！';}
+    else if(bank>=450){tier='銀級老手';emoji='🥈';code='BEPO-2X';msg='手感不錯！解鎖買一送一好券。';}
+    else{tier='銅級新手';emoji='🥉';code='BEPO-50';msg='再練練膽量，先拿杯折 50 元喝起來！';}
+    document.getElementById('ovEmoji').textContent=emoji;
+    document.getElementById('ovTitle').textContent='總共收下 '+bank+' 分';
+    document.getElementById('ovMsg').textContent=msg;
+    document.getElementById('tier').textContent=tier;
+    document.getElementById('code').textContent=code;
+    if(bank>=450 && typeof confetti==='function')
+      confetti({particleCount:140,spread:90,origin:{y:.6}});
+    document.getElementById('ov').classList.add('on');
+  }
+
+  pumpBtn.addEventListener('click',pump);
+  cashBtn.addEventListener('click',cashOut);
+  document.getElementById('cta').addEventListener('click',()=>{
+    if(ended) document.getElementById('ov').classList.add('on');
+    else toast('玩完 3 顆氣球就能領券囉！');
+  });
+  document.getElementById('again').addEventListener('click',()=>{
+    document.getElementById('ov').classList.remove('on');
+    ball=1;bank=0;ended=false;document.getElementById('bank').textContent=0;
+    resetBalloon();
+  });
+
+  resetBalloon();
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

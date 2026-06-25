@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>澆水開花療癒時光 × 花漾美肌</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      background:linear-gradient(180deg,#0d1b2a 0%,#1b3a2a 60%,#2d5016 100%);
+      display:flex;flex-direction:column;align-items:center;
+      min-height:100vh;
+      font-family:'Noto Sans TC',system-ui,sans-serif;
+      color:#fff;user-select:none;-webkit-tap-highlight-color:transparent;
+      overflow:hidden;
+    }
+    #header{
+      width:100%;max-width:480px;padding:10px 16px;
+      display:flex;justify-content:space-between;align-items:center;
+      background:rgba(0,0,0,.35);backdrop-filter:blur(8px);
+      border-bottom:1px solid rgba(255,200,100,.3);
+    }
+    #logo{font-size:18px;font-weight:900;color:#f9d876;letter-spacing:1px;}
+    #watered-info{font-size:13px;color:#c8f0a0;font-weight:700;}
+    #scene{
+      flex:1;width:100%;max-width:480px;
+      position:relative;overflow:hidden;
+    }
+    canvas#bg-canvas{position:absolute;inset:0;width:100%;height:100%;}
+    canvas#main-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;}
+    #score-float{
+      position:absolute;top:10px;left:50%;transform:translateX(-50%);
+      font-size:13px;color:#c8f0a0;font-weight:700;
+      background:rgba(0,0,0,.4);padding:4px 14px;border-radius:20px;
+      pointer-events:none;
+    }
+    #msg{
+      position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+      font-size:14px;color:#f9d876;font-weight:700;
+      background:rgba(0,0,0,.5);padding:6px 16px;border-radius:20px;
+      pointer-events:none;white-space:nowrap;
+      transition:opacity .5s;
+    }
+    #cta-bar{
+      width:100%;max-width:480px;padding:11px 16px;
+      background:linear-gradient(90deg,#2d5016,#7bbf35);
+      text-align:center;font-size:13px;font-weight:700;cursor:pointer;
+    }
+    #complete-overlay{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,.88);z-index:30;
+      flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    }
+    .co-title{font-size:26px;font-weight:900;color:#f9d876;text-align:center;}
+    .co-sub{font-size:13px;color:#c8f0a0;text-align:center;padding:0 24px;line-height:1.6;}
+    .co-coupon{
+      background:rgba(0,0,0,.5);border:2px dashed #7bbf35;
+      border-radius:14px;padding:14px 28px;text-align:center;
+    }
+    .co-code{font-size:22px;font-weight:900;color:#f9d876;letter-spacing:4px;}
+    .co-desc{font-size:11px;color:#999;margin-top:4px;}
+    .big-btn{
+      background:linear-gradient(135deg,#7bbf35,#2d5016);
+      border:none;color:#fff;font-size:16px;font-weight:700;
+      padding:12px 36px;border-radius:50px;cursor:pointer;
+      font-family:system-ui,sans-serif;
+    }
+    canvas#flower-canvas{border-radius:10px;max-width:240px;}
+  </style>
+</head>
+<body>
+<div id="header">
+  <div id="logo">🌸 花漾美肌</div>
+  <div id="watered-info">已開花 <span id="bloom-count">0</span> / <span id="total-count">6</span></div>
+</div>
+<div id="scene">
+  <canvas id="bg-canvas"></canvas>
+  <canvas id="main-canvas"></canvas>
+  <div id="score-float">🌧 點擊雨滴澆灌花朵！</div>
+  <div id="msg" style="opacity:0">　</div>
+</div>
+<div id="cta-bar">🌺 探索花漾美肌保濕新品，限時 85 折！</div>
+
+<div id="complete-overlay">
+  <div class="co-title">🌸 花園盛開了！</div>
+  <canvas id="flower-canvas" width="240" height="200"></canvas>
+  <div class="co-sub">感謝你的療癒時光<br>花漾美肌專屬折扣碼已為你解鎖！</div>
+  <div class="co-coupon">
+    <div class="co-code">BLOOM85</div>
+    <div class="co-desc">保濕新品結帳享 85 折，限時優惠</div>
+  </div>
+  <button class="big-btn" id="shop-btn">立即選購保濕系列</button>
+</div>
+
+<script>
+(function(){
+  var bgCanvas=document.getElementById('bg-canvas');
+  var bctx=bgCanvas.getContext('2d');
+  var mainCanvas=document.getElementById('main-canvas');
+  var mctx=mainCanvas.getContext('2d');
+  var scene=document.getElementById('scene');
+  var W=0,H=0;
+
+  // Flower definitions
+  var TOTAL_FLOWERS=6;
+  var bloomCount=0;
+  var flowers=[];
+  var drops=[];   // falling water drops
+  var floatTexts=[];
+  var particles=[];
+  var animId=0;
+
+  // Messages
+  var MESSAGES=['💧 好棒！種子喝到水了','🌱 它在發芽了！','🌿 越長越好！','🌺 快開花了！'];
+
+  function resize(){
+    W=bgCanvas.width=mainCanvas.width=scene.clientWidth;
+    H=bgCanvas.height=mainCanvas.height=scene.clientHeight;
+    initFlowers();
+    drawBG();
+  }
+
+  function initFlowers(){
+    flowers=[];
+    var cols=3;
+    var rows=Math.ceil(TOTAL_FLOWERS/cols);
+    var padX=W*0.12, padY=H*0.12;
+    var stepX=(W-padX*2)/(cols-1||1);
+    var stepY=(H*0.55)/(rows);
+    for(var i=0;i<TOTAL_FLOWERS;i++){
+      var col=i%cols, row=Math.floor(i/cols);
+      var bx=padX+col*stepX+(row%2===1?stepX/2:0);
+      var by=H*0.38+row*stepY;
+      flowers.push({
+        x:bx, y:by,
+        watered:0,  // 0..3 stages
+        bloomed:false,
+        stage:0,    // 0=seed,1=sprout,2=bud,3=bloom
+        anim:0,     // animation progress 0..1
+        wobble:Math.random()*Math.PI*2,
+        hue:Math.floor(Math.random()*360),
+        radius:22+Math.random()*8,
+        petal:4+Math.floor(Math.random()*5),
+      });
+    }
+    bloomCount=0;
+    document.getElementById('bloom-count').textContent=0;
+  }
+
+  // Draw static BG: gradient sky + ground + stars
+  function drawBG(){
+    var g=bctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0d1b2a');
+    g.addColorStop(0.55,'#1b3a2a');
+    g.addColorStop(1,'#2d5016');
+    bctx.fillStyle=g;
+    bctx.fillRect(0,0,W,H);
+    // Stars
+    bctx.fillStyle='rgba(255,255,200,.7)';
+    for(var i=0;i<40;i++){
+      var sx=(i*137.5)%W, sy=(i*97.3)%(H*0.5);
+      bctx.beginPath();
+      bctx.arc(sx,sy,Math.random()<0.3?1.5:0.8,0,Math.PI*2);
+      bctx.fill();
+    }
+    // Ground
+    var gg=bctx.createLinearGradient(0,H*0.7,0,H);
+    gg.addColorStop(0,'#2d5016');
+    gg.addColorStop(1,'#1a2e08');
+    bctx.fillStyle=gg;
+    bctx.beginPath();
+    bctx.moveTo(0,H*0.72);
+    for(var xi=0;xi<=W;xi+=40){
+      bctx.lineTo(xi,H*0.72+Math.sin(xi/60)*8);
+    }
+    bctx.lineTo(W,H);
+    bctx.lineTo(0,H);
+    bctx.closePath();
+    bctx.fill();
+    // Moon
+    bctx.save();
+    bctx.beginPath();
+    bctx.arc(W*0.82,H*0.12,26,0,Math.PI*2);
+    bctx.fillStyle='rgba(249,216,118,.85)';
+    bctx.shadowColor='rgba(249,216,118,.5)';
+    bctx.shadowBlur=20;
+    bctx.fill();
+    bctx.restore();
+  }
+
+  // Spawn random drops from the top
+  function spawnDrop(){
+    drops.push({
+      x:W*0.05+Math.random()*(W*0.9),
+      y:-15,
+      vy:2.5+Math.random()*2,
+      r:7+Math.random()*5,
+      alpha:0.9,
+    });
+  }
+
+  // Draw a flower at a given stage
+  function drawFlower(f,ctx2){
+    var x=f.x, y=f.y;
+    var stage=f.stage;
+    var t=f.anim;
+    ctx2.save();
+    ctx2.translate(x,y);
+    if(stage===0){
+      // Seed
+      ctx2.fillStyle='#8B5E3C';
+      ctx2.beginPath();
+      ctx2.ellipse(0,0,5,8,0,0,Math.PI*2);
+      ctx2.fill();
+    } else if(stage===1){
+      // Sprout
+      var h=20*t;
+      ctx2.strokeStyle='#5aaa20';
+      ctx2.lineWidth=3;
+      ctx2.beginPath();ctx2.moveTo(0,0);ctx2.lineTo(0,-h);ctx2.stroke();
+      if(t>0.5){
+        ctx2.strokeStyle='#7bc832';
+        ctx2.beginPath();ctx2.moveTo(0,-h*0.6);ctx2.lineTo(-10*t,-h*0.8);ctx2.stroke();
+      }
+    } else if(stage===2){
+      // Bud
+      var stemH=30;
+      ctx2.strokeStyle='#5aaa20';
+      ctx2.lineWidth=3;
+      ctx2.beginPath();ctx2.moveTo(0,0);ctx2.lineTo(0,-stemH);ctx2.stroke();
+      ctx2.fillStyle='hsl('+f.hue+',70%,45%)';
+      ctx2.beginPath();
+      ctx2.ellipse(0,-stemH-6*t,4*t,8*t,0,0,Math.PI*2);
+      ctx2.fill();
+      ctx2.fillStyle='hsl('+f.hue+',80%,60%)';
+      ctx2.beginPath();
+      ctx2.ellipse(0,-stemH-8*t,2.5*t,5*t,0,0,Math.PI*2);
+      ctx2.fill();
+    } else {
+      // Full bloom
+      var stemH2=32;
+      ctx2.strokeStyle='#5aaa20';
+      ctx2.lineWidth=3;
+      // Wobble
+      var wb=Math.sin(f.wobble)*0.06;
+      ctx2.rotate(wb);
+      ctx2.beginPath();ctx2.moveTo(0,0);ctx2.lineTo(0,-stemH2);ctx2.stroke();
+      // Leaf
+      ctx2.fillStyle='#5aaa20';
+      ctx2.beginPath();
+      ctx2.ellipse(-10,-stemH2*0.55,10,5,Math.PI/4,0,Math.PI*2);
+      ctx2.fill();
+      // Petals
+      var np=f.petal;
+      var pr=f.radius*t;
+      for(var p=0;p<np;p++){
+        var pa=(p/np)*Math.PI*2;
+        ctx2.save();
+        ctx2.translate(0,-stemH2);
+        ctx2.rotate(pa);
+        ctx2.fillStyle='hsl('+f.hue+','+(60+p*5)+'%,'+(55+p*3)+'%)';
+        ctx2.beginPath();
+        ctx2.ellipse(0,-pr/2*t,pr*0.35,pr/2*t,0,0,Math.PI*2);
+        ctx2.fill();
+        ctx2.restore();
+      }
+      // Center
+      ctx2.save();
+      ctx2.translate(0,-stemH2);
+      ctx2.beginPath();
+      ctx2.arc(0,0,7*t,0,Math.PI*2);
+      ctx2.fillStyle='#fff176';
+      ctx2.fill();
+      ctx2.restore();
+    }
+    ctx2.restore();
+  }
+
+  function drawDrop(d){
+    mctx.save();
+    mctx.globalAlpha=d.alpha;
+    mctx.fillStyle='#00bfff';
+    mctx.beginPath();
+    mctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+    mctx.fill();
+    mctx.strokeStyle='rgba(255,255,255,.5)';
+    mctx.lineWidth=1.5;
+    mctx.stroke();
+    // Shine
+    mctx.fillStyle='rgba(255,255,255,.6)';
+    mctx.beginPath();
+    mctx.arc(d.x-d.r*0.3,d.y-d.r*0.3,d.r*0.25,0,Math.PI*2);
+    mctx.fill();
+    mctx.restore();
+  }
+
+  function showMsg(txt){
+    var el=document.getElementById('msg');
+    el.textContent=txt;
+    el.style.opacity='1';
+    clearTimeout(el._t);
+    el._t=setTimeout(function(){el.style.opacity='0';},1800);
+  }
+
+  function spawnParticles(x,y,hue){
+    for(var i=0;i<12;i++){
+      var ang=Math.random()*Math.PI*2;
+      var spd=1.5+Math.random()*3;
+      particles.push({
+        x:x,y:y,
+        vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
+        life:40,maxLife:40,
+        col:'hsl('+hue+',80%,60%)',
+        r:3+Math.random()*3,
+      });
+    }
+  }
+
+  // Click/tap drops
+  function handleClick(e){
+    var rect=mainCanvas.getBoundingClientRect();
+    var cx,cy;
+    if(e.touches){
+      cx=e.touches[0].clientX-rect.left;
+      cy=e.touches[0].clientY-rect.top;
+    } else {
+      cx=e.clientX-rect.left;
+      cy=e.clientY-rect.top;
+    }
+    var scX=W/rect.width, scY=H/rect.height;
+    cx*=scX; cy*=scY;
+
+    // Hit test drops
+    for(var i=drops.length-1;i>=0;i--){
+      var d=drops[i];
+      var dx=cx-d.x, dy=cy-d.y;
+      if(Math.sqrt(dx*dx+dy*dy)<d.r+10){
+        drops.splice(i,1);
+        // Find nearest un-bloomed flower
+        var best=null,bestDist=Infinity;
+        flowers.forEach(function(f){
+          if(f.bloomed)return;
+          var fd=Math.sqrt((f.x-cx)*(f.x-cx)+(f.y-cy)*(f.y-cy));
+          if(fd<bestDist){bestDist=fd;best=f;}
+        });
+        if(best){
+          best.watered++;
+          spawnParticles(best.x,best.y,best.hue);
+          if(best.watered===1)best.stage=1;
+          else if(best.watered===2)best.stage=2;
+          else if(best.watered>=3&&!best.bloomed){
+            best.stage=3;
+            best.bloomed=true;
+            bloomCount++;
+            document.getElementById('bloom-count').textContent=bloomCount;
+            showMsg('🌸 花朵盛開了！');
+            if(bloomCount>=TOTAL_FLOWERS) setTimeout(showComplete,800);
+            return;
+          }
+          showMsg(MESSAGES[Math.min(best.watered-1,MESSAGES.length-1)]);
+        } else {
+          showMsg('💧 所有花都澆好了！');
+        }
+        return;
+      }
+    }
+  }
+  mainCanvas.addEventListener('click',handleClick);
+  mainCanvas.addEventListener('touchstart',function(e){e.preventDefault();handleClick(e);},{passive:false});
+
+  var dropTimer=0;
+  function loop(ts){
+    mctx.clearRect(0,0,W,H);
+
+    // Spawn drops
+    dropTimer++;
+    if(dropTimer>35){dropTimer=0;if(drops.length<6)spawnDrop();}
+
+    // Update & draw drops
+    for(var i=drops.length-1;i>=0;i--){
+      var d=drops[i];
+      d.y+=d.vy;
+      if(d.y>H+20){drops.splice(i,1);continue;}
+      drawDrop(d);
+    }
+
+    // Update & draw flowers
+    flowers.forEach(function(f){
+      if(f.stage>0){
+        f.anim=Math.min(1,f.anim+0.015);
+        f.wobble+=0.02;
+      }
+      drawFlower(f,mctx);
+    });
+
+    // Particles
+    for(var pi=particles.length-1;pi>=0;pi--){
+      var pt=particles[pi];
+      pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.08;
+      pt.life--;
+      if(pt.life<=0){particles.splice(pi,1);continue;}
+      mctx.save();
+      mctx.globalAlpha=pt.life/pt.maxLife;
+      mctx.fillStyle=pt.col;
+      mctx.beginPath();
+      mctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2);
+      mctx.fill();
+      mctx.restore();
+    }
+
+    animId=requestAnimationFrame(loop);
+  }
+
+  function showComplete(){
+    document.getElementById('complete-overlay').style.display='flex';
+    drawCompleteBanner();
+    cancelAnimationFrame(animId);
+  }
+
+  function drawCompleteBanner(){
+    var fc=document.getElementById('flower-canvas');
+    var fctx=fc.getContext('2d');
+    var fw=fc.width,fh=fc.height;
+    fctx.clearRect(0,0,fw,fh);
+    // Draw mini garden
+    fctx.fillStyle='#1b3a2a';
+    fctx.fillRect(0,0,fw,fh);
+    var cols2=3;
+    for(var i=0;i<TOTAL_FLOWERS;i++){
+      var cx2=fw*0.12+fw*0.38*(i%cols2);
+      var cy2=fh*0.55+Math.floor(i/cols2)*fh*0.35;
+      var hue=i*60;
+      fctx.save();
+      fctx.translate(cx2,cy2);
+      // Stem
+      fctx.strokeStyle='#5aaa20';
+      fctx.lineWidth=2;
+      fctx.beginPath();fctx.moveTo(0,0);fctx.lineTo(0,-28);fctx.stroke();
+      // Petals
+      var np2=5+i%3;
+      for(var p2=0;p2<np2;p2++){
+        var pa2=(p2/np2)*Math.PI*2;
+        fctx.save();
+        fctx.translate(0,-28);
+        fctx.rotate(pa2);
+        fctx.fillStyle='hsl('+hue+',75%,60%)';
+        fctx.beginPath();
+        fctx.ellipse(0,-10,5,10,0,0,Math.PI*2);
+        fctx.fill();
+        fctx.restore();
+      }
+      // Center
+      fctx.save();
+      fctx.translate(0,-28);
+      fctx.beginPath();fctx.arc(0,0,6,0,Math.PI*2);
+      fctx.fillStyle='#fff176';fctx.fill();
+      fctx.restore();
+      fctx.restore();
+    }
+  }
+
+  document.getElementById('shop-btn').addEventListener('click',function(){
+    window.open('https://huayang.example.com','_blank');
+  });
+  document.getElementById('cta-bar').addEventListener('click',function(){
+    window.open('https://huayang.example.com','_blank');
+  });
+
+  // Init
+  resize();
+  window.addEventListener('resize',function(){resize();drawBG();});
+  loop();
+})();
+</script>
+</body>
+</html>

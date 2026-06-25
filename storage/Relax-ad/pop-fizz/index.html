@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#06b6d4" />
+<title>氣泡星球・無限捏捏樂</title>
+<meta name="description" content="氣泡星球 SODA STAR 限時互動：捏破整片汽水泡泡，釋放一整天的壓力，集滿氣泡能量解鎖買一送一好康。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg1:#04263a; --bg2:#063a52; --cyan:#22d3ee; --aqua:#5eead4;
+    --lime:#a3e635; --pink:#fb7185; --ink:#04222f; --paper:#f0fdff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    color:var(--paper);
+    background:radial-gradient(120% 90% at 50% -10%,#0a4a66 0%,var(--bg1) 55%,#021a28 100%);
+    overflow-x:hidden;min-height:100%;
+    display:flex;flex-direction:column;align-items:center;
+    padding:env(safe-area-inset-top) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
+  /* 背景漂浮氣泡 */
+  .floaters{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .floaters i{
+    position:absolute;bottom:-60px;border-radius:50%;
+    background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.55),rgba(94,234,212,.10) 60%,transparent 70%);
+    border:1px solid rgba(255,255,255,.12);
+    animation:rise linear infinite;
+  }
+  @keyframes rise{to{transform:translateY(-115vh) translateX(var(--dx,0)) rotate(40deg);opacity:0}}
+
+  .wrap{position:relative;z-index:1;width:100%;max-width:540px;display:flex;flex-direction:column;gap:16px}
+
+  /* 品牌列 */
+  header{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .logo{display:flex;align-items:center;gap:8px;font-family:"Baloo 2",cursive;font-weight:800;
+    letter-spacing:.5px;font-size:15px}
+  .logo .dot{width:26px;height:26px;border-radius:50%;
+    background:radial-gradient(circle at 32% 30%,#bbf7ff,#22d3ee 55%,#0e7490);
+    box-shadow:0 0 14px rgba(34,211,238,.8),inset 0 0 8px rgba(255,255,255,.7)}
+  .badge{margin-left:auto;font-size:11px;font-weight:700;color:#022;background:var(--aqua);
+    padding:4px 10px;border-radius:999px;letter-spacing:.5px}
+
+  .hero{text-align:center;padding:6px 4px 0}
+  .hero h1{font-family:"Baloo 2","Noto Sans TC",cursive;font-weight:800;line-height:1.1;
+    font-size:clamp(28px,8.5vw,42px);
+    background:linear-gradient(90deg,#bbf7ff,#5eead4 50%,#a3e635);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 2px 20px rgba(34,211,238,.25)}
+  .hero p{margin-top:8px;font-size:14px;color:#aef2ff;opacity:.92;line-height:1.6}
+
+  /* 能量條 */
+  .meter{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:10px 14px;
+    backdrop-filter:blur(6px)}
+  .meter .label{font-size:12px;white-space:nowrap;color:#cffafe}
+  .meter .label b{font-family:"Baloo 2";font-size:17px;color:#fff}
+  .bar{flex:1;height:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;position:relative}
+  .bar>span{position:absolute;inset:0;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,#22d3ee,#a3e635);transition:width .25s cubic-bezier(.2,.9,.3,1);
+    box-shadow:0 0 12px rgba(163,230,53,.6)}
+  .combo{font-family:"Baloo 2";font-size:13px;color:#a3e635;min-width:54px;text-align:right;
+    transition:transform .1s}
+  .combo.kick{transform:scale(1.45)}
+
+  /* 泡泡板 */
+  .board{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:14px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.2)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:10px;justify-items:center}
+  .bub{
+    width:100%;max-width:58px;aspect-ratio:1;border:none;background:transparent;cursor:pointer;
+    position:relative;touch-action:manipulation;display:grid;place-items:center;padding:0;
+  }
+  .bub::before{
+    content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      radial-gradient(circle at 32% 28%,rgba(255,255,255,.95),rgba(255,255,255,.15) 38%,transparent 42%),
+      radial-gradient(circle at 50% 60%,var(--c1),var(--c2));
+    box-shadow:inset 0 -6px 10px rgba(0,0,0,.22),inset 0 4px 6px rgba(255,255,255,.5),
+      0 6px 12px -4px rgba(0,0,0,.45);
+    transition:transform .12s ease, filter .2s;
+  }
+  .bub:active::before{transform:scale(.92)}
+  .bub.pop::before{
+    transform:scale(.62);
+    background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.18),rgba(0,0,0,.18) 70%);
+    box-shadow:inset 0 5px 9px rgba(0,0,0,.45),inset 0 -2px 4px rgba(255,255,255,.12);
+    filter:saturate(.4);cursor:default;
+  }
+  .bub.pop{pointer-events:none}
+  /* 噴濺 */
+  .splash{position:absolute;inset:0;pointer-events:none}
+  .splash span{position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;
+    background:var(--c1);animation:spray .5s ease-out forwards}
+  @keyframes spray{from{transform:translate(-50%,-50%) scale(1);opacity:.9}
+    to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.2);opacity:0}}
+
+  .tools{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{font-family:"Noto Sans TC";font-weight:700;font-size:14px;border:none;cursor:pointer;
+    padding:12px 18px;border-radius:14px;transition:transform .12s,box-shadow .2s}
+  .btn:active{transform:translateY(2px)}
+  .btn.ghost{background:rgba(255,255,255,.10);color:#cffafe;border:1px solid rgba(255,255,255,.18)}
+  .btn.cta{background:linear-gradient(90deg,#22d3ee,#a3e635);color:#022;
+    box-shadow:0 10px 24px -8px rgba(34,211,238,.8)}
+  .hint{text-align:center;font-size:12px;color:#9fdbe8;opacity:.8}
+
+  footer{margin-top:6px;text-align:center;font-size:11px;color:#6fa7b8;line-height:1.6;z-index:1;position:relative}
+
+  /* 解鎖彈窗 */
+  .modal{position:fixed;inset:0;z-index:30;display:none;place-items:center;padding:22px;
+    background:rgba(2,18,28,.72);backdrop-filter:blur(8px)}
+  .modal.show{display:grid;animation:fade .3s}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .ticket{width:100%;max-width:380px;background:linear-gradient(165deg,#0a4a66,#063a52);
+    border:1px solid rgba(94,234,212,.4);border-radius:24px;padding:28px 24px;text-align:center;
+    box-shadow:0 30px 80px -20px #000;animation:pop-in .45s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop-in{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .ticket .ico{font-size:44px}
+  .ticket h2{font-family:"Baloo 2";font-size:24px;margin:6px 0 4px;color:#bbf7ff}
+  .ticket p{font-size:13px;color:#bfeefa;line-height:1.6}
+  .code{margin:16px 0;border:2px dashed var(--aqua);border-radius:14px;padding:12px;
+    font-family:"Baloo 2";font-size:26px;letter-spacing:3px;color:#a3e635;background:rgba(163,230,53,.06)}
+  .ticket .btn.cta{width:100%;margin-top:4px;padding:14px}
+  .ticket .close{margin-top:12px;font-size:12px;color:#8fc7d6;background:none;border:none;cursor:pointer;text-decoration:underline}
+  canvas#fx{position:fixed;inset:0;z-index:40;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="floaters" id="floaters" aria-hidden="true"></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="dot"></span>SODA STAR・氣泡星球</div>
+    <span class="badge">限時互動</span>
+  </header>
+
+  <div class="hero">
+    <h1>無限捏捏樂</h1>
+    <p>嗶——啵！捏破一整片汽水泡泡，<br>把今天的壓力通通釋放掉 🫧</p>
+  </div>
+
+  <div class="meter">
+    <div class="label">氣泡能量 <b id="count">0</b>/<span id="goal">42</span></div>
+    <div class="bar"><span id="fill"></span></div>
+    <div class="combo" id="combo">x1</div>
+  </div>
+
+  <div class="board">
+    <div class="grid" id="grid" aria-label="汽水泡泡板"></div>
+  </div>
+
+  <p class="hint" id="hint">用手指或滑鼠連續捏破泡泡，速度越快氣泡能量越多 ⚡</p>
+
+  <div class="tools">
+    <button class="btn ghost" id="refill">🫧 再倒一杯泡泡</button>
+    <button class="btn cta" id="claim">🎁 直接看好康</button>
+  </div>
+
+  <footer>
+    氣泡星球 SODA STAR 為虛構品牌，本頁為互動廣告 Demo。<br>無相機、無定位、不收集個資，純屬好玩。
+  </footer>
+</div>
+
+<!-- 解鎖彈窗 -->
+<div class="modal" id="modal">
+  <div class="ticket">
+    <div class="ico">🥤</div>
+    <h2>氣泡能量已集滿！</h2>
+    <p>恭喜釋放壓力成功 🎉<br>送你一張氣泡星球專屬好康：</p>
+    <div class="code">POP-2026</div>
+    <p style="font-size:12px;opacity:.85">全口味氣泡水 <b>買一送一</b>・限量 5,000 組</p>
+    <button class="btn cta" id="go">立即兌換我的氣泡水 →</button>
+    <button class="close" id="close">繼續捏泡泡</button>
+  </div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var GOAL = 42;
+  var PALETTE = [
+    ["#7dd3fc","#0ea5e9"],["#5eead4","#0d9488"],["#bef264","#65a30d"],
+    ["#fbcfe8","#ec4899"],["#fde68a","#f59e0b"],["#c4b5fd","#7c3aed"]
+  ];
+
+  var grid = document.getElementById("grid");
+  var countEl = document.getElementById("count");
+  var fillEl = document.getElementById("fill");
+  var comboEl = document.getElementById("combo");
+  var hint = document.getElementById("hint");
+  var modal = document.getElementById("modal");
+
+  document.getElementById("goal").textContent = GOAL;
+
+  var popped = 0, lastPop = 0, combo = 1, unlocked = false;
+
+  /* ---- 音效:用 Tone 合成「啵」聲,沒有 Tone 也能玩 ---- */
+  var synth = null, audioReady = false;
+  function initAudio(){
+    if (audioReady || typeof Tone === "undefined") return;
+    try{
+      Tone.start();
+      synth = new Tone.MembraneSynth({
+        pitchDecay:0.012, octaves:5,
+        envelope:{attack:0.001,decay:0.18,sustain:0,release:0.02}
+      }).toDestination();
+      synth.volume.value = -8;
+      audioReady = true;
+    }catch(e){ audioReady = false; }
+  }
+  function playPop(){
+    if(!audioReady || !synth) return;
+    try{
+      var notes = ["C5","E5","G5","A5","C6","D6"];
+      var n = notes[Math.min(notes.length-1, combo-1) % notes.length];
+      synth.triggerAttackRelease(n, "32n");
+    }catch(e){}
+  }
+
+  /* ---- 噴濺粒子 ---- */
+  function splash(btn, c1){
+    var s = document.createElement("div");
+    s.className = "splash";
+    for(var i=0;i<6;i++){
+      var p = document.createElement("span");
+      var a = (Math.PI*2/6)*i + Math.random();
+      var d = 16 + Math.random()*14;
+      p.style.setProperty("--x", Math.cos(a)*d + "px");
+      p.style.setProperty("--y", Math.sin(a)*d + "px");
+      p.style.background = c1;
+      s.appendChild(p);
+    }
+    btn.appendChild(s);
+    setTimeout(function(){ s.remove(); }, 520);
+  }
+
+  /* ---- 捏破 ---- */
+  function pop(btn){
+    if(btn.classList.contains("pop")) return;
+    initAudio();
+    btn.classList.add("pop");
+    var c1 = getComputedStyle(btn).getPropertyValue("--c1").trim() || "#5eead4";
+
+    var now = Date.now();
+    if(now - lastPop < 480){ combo = Math.min(combo+1, 6); }
+    else { combo = 1; }
+    lastPop = now;
+    comboEl.textContent = "x"+combo;
+    comboEl.classList.add("kick");
+    setTimeout(function(){ comboEl.classList.remove("kick"); }, 120);
+
+    popped += combo;
+    if(popped > GOAL) popped = GOAL;
+    countEl.textContent = popped;
+    fillEl.style.width = (popped/GOAL*100) + "%";
+
+    playPop();
+    splash(btn, c1);
+    if(navigator.vibrate){ try{ navigator.vibrate(combo>3?22:12); }catch(e){} }
+
+    if(popped >= GOAL && !unlocked){ unlock(); }
+  }
+
+  /* ---- 建立泡泡板 ---- */
+  function build(n){
+    grid.innerHTML = "";
+    for(var i=0;i<n;i++){
+      var b = document.createElement("button");
+      b.className = "bub";
+      b.setAttribute("aria-label","泡泡");
+      var p = PALETTE[Math.floor(Math.random()*PALETTE.length)];
+      b.style.setProperty("--c1", p[0]);
+      b.style.setProperty("--c2", p[1]);
+      (function(btn){
+        btn.addEventListener("pointerdown", function(ev){ ev.preventDefault(); pop(btn); });
+      })(b);
+      grid.appendChild(b);
+    }
+  }
+
+  /* ---- 解鎖 ---- */
+  function unlock(){
+    unlocked = true;
+    hint.textContent = "太強了!氣泡能量集滿,好康已解鎖 🎉";
+    burst();
+    setTimeout(function(){ modal.classList.add("show"); }, 480);
+  }
+  function burst(){
+    if(typeof confetti === "undefined") return;
+    var end = Date.now() + 700;
+    (function frame(){
+      confetti({particleCount:5,angle:60,spread:60,origin:{x:0},
+        colors:["#22d3ee","#a3e635","#5eead4","#fbcfe8"]});
+      confetti({particleCount:5,angle:120,spread:60,origin:{x:1},
+        colors:["#22d3ee","#a3e635","#5eead4","#fbcfe8"]});
+      if(Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
+
+  /* ---- 背景漂浮泡泡 ---- */
+  (function floaters(){
+    var box = document.getElementById("floaters");
+    for(var i=0;i<14;i++){
+      var f = document.createElement("i");
+      var sz = 10 + Math.random()*46;
+      f.style.width = f.style.height = sz+"px";
+      f.style.left = Math.random()*100+"vw";
+      f.style.setProperty("--dx",(Math.random()*60-30)+"px");
+      f.style.animationDuration = (9+Math.random()*12)+"s";
+      f.style.animationDelay = (-Math.random()*12)+"s";
+      box.appendChild(f);
+    }
+  })();
+
+  /* ---- 按鈕 ---- */
+  document.getElementById("refill").addEventListener("click", function(){
+    build(48);
+    hint.textContent = "新鮮泡泡上桌!繼續捏破它們 🫧";
+  });
+  document.getElementById("claim").addEventListener("click", function(){
+    if(!unlocked){ unlocked = true; burst(); }
+    modal.classList.add("show");
+  });
+  document.getElementById("close").addEventListener("click", function(){ modal.classList.remove("show"); });
+  document.getElementById("go").addEventListener("click", function(){
+    burst();
+    var btn = this; var t = btn.textContent;
+    btn.textContent = "已套用優惠碼 POP-2026 ✓";
+    setTimeout(function(){ btn.textContent = t; }, 1800);
+  });
+  modal.addEventListener("click", function(e){ if(e.target === modal) modal.classList.remove("show"); });
+
+  build(48);
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sips --cropOffset 0 0 -c 430 640 oak1.png --out realtop.png)",
+      "Bash(sips --cropOffset 1150 0 -c 235 640 oak1.png --out realbottom.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight realtop.png)",
+      "Bash(python3 -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(python3 -m pip install --quiet Pillow)",
+      "Bash(python3 -c \"from PIL import Image; print\\('ok', Image.open\\('/tmp/oak1.png'\\).size\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(find /Users/zack/Downloads /Users/zack/Desktop /var/folders /private/var/folders /tmp -maxdepth 4 -type f \\\\\\( -iname \"*.png\" -o -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.webp\" \\\\\\) -newermt \"2026-06-01 15:10\" 2>/dev/null | grep -v \"/tmp/\" | head -20; echo \"--- downloads recent ---\"; ls -lat /Users/zack/Downloads | head -8)",
+      "Read(//private/var/folders/**)",
+      "Bash(cp \"/Users/zack/Desktop/橡樹街 USER FLOW/2.png\" oak2.png)",
+      "Bash(cp /tmp/bg_unlock_full.jpg /Users/zack/Desktop/oka-street/assets/bg-unlock.jpg && ls -la /Users/zack/Desktop/oka-street/assets/bg-unlock.jpg /Users/zack/Desktop/oka-street/assets/unlock-icon.png)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
+  }
+}

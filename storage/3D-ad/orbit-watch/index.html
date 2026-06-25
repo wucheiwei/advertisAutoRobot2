@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AXIS 極軸腕錶 × 立體賞錶</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      color: #e0e0ff;
+      overflow: hidden;
+      padding: 20px;
+      gap: 0;
+    }
+
+    /* Star field */
+    #stars {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur) ease infinite alternate;
+      opacity: 0.6;
+    }
+    @keyframes twinkle { from { opacity: 0.2; } to { opacity: 0.9; } }
+
+    /* Ambient glow */
+    .glow-orb {
+      position: fixed;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(60,80,255,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: breathe 4s ease infinite alternate;
+    }
+    @keyframes breathe { from { transform: translate(-50%,-50%) scale(0.9); } to { transform: translate(-50%,-50%) scale(1.1); } }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 24px; }
+    .brand-name {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 0.4em;
+      background: linear-gradient(90deg, #8888ff, #ccccff, #6688ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+    .brand-tagline {
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      color: #6688cc;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* 3D Scene */
+    .scene-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .scene {
+      width: 260px; height: 260px;
+      perspective: 600px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      position: relative;
+    }
+    .scene:active { cursor: grabbing; }
+
+    .drag-hint {
+      position: absolute;
+      bottom: -32px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: #5566aa;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      animation: hintFade 3s ease 1s forwards;
+    }
+    @keyframes hintFade { from { opacity:1; } to { opacity:0; } }
+
+    .watch-root {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      /* initial tilt */
+      transform: rotateX(-20deg) rotateY(25deg);
+      transition: transform 0.05s linear;
+    }
+
+    /* Watch case — cylinder simulated with 6 box faces */
+    .w-face {
+      position: absolute;
+      backface-visibility: hidden;
+    }
+
+    /* ── FRONT face: watch dial ── */
+    .w-front {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #1e1e3a, #0a0a1e);
+      border: 8px solid #2a2a5a;
+      top: 30px; left: 30px;
+      transform: translateZ(20px);
+      overflow: hidden;
+      box-shadow: 0 0 0 2px rgba(100,100,255,0.15), 0 0 30px rgba(80,80,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Dial SVG drawn inline */
+    .w-front svg { width: 180px; height: 180px; }
+
+    /* ── BACK face ── */
+    .w-back {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1a1a30, #0d0d20);
+      border: 8px solid #1a1a40;
+      top: 30px; left: 30px;
+      transform: translateZ(-20px) rotateY(180deg);
+    }
+
+    /* ── Side ring — made of many thin slices ── */
+    .side-ring {
+      position: absolute;
+      top: 30px; left: 30px;
+      width: 200px; height: 200px;
+      transform-style: preserve-3d;
+    }
+    .ring-seg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      border: 8px solid transparent;
+      border-top-color: #3a3a6a;
+      transform-style: preserve-3d;
+    }
+
+    /* ── Strap top ── */
+    .strap-top {
+      position: absolute;
+      width: 70px; height: 80px;
+      background: linear-gradient(90deg, #222, #333, #222);
+      border-radius: 8px 8px 0 0;
+      top: -48px; left: 95px;
+      transform: translateZ(0px);
+    }
+    /* Strap holes */
+    .strap-top::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 12px;
+      transform: translateX(-50%);
+      width: 8px; height: 32px;
+      background: repeating-linear-gradient(0deg, #111 0px, #111 4px, #333 4px, #333 10px);
+      border-radius: 4px;
+    }
+
+    /* ── Strap bottom ── */
+    .strap-bot {
+      position: absolute;
+      width: 70px; height: 80px;
+      background: linear-gradient(90deg, #222, #333, #222);
+      border-radius: 0 0 8px 8px;
+      top: 228px; left: 95px;
+      transform: translateZ(0px);
+    }
+
+    /* Crown button on side */
+    .crown {
+      position: absolute;
+      width: 12px; height: 28px;
+      background: linear-gradient(90deg, #555, #888, #555);
+      border-radius: 4px;
+      top: 116px; left: 248px;
+      transform: translateZ(0px);
+    }
+
+    /* ── Info panel ── */
+    .info-panel {
+      text-align: center;
+      max-width: 300px;
+    }
+    .model-name {
+      font-size: 1.3rem;
+      font-weight: 900;
+      letter-spacing: 0.25em;
+      color: #aaccff;
+    }
+    .model-line {
+      font-size: 0.72rem;
+      color: #5566aa;
+      letter-spacing: 0.2em;
+      margin: 4px 0 12px;
+    }
+
+    .specs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .spec-item {
+      background: rgba(80,100,200,0.08);
+      border: 1px solid rgba(80,100,200,0.18);
+      border-radius: 8px;
+      padding: 8px 4px;
+    }
+    .spec-val { font-size: 0.9rem; font-weight: 700; color: #99bbff; }
+    .spec-key { font-size: 0.58rem; color: #446; margin-top: 2px; letter-spacing: 0.05em; }
+
+    .color-picks {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .color-pick {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .color-pick:hover, .color-pick.active { transform: scale(1.25); border-color: #aaccff; }
+
+    .cta-btn {
+      padding: 14px 40px;
+      background: linear-gradient(90deg, #4455dd, #6677ff, #4455dd);
+      background-size: 200% 100%;
+      animation: btnShine 3s ease infinite;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 900;
+      color: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.1em;
+      box-shadow: 0 4px 24px rgba(80,100,255,0.4);
+      transition: transform 0.2s;
+      touch-action: manipulation;
+    }
+    @keyframes btnShine { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+    .cta-btn:hover { transform: scale(1.04); }
+    .cta-sub { font-size: 0.7rem; color: #446; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+<div class="glow-orb"></div>
+
+<div class="header">
+  <div class="brand-name">AXIS</div>
+  <div class="brand-tagline">極軸腕錶 · Precision Timepiece</div>
+</div>
+
+<div class="scene-wrap">
+  <div class="scene" id="scene">
+    <div class="watch-root" id="watchRoot">
+
+      <!-- Straps -->
+      <div class="strap-top"></div>
+      <div class="strap-bot"></div>
+
+      <!-- Crown -->
+      <div class="crown"></div>
+
+      <!-- Case sides (simple rings rendered at various Z rotations) -->
+      <div class="side-ring" id="sideRing"></div>
+
+      <!-- Back face -->
+      <div class="w-back"></div>
+
+      <!-- Front face — SVG dial -->
+      <div class="w-front" id="watchFace">
+        <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bezel ring -->
+          <circle cx="90" cy="90" r="86" fill="none" stroke="rgba(100,100,255,0.2)" stroke-width="4"/>
+
+          <!-- Hour markers -->
+          <g id="markers"></g>
+
+          <!-- Sub-dial circle -->
+          <circle cx="90" cy="120" r="18" fill="rgba(20,20,50,0.8)" stroke="rgba(100,100,200,0.3)" stroke-width="1"/>
+          <text x="90" y="124" text-anchor="middle" font-size="7" fill="#5566aa" letter-spacing="1">SECONDS</text>
+
+          <!-- Brand text -->
+          <text x="90" y="62" text-anchor="middle" font-size="10" font-weight="700" fill="#8899cc" letter-spacing="3">AXIS</text>
+          <text x="90" y="73" text-anchor="middle" font-size="6" fill="#445577" letter-spacing="2">SWISS MADE</text>
+
+          <!-- Hands drawn by JS -->
+          <line id="hourHand"   x1="90" y1="90" x2="90" y2="50" stroke="#ccddff" stroke-width="4" stroke-linecap="round"/>
+          <line id="minuteHand" x1="90" y1="90" x2="90" y2="36" stroke="#aabbee" stroke-width="2.5" stroke-linecap="round"/>
+          <line id="secHand"    x1="90" y1="96" x2="90" y2="32" stroke="#ff4466" stroke-width="1.5" stroke-linecap="round"/>
+
+          <!-- Center dot -->
+          <circle cx="90" cy="90" r="4" fill="#ccddff"/>
+          <circle cx="90" cy="90" r="2" fill="#ff4466"/>
+        </svg>
+      </div>
+
+    </div>
+    <div class="drag-hint">👆 拖曳旋轉錶體</div>
+  </div>
+
+  <div class="info-panel">
+    <div class="model-name">AXIS ONE</div>
+    <div class="model-line">LIMITED EDITION · 極限量版</div>
+
+    <div class="specs">
+      <div class="spec-item"><div class="spec-val">42mm</div><div class="spec-key">錶徑</div></div>
+      <div class="spec-item"><div class="spec-val">50M</div><div class="spec-key">防水深度</div></div>
+      <div class="spec-item"><div class="spec-val">80H</div><div class="spec-key">動力儲能</div></div>
+    </div>
+
+    <div class="color-picks">
+      <div class="color-pick active" style="background:#1e1e3a" data-color="#1e1e3a,#0a0a1e" onclick="setColor(this)"></div>
+      <div class="color-pick" style="background:#1a2a1a" data-color="#1a2a1a,#0a150a" onclick="setColor(this)"></div>
+      <div class="color-pick" style="background:#2a1a1a" data-color="#2a1a1a,#150a0a" onclick="setColor(this)"></div>
+      <div class="color-pick" style="background:#2a2218" data-color="#2a2218,#15110a" onclick="setColor(this)"></div>
+    </div>
+
+    <button class="cta-btn" onclick="ctaAction()">立即預購 · 限量 500 只</button>
+    <div class="cta-sub">官方預購享早鳥價 $12,800｜附贈原廠錶帶組</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── Star field ── */
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2 + 0.5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${1+Math.random()*2}s;animation-delay:${Math.random()*3}s`;
+  starsEl.appendChild(s);
+}
+
+/* ── Hour markers on SVG ── */
+const markersG = document.getElementById('markers');
+for (let i = 0; i < 12; i++) {
+  const ang = i * 30;
+  const rad = ang * Math.PI / 180;
+  const r1 = 78, r2 = i % 3 === 0 ? 68 : 72;
+  const x1 = 90 + r1 * Math.sin(rad);
+  const y1 = 90 - r1 * Math.cos(rad);
+  const x2 = 90 + r2 * Math.sin(rad);
+  const y2 = 90 - r2 * Math.cos(rad);
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+  line.setAttribute('stroke', i % 3 === 0 ? '#6677cc' : '#334466');
+  line.setAttribute('stroke-width', i % 3 === 0 ? '3' : '1.5');
+  line.setAttribute('stroke-linecap', 'round');
+  markersG.appendChild(line);
+}
+
+/* ── Live clock hands ── */
+function updateHands() {
+  const now = new Date();
+  const s = now.getSeconds() + now.getMilliseconds()/1000;
+  const m = now.getMinutes() + s/60;
+  const h = (now.getHours() % 12) + m/60;
+  const sAng = s * 6;
+  const mAng = m * 6;
+  const hAng = h * 30;
+
+  function handPos(ang, len) {
+    const r = ang * Math.PI / 180;
+    return { x: 90 + len * Math.sin(r), y: 90 - len * Math.cos(r) };
+  }
+  const hp = handPos(hAng, 40);
+  const mp = handPos(mAng, 52);
+  const sp = handPos(sAng, 56);
+  const sp2= handPos(sAng+180, 6); // tail
+
+  document.getElementById('hourHand').setAttribute('x2', hp.x);
+  document.getElementById('hourHand').setAttribute('y2', hp.y);
+  document.getElementById('minuteHand').setAttribute('x2', mp.x);
+  document.getElementById('minuteHand').setAttribute('y2', mp.y);
+  document.getElementById('secHand').setAttribute('x2', sp.x);
+  document.getElementById('secHand').setAttribute('y2', sp.y);
+  document.getElementById('secHand').setAttribute('x1', sp2.x);
+  document.getElementById('secHand').setAttribute('y1', sp2.y);
+}
+setInterval(updateHands, 50);
+updateHands();
+
+/* ── Drag rotation ── */
+const watchRoot = document.getElementById('watchRoot');
+let rotX = -20, rotY = 25;
+let dragging = false;
+let lastX = 0, lastY = 0;
+let velX = 0, velY = 0;
+let autoSpin = true;
+let autoAngle = 25;
+
+function applyTransform() {
+  watchRoot.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+}
+
+const scene = document.getElementById('scene');
+
+function onDown(cx, cy) { dragging = true; autoSpin = false; lastX = cx; lastY = cy; velX = 0; velY = 0; }
+function onMove(cx, cy) {
+  if (!dragging) return;
+  velX = cx - lastX; velY = cy - lastY;
+  rotY += velX * 0.5;
+  rotX -= velY * 0.5;
+  rotX = Math.max(-60, Math.min(60, rotX));
+  lastX = cx; lastY = cy;
+  applyTransform();
+}
+function onUp() {
+  dragging = false;
+  // inertia
+  (function glide() {
+    if (dragging) return;
+    velX *= 0.92; velY *= 0.92;
+    if (Math.abs(velX) < 0.1 && Math.abs(velY) < 0.1) { autoSpin = true; return; }
+    rotY += velX * 0.3;
+    rotX -= velY * 0.3;
+    rotX = Math.max(-60, Math.min(60, rotX));
+    applyTransform();
+    requestAnimationFrame(glide);
+  })();
+}
+
+scene.addEventListener('mousedown',  e => onDown(e.clientX, e.clientY));
+window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+window.addEventListener('mouseup',   onUp);
+
+scene.addEventListener('touchstart', e => { e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+scene.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+scene.addEventListener('touchend',   onUp);
+
+/* Auto-spin when idle */
+(function autoLoop() {
+  if (autoSpin) {
+    autoAngle += 0.3;
+    rotY = autoAngle;
+    applyTransform();
+  }
+  requestAnimationFrame(autoLoop);
+})();
+
+/* ── Color picker ── */
+function setColor(el) {
+  document.querySelectorAll('.color-pick').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  const [c1, c2] = el.dataset.color.split(',');
+  document.getElementById('watchFace').style.background = `radial-gradient(circle at 35% 30%, ${c1}, ${c2})`;
+}
+
+/* ── CTA ── */
+function ctaAction() {
+  const btn = document.querySelector('.cta-btn');
+  btn.textContent = '✅ 預購成功！序號 #000' + Math.floor(Math.random()*500+1);
+  btn.style.background = 'linear-gradient(90deg,#22aa44,#33cc55)';
+  btn.style.animation = 'none';
+}
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

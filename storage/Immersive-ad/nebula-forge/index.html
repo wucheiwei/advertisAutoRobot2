@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>星霧香氛 — 用指尖鍛造你的星雲</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #03000e;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #fff;
+}
+#canvas { display: block; position: fixed; inset: 0; z-index: 0; touch-action: none; }
+
+/* UI Overlay */
+#ui {
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+  display: flex; flex-direction: column;
+  align-items: center;
+}
+
+/* Top brand bar */
+#top-bar {
+  width: 100%; padding: 18px 24px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.brand-name {
+  font-size: 1.1rem; font-weight: 900; letter-spacing: 2px;
+  background: linear-gradient(135deg, #d4aaff, #7ec8ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.brand-tagline {
+  font-size: 0.68rem; color: #8888bb; letter-spacing: 1.5px; margin-top: 2px;
+}
+.product-badge {
+  background: linear-gradient(135deg, #2a003f, #001a3f);
+  border: 1px solid #6644aa55;
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 0.72rem; color: #c8aaff; letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* Center hint */
+#hint {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 1.2s;
+}
+#hint .emoji { font-size: 2.8rem; line-height: 1; }
+#hint .hint-text {
+  font-size: 0.88rem; color: #9988cc;
+  margin-top: 8px; letter-spacing: 1px;
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+@keyframes pulse-soft {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+
+/* Bottom panel */
+#bottom-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 0 24px 32px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  pointer-events: none;
+  background: linear-gradient(to top, #03000eee 60%, transparent);
+  padding-top: 48px;
+}
+.perfume-title {
+  font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900;
+  background: linear-gradient(135deg, #e8ccff, #a0d8ff, #ffd4f0);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; line-height: 1.2;
+  filter: drop-shadow(0 0 16px #9944ff60);
+}
+.perfume-desc {
+  font-size: 0.82rem; color: #9988bb; text-align: center;
+  max-width: 280px; line-height: 1.6;
+}
+.cta-btn {
+  pointer-events: all;
+  padding: 14px 40px; border-radius: 999px;
+  border: none; cursor: pointer;
+  background: linear-gradient(135deg, #9944ff, #2277dd);
+  color: #fff; font-size: 1rem; font-weight: 700;
+  font-family: inherit; letter-spacing: 1px;
+  box-shadow: 0 0 30px #9944ff60, 0 4px 20px #0008;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.cta-btn:hover { transform: scale(1.05); box-shadow: 0 0 50px #9944ffaa; }
+.cta-btn:active { transform: scale(0.97); }
+
+/* Mode toggle */
+#mode-toggle {
+  position: fixed; top: 80px; right: 18px;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: all; z-index: 3;
+}
+.mode-btn {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid #6644aa66;
+  background: #0a0020cc; color: #c8aaff;
+  font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  backdrop-filter: blur(6px);
+}
+.mode-btn.active { background: #9944ff55; border-color: #9944ffaa; }
+.mode-btn:hover { background: #9944ff33; }
+
+/* Scent label */
+#scent-label {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem; color: #7766aa;
+  letter-spacing: 2px; text-align: center;
+  pointer-events: none; z-index: 2;
+  transition: opacity 0.8s;
+  opacity: 0;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <div id="top-bar">
+    <div>
+      <div class="brand-name">✦ 星霧 NEBULA</div>
+      <div class="brand-tagline">LUXURY FRAGRANCE</div>
+    </div>
+    <div class="product-badge">星雲限定版</div>
+  </div>
+</div>
+
+<!-- Center hint -->
+<div id="hint">
+  <div class="emoji">✦</div>
+  <div class="hint-text">觸摸星塵，鍛造你的星雲</div>
+</div>
+
+<!-- Mode buttons -->
+<div id="mode-toggle">
+  <button class="mode-btn active" id="btn-attract" title="吸引">✦</button>
+  <button class="mode-btn" id="btn-repel" title="散開">✸</button>
+  <button class="mode-btn" id="btn-swirl" title="旋渦">⟳</button>
+</div>
+
+<!-- Scent label -->
+<div id="scent-label" id="scent-label">正在調配星雲…</div>
+
+<!-- Bottom panel -->
+<div id="bottom-panel">
+  <div class="perfume-title">「星霧之夜」<br>香氛原液</div>
+  <div class="perfume-desc">以手指織染星塵，每一道軌跡都是專屬你的星雲香氣。</div>
+  <button class="cta-btn" onclick="alert('星霧香氛門市為您調配（示範頁面）')">探索香氛系列 →</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // --- Particle system ---
+  const NUM_PARTICLES = 420;
+  const COLORS = [
+    [180, 120, 255], // violet
+    [100, 180, 255], // blue
+    [255, 160, 220], // pink
+    [220, 255, 180], // pale green
+    [255, 220, 140], // gold
+    [140, 220, 255], // cyan
+  ];
+
+  const particles = [];
+  for (let i = 0; i < NUM_PARTICLES; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 80 + Math.random() * Math.min(W, H) * 0.38;
+    const col = COLORS[Math.floor(Math.random() * COLORS.length)];
+    particles.push({
+      x: W / 2 + Math.cos(angle) * dist,
+      y: H / 2 + Math.sin(angle) * dist,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      r: 0.8 + Math.random() * 2.2,
+      col: col,
+      baseCol: col,
+      alpha: 0.3 + Math.random() * 0.7,
+      twinkleOffset: Math.random() * Math.PI * 2,
+      twinkleSpeed: 0.02 + Math.random() * 0.04,
+      // Slow drift orbit
+      orbitAngle: angle,
+      orbitR: dist,
+      orbitSpeed: (0.0003 + Math.random() * 0.0004) * (Math.random() < 0.5 ? 1 : -1),
+    });
+  }
+
+  // --- Interaction state ---
+  let pointer = null; // {x, y, active}
+  let mode = 'attract'; // attract | repel | swirl
+  let interacted = false;
+
+  // Mode buttons
+  document.getElementById('btn-attract').addEventListener('click', () => setMode('attract'));
+  document.getElementById('btn-repel').addEventListener('click', () => setMode('repel'));
+  document.getElementById('btn-swirl').addEventListener('click', () => setMode('swirl'));
+
+  function setMode(m) {
+    mode = m;
+    ['attract','repel','swirl'].forEach(n => {
+      document.getElementById('btn-' + n).classList.toggle('active', n === m);
+    });
+    const label = document.getElementById('scent-label');
+    const names = { attract: '星塵凝聚中…', repel: '香氣四散中…', swirl: '星雲旋轉中…' };
+    label.textContent = names[m];
+    label.style.opacity = '1';
+    setTimeout(() => { label.style.opacity = '0'; }, 1400);
+  }
+
+  function onPointerStart(e) {
+    const t = e.touches ? e.touches[0] : e;
+    pointer = { x: t.clientX, y: t.clientY, active: true };
+    if (!interacted) {
+      interacted = true;
+      document.getElementById('hint').style.opacity = '0';
+    }
+  }
+  function onPointerMove(e) {
+    if (!pointer) return;
+    const t = e.touches ? e.touches[0] : e;
+    pointer.x = t.clientX;
+    pointer.y = t.clientY;
+    e.preventDefault();
+  }
+  function onPointerEnd() { if (pointer) pointer.active = false; pointer = null; }
+
+  canvas.addEventListener('mousedown', onPointerStart);
+  canvas.addEventListener('mousemove', onPointerMove);
+  canvas.addEventListener('mouseup', onPointerEnd);
+  canvas.addEventListener('touchstart', onPointerStart, { passive: false });
+  canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+  canvas.addEventListener('touchend', onPointerEnd);
+
+  // --- Render ---
+  let frame = 0;
+  function tick() {
+    frame++;
+    // Fade trail
+    ctx.fillStyle = 'rgba(3, 0, 14, 0.18)';
+    ctx.fillRect(0, 0, W, H);
+
+    particles.forEach(p => {
+      // Orbit drift
+      p.orbitAngle += p.orbitSpeed;
+      const targetX = W / 2 + Math.cos(p.orbitAngle) * p.orbitR;
+      const targetY = H / 2 + Math.sin(p.orbitAngle) * p.orbitR;
+      p.vx += (targetX - p.x) * 0.0004;
+      p.vy += (targetY - p.y) * 0.0004;
+
+      // Pointer interaction
+      if (pointer && pointer.active) {
+        const dx = pointer.x - p.x;
+        const dy = pointer.y - p.y;
+        const dist2 = dx * dx + dy * dy;
+        const RANGE = 160;
+        if (dist2 < RANGE * RANGE && dist2 > 0.01) {
+          const dist = Math.sqrt(dist2);
+          const force = (1 - dist / RANGE) * 2.2;
+          if (mode === 'attract') {
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          } else if (mode === 'repel') {
+            p.vx -= (dx / dist) * force * 0.8;
+            p.vy -= (dy / dist) * force * 0.8;
+          } else if (mode === 'swirl') {
+            // Perpendicular push
+            p.vx += (-dy / dist) * force * 0.9;
+            p.vy += (dx / dist) * force * 0.9;
+          }
+        }
+      }
+
+      // Damping
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Wrap edges
+      if (p.x < -10) p.x = W + 10;
+      if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10;
+      if (p.y > H + 10) p.y = -10;
+
+      // Twinkle alpha
+      const tw = 0.5 + 0.5 * Math.sin(frame * p.twinkleSpeed + p.twinkleOffset);
+      const alpha = p.alpha * (0.5 + 0.5 * tw);
+
+      // Glow
+      const [r, g, b] = p.col;
+      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+      grd.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+      grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      // Core dot
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${Math.min(255, r + 60)},${Math.min(255, g + 60)},${Math.min(255, b + 60)},${alpha})`;
+      ctx.fill();
+    });
+
+    // Subtle nebula fog on active interaction
+    if (pointer && pointer.active) {
+      const gr = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 120);
+      const modeColors = {
+        attract: 'rgba(153,68,255,0.04)',
+        repel:   'rgba(68,153,255,0.04)',
+        swirl:   'rgba(255,100,200,0.04)',
+      };
+      gr.addColorStop(0, modeColors[mode] || 'rgba(150,80,255,0.05)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, 120, 0, Math.PI * 2);
+      ctx.fillStyle = gr;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>

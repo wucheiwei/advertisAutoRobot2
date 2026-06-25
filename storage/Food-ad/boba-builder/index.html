@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>珍珠星球｜打造你的專屬宇宙珍奶</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--pk:#FF5B8E;--pu:#C8A2D4;--yl:#FFD166;--dk:#2D2438;--bg:#FFF5F7}
+    body{font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif;background:var(--bg);color:var(--dk);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+    .hdr{background:linear-gradient(135deg,#FF5B8E,#C8A2D4);color:#fff;text-align:center;padding:18px 16px;position:relative;overflow:hidden}
+    .hdr::after{content:'🌟';position:absolute;font-size:80px;right:-10px;top:-20px;opacity:.12;animation:spin 20s linear infinite;pointer-events:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .brand{font-size:1.8rem;font-weight:900;letter-spacing:2px}
+    .tag{font-size:.82rem;opacity:.9;margin-top:3px}
+    .main{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 16px 36px;gap:20px;max-width:480px;margin:0 auto;width:100%;position:relative;z-index:1}
+
+    /* Cup */
+    .cup-area{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .cup-wrap{width:130px;height:210px;filter:drop-shadow(0 8px 18px rgba(200,162,212,.35))}
+    .cup-lbl{font-size:.78rem;color:#bbb;text-align:center;transition:color .3s;min-height:20px}
+    .cup-lbl.live{color:var(--pk);font-weight:700}
+
+    /* Panel */
+    .panel{width:100%;background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 24px rgba(200,162,212,.18)}
+    .pt{font-size:1rem;font-weight:700;margin-bottom:2px}
+    .ps{font-size:.75rem;color:#aaa;margin-bottom:14px}
+    .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .opt{background:#F8F2FC;border:2px solid transparent;border-radius:14px;padding:10px 6px;cursor:pointer;text-align:center;transition:all .2s;font-family:inherit;width:100%}
+    .opt:hover{border-color:var(--pu);background:#fff}
+    .opt.sel{border-color:var(--pk);background:linear-gradient(135deg,#FFF0F5,#F5EAFB)}
+    .ic{font-size:1.6rem;display:block;margin-bottom:3px}
+    .nm{font-size:.85rem;font-weight:700;color:var(--dk)}
+    .ds{font-size:.68rem;color:#bbb;margin-top:1px}
+
+    /* Nav */
+    .nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .dots{display:flex;gap:5px;align-items:center}
+    .dot{width:7px;height:7px;border-radius:50%;background:#e0d5f0;transition:all .3s}
+    .dot.a{background:var(--pk);width:18px;border-radius:4px}
+    .dot.d{background:var(--pu)}
+    .bts{display:flex;gap:8px}
+    .btn{border:none;border-radius:11px;padding:9px 20px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s}
+    .btn:hover{transform:scale(1.05)}
+    .btn:disabled{background:#ede5f5;color:#bbb;cursor:default;transform:none}
+    .btnp{background:var(--pk);color:#fff}
+    .btns{background:transparent;border:2px solid var(--pu);color:var(--pu)}
+
+    /* Complete */
+    .done{display:none;width:100%;text-align:center}
+    .done.show{display:block}
+    .dt{font-size:1.5rem;font-weight:900;color:var(--pk);margin-bottom:6px}
+    .ds2{font-size:.82rem;color:#aaa;margin-bottom:16px}
+    .sum{background:#fff;border-radius:18px;padding:16px;box-shadow:0 4px 20px rgba(200,162,212,.18);text-align:left;margin-bottom:16px}
+    .sr{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0E8F8;font-size:.85rem}
+    .sr:last-child{border-bottom:none;padding-top:10px;font-size:1rem}
+    .sl{color:#aaa}.sv{font-weight:700}
+    .sp{color:var(--pk);font-size:1.3rem;font-weight:900}
+    .cta{display:block;width:100%;background:linear-gradient(135deg,#FF5B8E,#C8A2D4);color:#fff;border:none;border-radius:16px;padding:17px;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 8px 24px rgba(255,91,142,.3);transition:transform .15s;margin-bottom:10px}
+    .cta:hover{transform:scale(1.03)}
+    .rst{width:100%;background:transparent;border:2px solid var(--pu);color:var(--pu);border-radius:14px;padding:11px;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:transform .15s}
+    .rst:hover{transform:scale(1.03)}
+
+    /* Bubbles bg */
+    .bg-bubs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .bub{position:absolute;border-radius:50%;opacity:.06;animation:fup linear infinite}
+    @keyframes fup{0%{transform:translateY(110vh) scale(.5);opacity:0}10%{opacity:.06}90%{opacity:.06}100%{transform:translateY(-20vh) scale(1.2);opacity:0}}
+
+    /* Confetti canvas */
+    #cfc{position:fixed;inset:0;pointer-events:none;z-index:999}
+  </style>
+</head>
+<body>
+<canvas id="cfc"></canvas>
+<div class="bg-bubs" id="bgb"></div>
+
+<div class="hdr">
+  <div class="brand">🧋 珍珠星球</div>
+  <div class="tag">客製化你的宇宙珍奶，每一杯都是獨一無二的星球</div>
+</div>
+
+<div class="main">
+
+  <div class="cup-area">
+    <div class="cup-wrap">
+      <svg viewBox="0 0 130 210" xmlns="http://www.w3.org/2000/svg" width="130" height="210">
+        <defs>
+          <clipPath id="cc">
+            <path d="M10,4 L22,196 Q65,222 108,196 L120,4 Z"/>
+          </clipPath>
+          <linearGradient id="sh" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="rgba(255,255,255,.4)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+        </defs>
+        <path d="M10,4 L22,196 Q65,222 108,196 L120,4 Z" fill="#F8F2FC"/>
+        <g clip-path="url(#cc)">
+          <rect id="L0" x="0" y="222" width="130" height="0" opacity=".9"/>
+          <rect id="L1" x="0" y="222" width="130" height="0" opacity=".78"/>
+          <rect id="L2" x="0" y="222" width="130" height="0" fill="rgba(255,255,255,.55)" opacity="0"/>
+          <g id="ice" opacity="0">
+            <rect x="28" y="112" width="20" height="16" rx="3" fill="rgba(200,230,255,.6)"/>
+            <rect x="54" y="108" width="18" height="18" rx="3" fill="rgba(200,230,255,.5)"/>
+            <rect x="76" y="114" width="16" height="15" rx="3" fill="rgba(200,230,255,.6)"/>
+          </g>
+          <g id="tops"></g>
+        </g>
+        <path d="M10,4 L22,196 Q65,222 108,196 L120,4 Z" fill="none" stroke="#D8C8E8" stroke-width="2.5"/>
+        <path d="M6,4 Q65,-4 124,4" fill="none" stroke="#D8C8E8" stroke-width="2.5"/>
+        <path d="M20,16 L26,158" stroke="url(#sh)" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <rect id="lid" x="4" y="0" width="122" height="13" rx="6.5" fill="#C8A2D4" opacity="0"/>
+        <rect id="str" x="76" y="-12" width="7" height="220" rx="3.5" fill="#FF5B8E" opacity="0"/>
+        <g id="strS" opacity="0">
+          <rect x="76" y="18" width="7" height="10" fill="rgba(255,255,255,.4)"/>
+          <rect x="76" y="44" width="7" height="10" fill="rgba(255,255,255,.4)"/>
+          <rect x="76" y="70" width="7" height="10" fill="rgba(255,255,255,.4)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="cup-lbl" id="lbl">選擇你的珍奶配方 ✨</div>
+  </div>
+
+  <div id="sc" style="width:100%">
+    <!-- Step 1 -->
+    <div class="panel" id="s1">
+      <div class="pt">Step 1 · 選擇茶底</div><div class="ps">香氣是一切的靈魂基礎</div>
+      <div class="opts">
+        <button class="opt" data-v="oolong" data-c="#7A5C10" data-n="高山烏龍" onclick="pick(this,'tea')"><span class="ic">🍵</span><div class="nm">高山烏龍</div><div class="ds">清香回甘</div></button>
+        <button class="opt" data-v="ceylon" data-c="#8B3A20" data-n="錫蘭紅茶" onclick="pick(this,'tea')"><span class="ic">🫖</span><div class="nm">錫蘭紅茶</div><div class="ds">濃郁醇厚</div></button>
+        <button class="opt" data-v="green"  data-c="#4E7028" data-n="台灣綠茶" onclick="pick(this,'tea')"><span class="ic">🌿</span><div class="nm">台灣綠茶</div><div class="ds">清爽順口</div></button>
+        <button class="opt" data-v="taro"   data-c="#7060C0" data-n="芋頭拿鐵" onclick="pick(this,'tea')"><span class="ic">💜</span><div class="nm">芋頭拿鐵</div><div class="ds">濃香芋泥</div></button>
+      </div>
+      <div class="nav">
+        <div class="dots"><div class="dot a"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <button class="btn btnp" id="n1" disabled onclick="go(2)">下一步 →</button>
+      </div>
+    </div>
+    <!-- Step 2 -->
+    <div class="panel" id="s2" style="display:none">
+      <div class="pt">Step 2 · 選擇奶底</div><div class="ps">決定你的滑順口感</div>
+      <div class="opts">
+        <button class="opt" data-v="fresh"   data-c="#FFE8A0" data-n="全脂鮮奶" onclick="pick(this,'milk')"><span class="ic">🥛</span><div class="nm">全脂鮮奶</div><div class="ds">香醇濃郁</div></button>
+        <button class="opt" data-v="oat"     data-c="#DFC888" data-n="燕麥奶"   onclick="pick(this,'milk')"><span class="ic">🌾</span><div class="nm">燕麥奶</div><div class="ds">輕盈植物感</div></button>
+        <button class="opt" data-v="coconut" data-c="#C8ECC8" data-n="椰奶"     onclick="pick(this,'milk')"><span class="ic">🥥</span><div class="nm">椰奶</div><div class="ds">南洋熱帶風</div></button>
+        <button class="opt" data-v="none"    data-c="transparent" data-n="純茶原味" onclick="pick(this,'milk')"><span class="ic">🍃</span><div class="nm">純茶原味</div><div class="ds">不加奶</div></button>
+      </div>
+      <div class="nav">
+        <div class="dots"><div class="dot d"></div><div class="dot a"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="bts"><button class="btn btns" onclick="go(1)">← 返回</button><button class="btn btnp" id="n2" disabled onclick="go(3)">下一步 →</button></div>
+      </div>
+    </div>
+    <!-- Step 3 -->
+    <div class="panel" id="s3" style="display:none">
+      <div class="pt">Step 3 · 加入配料</div><div class="ps">最多選 3 樣，越豐富越幸福！</div>
+      <div class="opts">
+        <button class="opt" data-v="pearl"   data-n="黑糖珍珠" onclick="tog(this)"><span class="ic">🖤</span><div class="nm">黑糖珍珠</div><div class="ds">QQ 彈牙</div></button>
+        <button class="opt" data-v="pudding" data-n="雞蛋布丁" onclick="tog(this)"><span class="ic">🍮</span><div class="nm">雞蛋布丁</div><div class="ds">滑嫩香甜</div></button>
+        <button class="opt" data-v="coco"    data-n="椰果粒"   onclick="tog(this)"><span class="ic">🌴</span><div class="nm">椰果粒</div><div class="ds">脆口清甜</div></button>
+        <button class="opt" data-v="jelly"   data-n="仙草凍"   onclick="tog(this)"><span class="ic">💚</span><div class="nm">仙草凍</div><div class="ds">消暑退火</div></button>
+      </div>
+      <div class="nav">
+        <div class="dots"><div class="dot d"></div><div class="dot d"></div><div class="dot a"></div><div class="dot"></div></div>
+        <div class="bts"><button class="btn btns" onclick="go(2)">← 返回</button><button class="btn btnp" onclick="go(4)">下一步 →</button></div>
+      </div>
+    </div>
+    <!-- Step 4 -->
+    <div class="panel" id="s4" style="display:none">
+      <div class="pt">Step 4 · 選擇甜度</div><div class="ps">依照你的喜好調整</div>
+      <div class="opts">
+        <button class="opt" data-v="full" data-n="全糖"   onclick="pick(this,'sugar')"><span class="ic">🍯</span><div class="nm">全糖</div><div class="ds">甜蜜滿點</div></button>
+        <button class="opt" data-v="70"   data-n="七分糖" onclick="pick(this,'sugar')"><span class="ic">🍬</span><div class="nm">七分糖</div><div class="ds">甜而不膩</div></button>
+        <button class="opt" data-v="half" data-n="半糖"   onclick="pick(this,'sugar')"><span class="ic">🌼</span><div class="nm">半糖</div><div class="ds">清爽淡甜</div></button>
+        <button class="opt" data-v="less" data-n="微糖"   onclick="pick(this,'sugar')"><span class="ic">🍃</span><div class="nm">微糖</div><div class="ds">茶香最純粹</div></button>
+      </div>
+      <div class="nav">
+        <div class="dots"><div class="dot d"></div><div class="dot d"></div><div class="dot d"></div><div class="dot a"></div></div>
+        <div class="bts"><button class="btn btns" onclick="go(3)">← 返回</button><button class="btn btnp" id="n4" disabled onclick="finish()">完成訂製 🎉</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div class="done" id="dn">
+    <div class="dt">🎊 你的專屬珍奶誕生了！</div>
+    <div class="ds2">每一杯都是宇宙中唯一的星球配方</div>
+    <div class="sum" id="sm"></div>
+    <button class="cta" onclick="order()">立即到店取飲 🧋</button>
+    <button class="rst" onclick="reset()">再訂製一杯 ↺</button>
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+const S={tea:null,milk:null,tops:[],sugar:null,tc:'',mc:''};
+const TN={oolong:'高山烏龍',ceylon:'錫蘭紅茶',green:'台灣綠茶',taro:'芋頭拿鐵'};
+const MN={fresh:'全脂鮮奶',oat:'燕麥奶',coconut:'椰奶',none:'純茶原味'};
+const SN={full:'全糖','70':'七分糖',half:'半糖',less:'微糖'};
+const TOP={pearl:'黑糖珍珠',pudding:'雞蛋布丁',coco:'椰果粒',jelly:'仙草凍'};
+
+function pick(btn,type){
+  btn.closest('.opts').querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  if(type==='tea'){S.tea=btn.dataset.v;S.tc=btn.dataset.c;n1.disabled=false;}
+  else if(type==='milk'){S.milk=btn.dataset.v;S.mc=btn.dataset.c;n2.disabled=false;}
+  else if(type==='sugar'){S.sugar=btn.dataset.v;n4.disabled=false;}
+  drawCup();
+}
+function tog(btn){
+  const v=btn.dataset.v;
+  if(btn.classList.contains('sel')){btn.classList.remove('sel');S.tops=S.tops.filter(t=>t!==v);}
+  else{if(S.tops.length>=3)return;btn.classList.add('sel');S.tops.push(v);}
+  drawCup();
+}
+function go(n){for(let i=1;i<=4;i++)document.getElementById('s'+i).style.display=i===n?'block':'none';}
+
+const svg=document.querySelector('svg');
+function sl(id,color,y,h){
+  const el=svg.getElementById(id);
+  if(color)el.setAttribute('fill',color);
+  el.setAttribute('y',y);el.setAttribute('height',h);
+  el.setAttribute('opacity',h>0?'.88':'0');
+}
+function ns(tag,attrs){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+
+function drawCup(){
+  if(S.tea){sl('L0',S.tc,96,100);svg.getElementById('ice').setAttribute('opacity','1');}
+  if(S.milk&&S.milk!=='none')sl('L1',S.mc,44,52);
+  else if(S.milk==='none')sl('L1','transparent',0,0);
+  if(S.sugar){
+    sl('L2',null,26,18);svg.getElementById('L2').setAttribute('opacity','.6');
+    svg.getElementById('lid').setAttribute('opacity','1');
+    svg.getElementById('str').setAttribute('opacity','1');
+    svg.getElementById('strS').setAttribute('opacity','1');
+  }
+  const tg=svg.getElementById('tops');tg.innerHTML='';
+  if(S.tops.includes('pearl')){
+    [[34,202],[48,208],[62,202],[76,208],[90,202],[42,196],[72,196]].forEach(([x,y])=>
+      tg.appendChild(ns('circle',{cx:x,cy:y,r:5,fill:'#2A1200'})));
+  }
+  if(S.tops.includes('pudding')){
+    tg.appendChild(ns('rect',{x:44,y:182,width:46,height:20,rx:5,fill:'#EFBE38'}));
+    tg.appendChild(ns('rect',{x:44,y:182,width:46,height:6,rx:3,fill:'#D8960E'}));
+  }
+  if(S.tops.includes('jelly'))
+    tg.appendChild(ns('rect',{x:34,y:176,width:38,height:16,rx:4,fill:'#1A3A1A',opacity:.85}));
+  if(S.tops.includes('coco'))
+    for(let i=0;i<6;i++)tg.appendChild(ns('ellipse',{cx:36+i*9,cy:208-(i%2)*4,rx:4.5,ry:3.5,fill:'#88E888',opacity:.9}));
+
+  const ps=[];
+  if(S.tea)ps.push(TN[S.tea]);
+  if(S.milk)ps.push(MN[S.milk]);
+  if(S.tops.length)ps.push(S.tops.map(t=>TOP[t]).join('、'));
+  if(S.sugar)ps.push(SN[S.sugar]);
+  const lbl=document.getElementById('lbl');
+  lbl.textContent=ps.length?ps.join(' + '):'選擇你的珍奶配方 ✨';
+  lbl.className='cup-lbl'+(ps.length?' live':'');
+}
+
+const n1=document.getElementById('n1');
+const n2=document.getElementById('n2');
+const n4=document.getElementById('n4');
+
+function finish(){
+  drawCup();
+  document.getElementById('sc').style.display='none';
+  document.getElementById('dn').classList.add('show');
+  const tops=S.tops.length?S.tops.map(t=>TOP[t]).join('、'):'無';
+  const price=65+S.tops.length*10;
+  document.getElementById('sm').innerHTML=`
+    <div class="sr"><span class="sl">茶底</span><span class="sv">${TN[S.tea]}</span></div>
+    <div class="sr"><span class="sl">奶底</span><span class="sv">${MN[S.milk]}</span></div>
+    <div class="sr"><span class="sl">配料</span><span class="sv">${tops}</span></div>
+    <div class="sr"><span class="sl">甜度</span><span class="sv">${SN[S.sugar]}</span></div>
+    <div class="sr"><span class="sl">合計</span><span class="sp">NT$ ${price}</span></div>`;
+  setTimeout(launchConfetti,300);
+}
+function order(){alert('🎉 訂單已送出！請至最近珍珠星球門市出示此頁面，享 85 折限時優惠！');}
+
+function reset(){
+  S.tea=null;S.milk=null;S.tops=[];S.sugar=null;
+  document.getElementById('sc').style.display='block';
+  document.getElementById('dn').classList.remove('show');
+  ['L0','L1','L2'].forEach(id=>sl(id,null,222,0));
+  svg.getElementById('tops').innerHTML='';
+  svg.getElementById('ice').setAttribute('opacity','0');
+  svg.getElementById('lid').setAttribute('opacity','0');
+  svg.getElementById('str').setAttribute('opacity','0');
+  svg.getElementById('strS').setAttribute('opacity','0');
+  document.querySelectorAll('.opt.sel').forEach(b=>b.classList.remove('sel'));
+  n1.disabled=true;n2.disabled=true;n4.disabled=true;
+  document.getElementById('lbl').textContent='選擇你的珍奶配方 ✨';
+  document.getElementById('lbl').className='cup-lbl';
+  go(1);
+}
+
+// ── Inline Confetti ──
+function launchConfetti(){
+  const canvas=document.getElementById('cfc');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d');
+  const colors=['#FF5B8E','#C8A2D4','#FFD166','#fff','#7BC8F0'];
+  const pieces=Array.from({length:120},()=>({
+    x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,
+    r:4+Math.random()*6,c:colors[Math.floor(Math.random()*colors.length)],
+    vy:3+Math.random()*5,vx:(Math.random()-0.5)*3,
+    rot:Math.random()*360,rs:(Math.random()-0.5)*8,w:8+Math.random()*6
+  }));
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.y+=p.vy;p.x+=p.vx;p.rot+=p.rs;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.c;ctx.globalAlpha=Math.max(0,1-t/90);
+      ctx.fillRect(-p.w/2,-p.r/2,p.w,p.r);
+      ctx.restore();
+    });
+    if(++t<100)requestAnimationFrame(frame);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── BG bubbles ──
+const bgb=document.getElementById('bgb');
+for(let i=0;i<14;i++){
+  const b=document.createElement('div');b.className='bub';
+  const sz=20+Math.random()*80;
+  b.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;background:hsl(${290+Math.random()*60},55%,68%);animation-duration:${9+Math.random()*12}s;animation-delay:-${Math.random()*18}s;`;
+  bgb.appendChild(b);
+}
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

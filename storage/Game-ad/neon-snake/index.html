@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>VOLT 霓虹蛇吃能量 — 挑戰極限！</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #000;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #fff;
+  }
+  #app {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  /* --- Start Screen --- */
+  #start-screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #0d0028 0%, #000 70%);
+    z-index: 10;
+    gap: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  .brand-tag {
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    color: #aaa; margin-bottom: 4px;
+  }
+  .game-title {
+    font-size: clamp(2.4rem, 10vw, 4.5rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, #00ffe7, #bf00ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px #00ffe780);
+    line-height: 1.1;
+  }
+  .game-subtitle {
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+    color: #ccc; max-width: 320px; line-height: 1.6;
+  }
+  .energy-pill {
+    display: inline-block;
+    background: linear-gradient(135deg, #00ffe7, #bf00ff);
+    color: #000; font-weight: 700;
+    padding: 6px 20px; border-radius: 999px;
+    font-size: 0.9rem; letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .start-btn {
+    margin-top: 8px;
+    padding: 16px 48px;
+    font-size: 1.2rem; font-weight: 700;
+    border: none; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(135deg, #00ffe7, #bf00ff);
+    color: #000;
+    box-shadow: 0 0 30px #00ffe780;
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  .start-btn:hover { transform: scale(1.06); box-shadow: 0 0 50px #00ffe7cc; }
+  .start-btn:active { transform: scale(0.97); }
+  .hint { font-size: 0.78rem; color: #666; margin-top: 4px; }
+  /* --- Game Screen --- */
+  #game-screen {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000;
+  }
+  #hud {
+    width: min(420px, 95vw);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px 8px;
+    font-size: 0.85rem; color: #aaa;
+  }
+  #score-display {
+    font-size: 1.4rem; font-weight: 700;
+    color: #00ffe7;
+    text-shadow: 0 0 10px #00ffe7;
+  }
+  #level-display {
+    font-size: 0.85rem; color: #bf00ff;
+    text-shadow: 0 0 8px #bf00ff;
+  }
+  #canvas-wrap {
+    position: relative;
+    border: 2px solid #1a0040;
+    border-radius: 8px;
+    box-shadow: 0 0 40px #00ffe720, inset 0 0 40px #0a0020;
+    overflow: hidden;
+  }
+  #game-canvas { display: block; background: #060010; }
+  /* D-pad */
+  #dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 4px;
+    margin-top: 14px;
+  }
+  .dpad-btn {
+    background: #1a1a2e; border: 1px solid #333;
+    border-radius: 8px; color: #fff; font-size: 1.4rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    user-select: none; -webkit-user-select: none;
+    transition: background 0.1s;
+  }
+  .dpad-btn:active { background: #00ffe740; }
+  .dpad-btn.empty { background: transparent; border-color: transparent; pointer-events: none; }
+  /* --- Game Over Overlay --- */
+  #gameover-overlay {
+    position: absolute; inset: 0;
+    background: #000c;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; text-align: center; z-index: 5;
+  }
+  #gameover-overlay h2 {
+    font-size: 2.4rem; font-weight: 900;
+    background: linear-gradient(135deg, #ff006e, #bf00ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 12px #ff006e80);
+  }
+  #final-score { font-size: 1.1rem; color: #ccc; }
+  .retry-btn {
+    padding: 12px 36px; font-size: 1rem; font-weight: 700;
+    border: none; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(135deg, #00ffe7, #bf00ff);
+    color: #000; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    box-shadow: 0 0 20px #00ffe760;
+    transition: transform 0.12s;
+  }
+  .retry-btn:hover { transform: scale(1.05); }
+  .cta-text { font-size: 0.82rem; color: #888; margin-top: 4px; }
+  .cta-link {
+    display: inline-block; margin-top: 4px;
+    padding: 10px 28px; border-radius: 999px;
+    border: 1px solid #00ffe7;
+    color: #00ffe7; font-size: 0.88rem; font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .cta-link:hover { background: #00ffe720; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START SCREEN -->
+  <div id="start-screen">
+    <div class="brand-tag">VOLT Energy Drink</div>
+    <div class="game-title">霓虹蛇<br>能量挑戰</div>
+    <div class="game-subtitle">控制霓虹蛇吞噬能量球，<br>越吃越快，挑戰高分！</div>
+    <div class="energy-pill">⚡ 每個能量球 = 10分</div>
+    <button class="start-btn" id="start-btn">開始遊戲</button>
+    <div class="hint">← → ↑ ↓ 鍵盤 或 觸控方向鍵</div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen">
+    <div id="hud">
+      <span id="score-display">得分：0</span>
+      <span id="level-display">等級 1</span>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+      <!-- GAME OVER OVERLAY -->
+      <div id="gameover-overlay">
+        <h2>遊戲結束</h2>
+        <div id="final-score"></div>
+        <button class="retry-btn" id="retry-btn">再玩一次</button>
+        <div class="cta-text">能量耗盡？補充 VOLT！</div>
+        <a class="cta-link" href="#">立即購買 VOLT ⚡</a>
+      </div>
+    </div>
+    <!-- D-pad -->
+    <div id="dpad">
+      <div class="dpad-btn empty"></div>
+      <div class="dpad-btn" id="btn-up">▲</div>
+      <div class="dpad-btn empty"></div>
+      <div class="dpad-btn" id="btn-left">◀</div>
+      <div class="dpad-btn empty"></div>
+      <div class="dpad-btn" id="btn-right">▶</div>
+      <div class="dpad-btn empty"></div>
+      <div class="dpad-btn" id="btn-down">▼</div>
+      <div class="dpad-btn empty"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const CELL = 18;
+  let COLS, ROWS, W, H;
+  let snake, dir, nextDir, food, score, level, speed, gameLoop, alive;
+
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const startScreen = document.getElementById('start-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const gameoverOverlay = document.getElementById('gameover-overlay');
+  const scoreDisplay = document.getElementById('score-display');
+  const levelDisplay = document.getElementById('level-display');
+  const finalScore = document.getElementById('final-score');
+
+  function setupCanvas() {
+    const maxW = Math.min(window.innerWidth * 0.95, 420);
+    const maxH = window.innerHeight - 220;
+    COLS = Math.floor(maxW / CELL);
+    ROWS = Math.floor(maxH / CELL);
+    if (COLS < 10) COLS = 10;
+    if (ROWS < 14) ROWS = 14;
+    W = COLS * CELL;
+    H = ROWS * CELL;
+    canvas.width = W;
+    canvas.height = H;
+  }
+
+  function randPos() {
+    return { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+  }
+
+  function spawnFood() {
+    let pos;
+    do { pos = randPos(); }
+    while (snake.some(s => s.x === pos.x && s.y === pos.y));
+    return pos;
+  }
+
+  function initGame() {
+    setupCanvas();
+    const mx = Math.floor(COLS / 2), my = Math.floor(ROWS / 2);
+    snake = [
+      { x: mx, y: my },
+      { x: mx - 1, y: my },
+      { x: mx - 2, y: my }
+    ];
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    score = 0;
+    level = 1;
+    speed = 160;
+    alive = true;
+    food = spawnFood();
+    scoreDisplay.textContent = '得分：0';
+    levelDisplay.textContent = '等級 1';
+    gameoverOverlay.style.display = 'none';
+    startLoop();
+  }
+
+  function startLoop() {
+    clearTimeout(gameLoop);
+    if (alive) {
+      gameLoop = setTimeout(() => { tick(); startLoop(); }, speed);
+    }
+  }
+
+  function tick() {
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    // Wall collision
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+      return endGame();
+    }
+    // Self collision
+    if (snake.some(s => s.x === head.x && s.y === head.y)) {
+      return endGame();
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score += 10;
+      scoreDisplay.textContent = '得分：' + score;
+      // Level up every 50 pts
+      const newLevel = Math.floor(score / 50) + 1;
+      if (newLevel > level) {
+        level = newLevel;
+        speed = Math.max(60, 160 - (level - 1) * 18);
+        levelDisplay.textContent = '等級 ' + level;
+      }
+      food = spawnFood();
+    } else {
+      snake.pop();
+    }
+
+    render();
+  }
+
+  function render() {
+    ctx.fillStyle = '#060010';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid lines (subtle)
+    ctx.strokeStyle = '#0e0025';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < COLS; x++) {
+      ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, H); ctx.stroke();
+    }
+    for (let y = 0; y < ROWS; y++) {
+      ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(W, y * CELL); ctx.stroke();
+    }
+
+    // Food — glowing energy orb
+    const fx = food.x * CELL + CELL / 2, fy = food.y * CELL + CELL / 2;
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+    const gf = ctx.createRadialGradient(fx, fy, 0, fx, fy, CELL * 0.6 * pulse);
+    gf.addColorStop(0, '#fffb80');
+    gf.addColorStop(0.5, '#ffcc00');
+    gf.addColorStop(1, '#ff660000');
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#ffcc00';
+    ctx.fillStyle = gf;
+    ctx.beginPath();
+    ctx.arc(fx, fy, CELL * 0.38 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // ⚡ text on food
+    ctx.font = `bold ${Math.round(CELL * 0.55)}px Sora, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    ctx.fillText('⚡', fx, fy);
+
+    // Snake
+    snake.forEach((seg, i) => {
+      const sx = seg.x * CELL, sy = seg.y * CELL;
+      const t = i / snake.length;
+      // Gradient: head = cyan, tail = purple
+      const r = Math.round(0 + t * 191);
+      const g = Math.round(255 - t * 255);
+      const b = Math.round(231 + t * 24);
+      ctx.shadowBlur = i === 0 ? 18 : 8;
+      ctx.shadowColor = `rgb(${r},${g},${b})`;
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      const pad = i === 0 ? 1 : 2;
+      const radius = 4;
+      const x = sx + pad, y = sy + pad, w = CELL - pad * 2, h = CELL - pad * 2;
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+
+    // Eyes on head
+    if (snake.length > 0) {
+      const hx = snake[0].x * CELL + CELL / 2;
+      const hy = snake[0].y * CELL + CELL / 2;
+      const eyeOffset = CELL * 0.18;
+      const eyeR = CELL * 0.1;
+      const ex1 = hx + dir.y * eyeOffset - dir.x * eyeOffset * 0.6;
+      const ey1 = hy - dir.x * eyeOffset - dir.y * eyeOffset * 0.6;
+      const ex2 = hx - dir.y * eyeOffset - dir.x * eyeOffset * 0.6;
+      const ey2 = hy + dir.x * eyeOffset - dir.y * eyeOffset * 0.6;
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(ex1, ey1, eyeR, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2, ey2, eyeR, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function endGame() {
+    alive = false;
+    clearTimeout(gameLoop);
+    finalScore.textContent = `最終得分：${score} 分 ／ 等級 ${level}`;
+    gameoverOverlay.style.display = 'flex';
+    // Death flash
+    ctx.fillStyle = '#ff006e40';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Controls
+  document.addEventListener('keydown', e => {
+    switch (e.key) {
+      case 'ArrowUp':    if (dir.y !== 1)  nextDir = { x: 0, y: -1 }; e.preventDefault(); break;
+      case 'ArrowDown':  if (dir.y !== -1) nextDir = { x: 0, y: 1 };  e.preventDefault(); break;
+      case 'ArrowLeft':  if (dir.x !== 1)  nextDir = { x: -1, y: 0 }; e.preventDefault(); break;
+      case 'ArrowRight': if (dir.x !== -1) nextDir = { x: 1, y: 0 };  e.preventDefault(); break;
+    }
+  });
+
+  function setupDpad() {
+    document.getElementById('btn-up').addEventListener('click', () => { if (dir.y !== 1)  nextDir = { x: 0, y: -1 }; });
+    document.getElementById('btn-down').addEventListener('click', () => { if (dir.y !== -1) nextDir = { x: 0, y: 1 }; });
+    document.getElementById('btn-left').addEventListener('click', () => { if (dir.x !== 1)  nextDir = { x: -1, y: 0 }; });
+    document.getElementById('btn-right').addEventListener('click', () => { if (dir.x !== -1) nextDir = { x: 1, y: 0 }; });
+  }
+
+  // Swipe support
+  let touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 20 && dir.x !== -1) nextDir = { x: 1, y: 0 };
+      else if (dx < -20 && dir.x !== 1) nextDir = { x: -1, y: 0 };
+    } else {
+      if (dy > 20 && dir.y !== -1) nextDir = { x: 0, y: 1 };
+      else if (dy < -20 && dir.y !== 1) nextDir = { x: 0, y: -1 };
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    setupDpad();
+    initGame();
+  });
+
+  document.getElementById('retry-btn').addEventListener('click', () => {
+    initGame();
+  });
+
+  // Render loop for pulsing food on start screen (just keep a simple animation going)
+  function animStart() {
+    requestAnimationFrame(animStart);
+  }
+  animStart();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>表情濾鏡 AR (MindAR)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: system-ui, sans-serif; }
+  #ar-container { width: 100vw; height: 100vh; position: relative; }
+
+  /* 左上角：即時數值 / 偵測結果 (方便調門檻用) */
+  #hud {
+    position: fixed; top: 10px; left: 10px; z-index: 10;
+    background: rgba(0,0,0,.55); color: #0f0; padding: 10px 12px;
+    border-radius: 8px; font-size: 13px; line-height: 1.6;
+    font-family: ui-monospace, monospace; pointer-events: none;
+    white-space: pre;
+  }
+  #hud b { color: #fff; }
+  #expr { color: #ffd400; font-size: 18px; font-weight: 700; }
+
+  /* 底部按鈕 */
+  #start-btn {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 20; padding: 14px 28px; font-size: 18px; border: none;
+    border-radius: 999px; background: #ffd400; color: #000; font-weight: 700;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  #start-btn:active { transform: translateX(-50%) scale(.96); }
+  .hidden { display: none !important; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center;
+    justify-content: center; color: #fff; font-size: 16px; z-index: 30; }
+  #size-panel {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 20; background: rgba(0,0,0,.55); color: #fff; padding: 10px 16px;
+    border-radius: 12px; display: flex; flex-direction: column; gap: 6px;
+    align-items: center; font-size: 13px; width: 80vw; max-width: 360px;
+  }
+  #size-panel input[type=range] { width: 100%; }
+  #switch-cam {
+    position: fixed; top: 12px; right: 12px; z-index: 20;
+    padding: 9px 14px; border: none; border-radius: 999px;
+    background: rgba(0,0,0,.6); color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; backdrop-filter: blur(4px);
+  }
+  #switch-cam:disabled { opacity: .5; }
+</style>
+</head>
+<body>
+  <div id="ar-container"></div>
+
+  <div id="hud" class="hidden">
+<span id="expr">--</span>
+<span id="metrics"></span>
+  </div>
+
+  <!-- 即時調整貼圖大小 (手機上拖曳即可，免改 code) -->
+  <div id="size-panel" class="hidden">
+    <label>濾鏡大小 <span id="size-val">0.08</span></label>
+    <input id="size" type="range" min="0.02" max="0.5" step="0.005" value="0.08" />
+  </div>
+
+  <button id="switch-cam" class="hidden">🔄 切換鏡頭</button>
+
+  <button id="start-btn">▶ 開始 (允許相機)</button>
+  <div id="loading" class="hidden">載入中…</div>
+
+  <!-- MindAR 1.2.5 需搭配 three 0.152.0 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/",
+      "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { MindARThree } from 'mindar-face-three';
+
+    // ---------- 可調參數：表情判斷門檻 (相對臉寬的比例) ----------
+    const TH = {
+      mouthOpen: 0.06,   // 嘴巴張開：上下唇距離 / 臉寬  → 大於此值算「張嘴」(中性約 0.01)
+      smile:     0.34,   // 微笑：嘴角寬度 / 臉寬          → 大於此值算「微笑」(中性約 0.30)
+      browRaise: 0.152,  // 挑眉：眉毛到眼睛距離 / 臉寬     → 大於此值算「挑眉」(中性約 0.14)
+    };
+    // 各濾鏡彼此的相對比例 (已校準成同一個滑桿值下都合適；滑桿只當整體微調)
+    const SIZE = { glasses: 1.0, crown: 2.4, fire: 1.2, sparkle: 0.5 };
+
+    // MediaPipe face mesh 用到的特徵點索引
+    const LM = {
+      cheekL: 234, cheekR: 454,   // 臉寬 (左右臉頰)
+      lipTop: 13,  lipBot: 14,    // 上 / 下唇 (中間)
+      mouthL: 61,  mouthR: 291,   // 左右嘴角
+      eyeL: 159,   browL: 105,    // 左眼上緣 / 左眉
+      eyeR: 386,   browR: 334,    // 右眼上緣 / 右眉
+      betweenEyes: 168,           // 兩眼之間 (放眼鏡)
+      forehead: 10,               // 額頭最高點 (放皇冠)
+      mouthCenter: 13,            // 嘴巴中心 (放火焰)
+    };
+
+    // ---------- 用 emoji 畫成貼圖 (免外部素材) ----------
+    function emojiTexture(emoji, px = 512) {
+      const c = document.createElement('canvas');
+      c.width = c.height = px;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, px, px);
+      const fontOf = (s) => `${s}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", serif`;
+      // 先用較大字級量測，若實際寬度超過畫布就縮小，避免寬版 emoji (如 🕶️) 被裁切
+      let fs = px * 0.7;
+      ctx.font = fontOf(fs);
+      const w = ctx.measureText(emoji).width;
+      const maxW = px * 0.78;
+      if (w > maxW) { fs = fs * (maxW / w); ctx.font = fontOf(fs); }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, px / 2, px * 0.52);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;   // 不用 mipmap，避免縮放糊掉
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      return tex;
+    }
+    function emojiMesh(emoji) {
+      const mat = new THREE.MeshBasicMaterial({
+        map: emojiTexture(emoji),
+        transparent: true,
+        alphaTest: 0.2,        // 切掉半透明黑邊 (消除黑框/光暈)
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide, // 轉頭時背面也看得到
+        toneMapped: false,
+      });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+      mesh.renderOrder = 999; // 永遠畫在最上層
+      return mesh;
+    }
+
+    // ---------- 用 canvas 幾何畫眼鏡/墨鏡 (不靠 emoji，保證不被裁切) ----------
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function glassesMesh(kind) {
+      const px = 512;
+      const c = document.createElement('canvas');
+      c.width = c.height = px;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, px, px);
+
+      const dark = (kind === 'dark');
+      const frame = dark ? '#0a0a0a' : '#2a2a2a';
+      const lensFill = dark ? 'rgba(15,15,20,0.9)' : 'rgba(200,215,255,0.16)';
+
+      const cy = px * 0.5;
+      const lw = px * 0.26, lh = px * 0.22, r = px * 0.07;
+      const lcx = px * 0.36, rcx = px * 0.64;   // 左右鏡片中心
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // 鏡橋
+      ctx.strokeStyle = frame; ctx.lineWidth = px * 0.03;
+      ctx.beginPath();
+      ctx.moveTo(lcx + lw / 2, cy - px * 0.02);
+      ctx.lineTo(rcx - lw / 2, cy - px * 0.02);
+      ctx.stroke();
+      // 鏡腳
+      ctx.beginPath(); ctx.moveTo(lcx - lw / 2, cy); ctx.lineTo(px * 0.10, cy - px * 0.05); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rcx + lw / 2, cy); ctx.lineTo(px * 0.90, cy - px * 0.05); ctx.stroke();
+      // 鏡片
+      for (const cx of [lcx, rcx]) {
+        roundRect(ctx, cx - lw / 2, cy - lh / 2, lw, lh, r);
+        ctx.fillStyle = lensFill; ctx.fill();
+        ctx.lineWidth = px * 0.038; ctx.strokeStyle = frame; ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, depthTest: false, depthWrite: false,
+        side: THREE.DoubleSide, toneMapped: false,
+      });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+      mesh.renderOrder = 999;
+      return mesh;
+    }
+
+    const startBtn = document.getElementById('start-btn');
+    const loading  = document.getElementById('loading');
+    const hud      = document.getElementById('hud');
+    const exprEl   = document.getElementById('expr');
+    const metricsEl= document.getElementById('metrics');
+    const sizePanel= document.getElementById('size-panel');
+    const switchBtn= document.getElementById('switch-cam');
+    const sizeEl   = document.getElementById('size');
+    const sizeVal  = document.getElementById('size-val');
+    sizeEl.addEventListener('input', () => { sizeVal.textContent = (+sizeEl.value).toFixed(3); });
+
+    let started = false;
+    startBtn.addEventListener('click', () => { if (!started) { started = true; start(); } });
+
+    async function start() {
+      startBtn.classList.add('hidden');
+      loading.classList.remove('hidden');
+
+      const mindarThree = new MindARThree({ container: document.querySelector('#ar-container') });
+      const { renderer, scene, camera } = mindarThree;
+
+      // 光源 (MeshBasicMaterial 不需要，但保留給之後想換 3D 模型用)
+      scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+      // --- 量測用 anchor：只讀座標，不放可見物件 ---
+      const measure = {};
+      for (const idx of Object.values(LM)) {
+        if (measure[idx]) continue;
+        measure[idx] = mindarThree.addAnchor(idx).group;
+      }
+      const wp = (idx) => measure[idx].getWorldPosition(new THREE.Vector3());
+      const dist = (a, b) => wp(a).distanceTo(wp(b));
+
+      // --- 濾鏡 anchor + 物件 ---
+      // 1) 一般眼鏡 (中性表情)
+      const aEyes = mindarThree.addAnchor(LM.betweenEyes);
+      const glasses = glassesMesh('clear');
+      aEyes.group.add(glasses);
+
+      // 2) 墨鏡 (微笑) + 雙頰星星
+      const sunglasses = glassesMesh('dark');
+      aEyes.group.add(sunglasses);
+      const aCheekL = mindarThree.addAnchor(LM.cheekL);
+      const aCheekR = mindarThree.addAnchor(LM.cheekR);
+      const sparkL = emojiMesh('✨'); aCheekL.group.add(sparkL);
+      const sparkR = emojiMesh('✨'); aCheekR.group.add(sparkR);
+
+      // 3) 火焰 (張嘴)
+      const aMouth = mindarThree.addAnchor(LM.mouthCenter);
+      const fire = emojiMesh('🔥');
+      aMouth.group.add(fire);
+
+      // 4) 皇冠 (挑眉)
+      const aForehead = mindarThree.addAnchor(LM.forehead);
+      const crown = emojiMesh('👑');
+      aForehead.group.add(crown);
+
+      // ---- 修正 iOS 黑畫面：讓 WebGL 畫布透明、相機影像放到畫布後面填滿 ----
+      // (切換鏡頭會建立新的 video 元素，所以抽成函式，每次啟動後都重套一次)
+      function fixDisplay() {
+        renderer.setClearColor(0x000000, 0);
+        renderer.setClearAlpha(0);
+        const canvas = renderer.domElement;
+        Object.assign(canvas.style, {
+          position: 'absolute', top: '0', left: '0',
+          width: '100%', height: '100%', objectFit: 'cover', // 與 video 相同裁切方式，濾鏡才會對齊
+          zIndex: '2', background: 'transparent',
+        });
+        const video = mindarThree.video || document.querySelector('#ar-container video');
+        if (video) {
+          Object.assign(video.style, {
+            position: 'absolute', top: '0', left: '0',
+            width: '100%', height: '100%', objectFit: 'cover', zIndex: '1',
+          });
+          video.setAttribute('playsinline', '');
+          video.muted = true;
+          video.play?.().catch(() => {});
+        }
+        window.__video = video; // 方便除錯
+      }
+
+      await mindarThree.start();
+      loading.classList.add('hidden');
+      hud.classList.remove('hidden');
+      sizePanel.classList.remove('hidden');
+      switchBtn.classList.remove('hidden');
+      fixDisplay();
+
+      // ---- 切換前後鏡頭 ----
+      let switching = false;
+      switchBtn.addEventListener('click', async () => {
+        if (switching) return;
+        switching = true;
+        switchBtn.disabled = true;
+        try {
+          mindarThree.shouldFaceUser = !mindarThree.shouldFaceUser; // 前(user)<->後(environment)
+          mindarThree.stop();
+          await mindarThree.start();
+          fixDisplay();                 // 重新套用顯示修正到新的 video
+          loading.classList.add('hidden');
+        } catch (e) {
+          console.error('switchCamera failed', e);
+        } finally {
+          switching = false;
+          switchBtn.disabled = false;
+        }
+      });
+
+      const tmp = new THREE.Vector3();
+
+      renderer.setAnimationLoop(() => {
+        scene.updateMatrixWorld(true);
+
+        // 臉寬 (世界座標距離) → 用來做比例 & 自動縮放
+        const faceW = dist(LM.cheekL, LM.cheekR);
+
+        let expr = 'no-face';
+        let mouthOpenR = 0, smileR = 0, browR = 0;
+
+        if (faceW > 0.0001) {
+          mouthOpenR = dist(LM.lipTop, LM.lipBot) / faceW;
+          smileR     = dist(LM.mouthL, LM.mouthR) / faceW;
+          browR      = (dist(LM.browL, LM.eyeL) + dist(LM.browR, LM.eyeR)) / 2 / faceW;
+
+          // 判斷優先序：張嘴 > 挑眉 > 微笑 > 中性
+          if (mouthOpenR > TH.mouthOpen)      expr = 'mouthOpen';
+          else if (browR > TH.browRaise)      expr = 'browRaise';
+          else if (smileR > TH.smile)         expr = 'smile';
+          else                                expr = 'neutral';
+
+          // 大小 = 臉寬 × 滑桿值 × 各濾鏡比例 (隨臉自動貼合，滑桿微調整體大小)
+          const ui = +sizeEl.value;
+          const s = (m) => faceW * ui * m;
+          glasses.scale.setScalar(s(SIZE.glasses));
+          sunglasses.scale.setScalar(s(SIZE.glasses));
+          const crownScale = s(SIZE.crown);
+          crown.scale.setScalar(crownScale);
+          crown.position.set(0, crownScale * 0.5, 0); // 偏移量綁自身大小：底邊坐在額頭上，不會跑出框
+          const fireScale = s(SIZE.fire);
+          fire.scale.setScalar(fireScale);
+          fire.position.set(0, -fireScale * 0.5, 0);   // 偏移量綁自身大小：貼在嘴巴正下方
+          sparkL.scale.setScalar(s(SIZE.sparkle));
+          sparkR.scale.setScalar(s(SIZE.sparkle));
+        }
+
+        // 依表情切換顯示
+        glasses.visible    = (expr === 'neutral');
+        sunglasses.visible = (expr === 'smile');
+        sparkL.visible = sparkR.visible = (expr === 'smile');
+        fire.visible       = (expr === 'mouthOpen');
+        crown.visible      = (expr === 'browRaise');
+
+        // HUD
+        const label = {
+          'no-face': '😶 找不到臉', neutral: '😐 中性 → 👓',
+          smile: '😄 微笑 → 🕶️✨', mouthOpen: '😮 張嘴 → 🔥', browRaise: '🤨 挑眉 → 👑',
+        }[expr];
+        exprEl.textContent = label;
+        const vw = window.__video ? `${window.__video.videoWidth}x${window.__video.videoHeight}` : '無';
+        metricsEl.textContent =
+          `相機 video: ${vw}\n` +
+          `faceW (臉寬單位): ${faceW.toFixed(2)}\n` +
+          `張嘴 mouthOpen: ${mouthOpenR.toFixed(3)}  (門檻 ${TH.mouthOpen})\n` +
+          `微笑 smile    : ${smileR.toFixed(3)}  (門檻 ${TH.smile})\n` +
+          `挑眉 browRaise: ${browR.toFixed(3)}  (門檻 ${TH.browRaise})`;
+
+        renderer.render(scene, camera);
+      });
+    }
+  </script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

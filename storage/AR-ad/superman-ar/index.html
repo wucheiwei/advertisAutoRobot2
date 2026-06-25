@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>蜘蛛人 AR</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei",
+                 "Segoe UI", Roboto, sans-serif;
+    background: #000; color: #fff;
+    touch-action: none;
+  }
+
+  /*
+   * 近距離織布（--bg-fabric-close）+ 刷狀金屬高光（--bg-metal-sheen）+
+   * 定向光影（--bg-suit-relief）+ 細織紋（--bg-suit-weave）
+   */
+  :root {
+    --bg-suit-relief:
+      linear-gradient(156deg, rgba(228, 238, 255, 0.24) 0%, rgba(175, 200, 238, 0.07) 26%, transparent 54%),
+      linear-gradient(322deg, transparent 36%, rgba(0, 6, 18, 0.58) 78%, rgba(0, 0, 0, 0.74) 100%),
+      radial-gradient(ellipse 168% 102% at 5% 1%, rgba(215, 232, 255, 0.18), transparent 52%),
+      radial-gradient(ellipse 158% 112% at 97% 99%, rgba(0, 0, 0, 0.64), transparent 58%);
+    --bg-metal-sheen:
+      repeating-linear-gradient(
+        107deg,
+        transparent 0,
+        transparent 10px,
+        rgba(125, 165, 218, 0.11) 10px,
+        rgba(125, 165, 218, 0.11) 11px,
+        transparent 11px,
+        transparent 33px
+      ),
+      repeating-linear-gradient(
+        110deg,
+        transparent 0,
+        transparent 43px,
+        rgba(248, 252, 255, 0.32) 43px,
+        rgba(248, 252, 255, 0.32) 44.6px,
+        rgba(65, 92, 148, 0.14) 44.6px,
+        rgba(65, 92, 148, 0.14) 46px,
+        transparent 46px,
+        transparent 102px
+      ),
+      linear-gradient(172deg, rgba(95, 140, 212, 0.18) 0%, transparent 40%, transparent 100%),
+      linear-gradient(6deg, transparent 54%, rgba(18, 28, 48, 0.48) 100%);
+    --bg-fabric-close:
+      repeating-linear-gradient(
+        90deg,
+        rgba(10, 12, 20, 1) 0,
+        rgba(10, 12, 20, 1) 2.6px,
+        rgba(150, 168, 208, 0.48) 2.6px,
+        rgba(150, 168, 208, 0.48) 3.35px,
+        rgba(3, 5, 11, 1) 3.35px,
+        rgba(3, 5, 11, 1) 5.95px,
+        rgba(24, 30, 45, 0.72) 5.95px,
+        rgba(24, 30, 45, 0.72) 6.85px,
+        transparent 6.85px,
+        transparent 11.2px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgba(8, 10, 18, 0.99) 0,
+        rgba(8, 10, 18, 0.99) 2.45px,
+        rgba(118, 138, 182, 0.38) 2.45px,
+        rgba(118, 138, 182, 0.38) 3.05px,
+        rgba(2, 4, 9, 1) 3.05px,
+        rgba(2, 4, 9, 1) 5.65px,
+        rgba(30, 36, 52, 0.62) 5.65px,
+        rgba(30, 36, 52, 0.62) 6.4px,
+        transparent 6.4px,
+        transparent 10.8px
+      ),
+      repeating-linear-gradient(
+        128deg,
+        transparent 0,
+        transparent 6.5px,
+        rgba(38, 46, 68, 0.92) 6.5px,
+        rgba(38, 46, 68, 0.92) 7.95px,
+        rgba(195, 215, 248, 0.16) 7.95px,
+        rgba(195, 215, 248, 0.16) 8.65px,
+        transparent 8.65px,
+        transparent 20px
+      ),
+      repeating-linear-gradient(
+        59deg,
+        transparent 0,
+        transparent 13px,
+        rgba(22, 28, 42, 0.82) 13px,
+        rgba(22, 28, 42, 0.82) 14.25px,
+        rgba(175, 198, 235, 0.11) 14.25px,
+        rgba(175, 198, 235, 0.11) 14.85px,
+        transparent 14.85px,
+        transparent 30px
+      );
+    --bg-suit-weave:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 3.6px,
+        rgba(200, 218, 248, 0.11) 3.6px,
+        rgba(200, 218, 248, 0.11) 4.28px,
+        rgba(0, 0, 0, 0.48) 4.28px,
+        rgba(0, 0, 0, 0.48) 5px,
+        transparent 5px,
+        transparent 9px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 3.85px,
+        rgba(185, 205, 238, 0.09) 3.85px,
+        rgba(185, 205, 238, 0.09) 4.48px,
+        rgba(0, 0, 0, 0.4) 4.48px,
+        rgba(0, 0, 0, 0.4) 5.12px,
+        transparent 5.12px,
+        transparent 9.6px
+      ),
+      repeating-linear-gradient(
+        122deg,
+        transparent 0,
+        transparent 6px,
+        rgba(210, 228, 255, 0.075) 6px,
+        rgba(210, 228, 255, 0.075) 6.62px,
+        rgba(0, 0, 0, 0.38) 6.62px,
+        rgba(0, 0, 0, 0.38) 7.18px,
+        transparent 7.18px,
+        transparent 17px
+      ),
+      repeating-linear-gradient(
+        -122deg,
+        transparent 0,
+        transparent 6.8px,
+        rgba(0, 0, 0, 0.36) 6.8px,
+        rgba(0, 0, 0, 0.36) 7.35px,
+        rgba(165, 188, 228, 0.065) 7.35px,
+        rgba(165, 188, 228, 0.065) 7.88px,
+        transparent 7.88px,
+        transparent 18px
+      ),
+      repeating-linear-gradient(
+        56deg,
+        transparent 0,
+        transparent 12.6px,
+        rgba(226, 54, 54, 0.14) 12.6px,
+        rgba(226, 54, 54, 0.14) 13.05px,
+        rgba(0, 0, 0, 0.32) 13.05px,
+        rgba(0, 0, 0, 0.32) 13.45px,
+        transparent 13.45px,
+        transparent 27px
+      ),
+      repeating-linear-gradient(
+        -56deg,
+        transparent 0,
+        transparent 12.6px,
+        rgba(43, 95, 200, 0.12) 12.6px,
+        rgba(43, 95, 200, 0.12) 13.02px,
+        rgba(0, 0, 0, 0.28) 13.02px,
+        rgba(0, 0, 0, 0.28) 13.38px,
+        transparent 13.38px,
+        transparent 27px
+      ),
+      repeating-radial-gradient(
+        circle at 38% 44%,
+        transparent 0,
+        transparent 1.5px,
+        rgba(215, 232, 255, 0.09) 1.5px,
+        rgba(215, 232, 255, 0.09) 2.35px,
+        rgba(0, 0, 0, 0.22) 2.35px,
+        rgba(0, 0, 0, 0.22) 2.95px,
+        transparent 2.95px,
+        transparent 7.8px
+      );
+  }
+
+  /* 全畫面內凹＋邊緣暗影；上緣略帶冷色近似金屬邊緣反光 */
+  #splash,
+  #inapp-warn,
+  #photoPreview,
+  #status {
+    box-shadow:
+      inset 0 2px 5px rgba(200, 225, 255, 0.18),
+      inset 0 -14px 42px rgba(0, 0, 0, 0.68),
+      inset 28px 26px 80px rgba(0, 0, 0, 0.35),
+      inset -26px -30px 85px rgba(170, 195, 235, 0.065),
+      inset 0 0 120px rgba(0, 0, 0, 0.22);
+  }
+
+  @keyframes suitMetalPulse {
+    0%, 100% { opacity: 0.34; }
+    50% { opacity: 0.58; }
+  }
+
+  /* 金屬閃帶（叠在織紋上、蜘蛛網下） */
+  #splash::after,
+  #inapp-warn::after,
+  #photoPreview::after,
+  #status::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        124deg,
+        transparent 34%,
+        rgba(230, 242, 255, 0.18) 47.5%,
+        rgba(255, 255, 255, 0.08) 51%,
+        transparent 63%
+      ),
+      linear-gradient(52deg, transparent 52%, rgba(85, 125, 185, 0.12) 100%);
+    mix-blend-mode: soft-light;
+    animation: suitMetalPulse 8.5s ease-in-out infinite;
+  }
+
+  /* ---------- 蜘蛛網（左下角為中心，往右上擴張） ---------- */
+  #splash::before,
+  #inapp-warn::before,
+  #photoPreview::before,
+  #status::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%20preserveAspectRatio%3D%22none%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%220.32%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.55%22%3E%3Cpath%20d%3D%22M0%2C100%20L100%2C100%20M0%2C100%20L100%2C82.4%20M0%2C100%20L100%2C63.6%20M0%2C100%20L100%2C42.3%20M0%2C100%20L100%2C16.1%20M0%2C100%20L100%2C0%20M0%2C100%20L83.9%2C0%20M0%2C100%20L57.7%2C0%20M0%2C100%20L36.4%2C0%20M0%2C100%20L17.6%2C0%20M0%2C100%20L0%2C0%20M8%2C100%20A8%208%200%200%201%200%2092%20M16%2C100%20A16%2016%200%200%201%200%2084%20M24%2C100%20A24%2024%200%200%201%200%2076%20M32%2C100%20A32%2032%200%200%201%200%2068%20M40%2C100%20A40%2040%200%200%201%200%2060%20M48%2C100%20A48%2048%200%200%201%200%2052%20M56%2C100%20A56%2056%200%200%201%200%2044%20M64%2C100%20A64%2064%200%200%201%200%2036%20M72%2C100%20A72%2072%200%200%201%200%2028%20M80%2C100%20A80%2080%200%200%201%200%2020%20M88%2C100%20A88%2088%200%200%201%200%2012%20M96%2C100%20A96%2096%200%200%201%200%204%22/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    background-size: min(175vmin, 920px) min(175vmin, 920px);
+    opacity: 0.78;
+  }
+
+  /* 確保內容疊在蜘蛛網／金屬閃層之上 */
+  #splash .poster,
+  #splash h1,
+  #splash p,
+  #splash #startBtn,
+  #splash .hint,
+  #inapp-warn .inapp-card,
+  #photoPreview .preview-inner,
+  #status h2,
+  #status p,
+  #status button {
+    position: relative;
+    z-index: 3;
+  }
+
+  /* ---------- Splash ---------- */
+  #splash {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at 28% 18%, rgba(226,54,54,0.42), transparent 52%),
+      radial-gradient(circle at 72% 82%, rgba(43,95,200,0.38), transparent 55%),
+      var(--bg-metal-sheen),
+      var(--bg-suit-relief),
+      var(--bg-fabric-close),
+      var(--bg-suit-weave),
+      linear-gradient(180deg, #101e38 0%, #070f1d 48%, #000 100%);
+    text-align: center;
+    z-index: 30;
+    transition: opacity 0.5s ease;
+  }
+  #splash.hidden { opacity: 0; pointer-events: none; }
+  #splash .poster {
+    width: 200px;
+    aspect-ratio: 452 / 678;
+    border-radius: 24px;
+    background: url('assets/demo.jpeg') center/cover no-repeat;
+    box-shadow: 0 20px 60px rgba(226, 54, 54, 0.45), 0 0 40px rgba(43, 95, 200, 0.22), 0 0 0 1px rgba(255,255,255,0.1);
+    margin-bottom: 28px;
+  }
+  #splash h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, #ff3b45, #3b7de8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #splash p {
+    font-size: 15px; line-height: 1.6; color: #b8c8e4;
+    max-width: 320px; margin-bottom: 32px;
+  }
+  #startBtn {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 16px 40px; border-radius: 999px;
+    font-size: 16px; font-weight: 600; letter-spacing: 0.5px;
+    color: #fff;
+    background: linear-gradient(90deg, #e22e38, #2b5fc8);
+    box-shadow: 0 10px 32px rgba(226, 54, 54, 0.42), 0 8px 24px rgba(43, 95, 200, 0.28);
+    transition: transform 0.15s ease;
+  }
+  #startBtn:active { transform: scale(0.97); }
+  #splash .hint { margin-top: 20px; font-size: 12px; color: #6a7a94; }
+
+  /* ---------- Camera feed (inline-AR background) ---------- */
+  #cam {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    background: #000;
+    display: none;
+  }
+  #cam.visible { display: block; }
+
+  canvas { display: block; position: fixed; inset: 0; z-index: 2; }
+
+  /* ---------- AR overlay ---------- */
+  #ar-overlay {
+    position: fixed; inset: 0; z-index: 5;
+    display: none; flex-direction: column;
+    pointer-events: none;
+  }
+  #ar-overlay.visible { display: flex; }
+  #instructions {
+    margin: 24px auto 0;
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+    color: #fff;
+    max-width: 85%;
+    text-align: center;
+    pointer-events: auto;
+    transition: opacity 0.2s ease;
+  }
+  #exitBtn {
+    position: absolute; top: 20px; right: 20px;
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: #fff; font-size: 22px; line-height: 1;
+    cursor: pointer; pointer-events: auto;
+  }
+
+  /* ---------- Loading ring (gradient + percentage) ---------- */
+  #loading {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: auto;
+    display: none;
+    flex-direction: column; align-items: center;
+    padding: 24px 32px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-radius: 24px;
+  }
+  #loading.visible { display: flex; }
+  #loaderRing {
+    width: 88px; height: 88px;
+    transform: rotate(-90deg);
+    margin-bottom: 14px;
+    animation: spinPulse 2s ease-in-out infinite;
+  }
+  @keyframes spinPulse {
+    0%, 100% { transform: rotate(-90deg) scale(1); }
+    50%      { transform: rotate(-90deg) scale(1.04); }
+  }
+  #loaderRing .track { stroke: rgba(255,255,255,0.14); }
+  #loaderRing .fill {
+    stroke: url(#loaderGrad);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.25s ease-out;
+  }
+  #loaderRing .indet {
+    stroke: url(#loaderGrad);
+    stroke-linecap: round;
+    transform-origin: center;
+    animation: indetSpin 1.2s linear infinite;
+  }
+  @keyframes indetSpin { to { transform: rotate(360deg); } }
+  #loadingText { font-size: 14px; color: #e6e6e6; font-weight: 500; }
+  #loadingPct  {
+    font-size: 22px; font-weight: 700; margin-top: 4px;
+    background: linear-gradient(90deg, #ff3b45, #3b7de8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* ---------- Capture button (Spider emblem) ---------- */
+  /* The emblem is 1024×537 (≈1.91:1). Match that aspect so `contain`
+     fills the box edge-to-edge and the tap area is the emblem, not a
+     square with empty corners. */
+  #captureBtn {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    width: 210px; height: 110px;
+    border: 0;
+    background: url('assets/spider-emblem-alpha.png') center / contain no-repeat;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.55));
+    cursor: pointer; pointer-events: auto;
+    display: none;
+    transition: transform 0.12s ease, filter 0.12s ease;
+    padding: 0;
+  }
+  #captureBtn:active {
+    transform: translateX(-50%) scale(0.92);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7)) brightness(0.85);
+  }
+  #captureBtn.visible { display: block; }
+
+  /* ---------- Re-place button (bottom-left, secondary) ---------- */
+  #replaceBtn {
+    position: absolute; bottom: 44px; left: 24px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    cursor: pointer; pointer-events: auto;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 0;
+    transition: transform 0.12s ease;
+  }
+  #replaceBtn.visible { display: flex; }
+  #replaceBtn:active { transform: scale(0.94); }
+  #replaceBtn svg { width: 26px; height: 26px; }
+
+  /* ---------- Spider-web capture animation ----------
+     1) Full-screen spider web snaps onto the viewport (no progressive
+        line-drawing — appears in one shot).
+     2) The captured photo materialises BEHIND the web as a Polaroid.
+     3) Web + photo together tilt ~45° and get yanked off-screen, like a
+        single web pulling the polaroid out of frame. */
+  #webShot {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 55;
+    display: none;
+    overflow: hidden;
+  }
+  #webShot.active { display: block; }
+
+  #webShot .webContainer {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100vmax; height: 100vmax;
+    transform: translate(-50%, -50%);
+    transform-origin: 50% 50%;
+    will-change: transform, opacity;
+  }
+  #webShot.retract .webContainer {
+    animation: webRecoil 0.85s cubic-bezier(.45, -0.05, .35, 1) forwards;
+  }
+  @keyframes webRecoil {
+    0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(1);    opacity: 1; }
+    18%  { transform: translate(-50%, -50%) rotate(-8deg)  scale(1);    opacity: 1; }
+    55%  { transform: translate(calc(-50% - 12vw), calc(-50% - 28vh)) rotate(-42deg) scale(0.7); opacity: 1; }
+    100% { transform: translate(calc(-50% - 38vw), calc(-50% - 130vh)) rotate(-48deg) scale(0.12); opacity: 0; }
+  }
+
+  /* SVG web — sized to ~150vmax so the pattern overflows any phone aspect
+     and edge-to-edge coverage is guaranteed. Appears all at once with a
+     single scale+fade snap (no per-line stagger). */
+  #webShot .web {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 150vmax; height: 150vmax;
+    transform: translate(-50%, -50%) scale(0.7);
+    transform-origin: 50% 50%;
+    overflow: visible;
+    opacity: 0;
+    z-index: 2;                 /* sits ON TOP of the photo */
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.55));
+    pointer-events: none;
+  }
+  #webShot.active .web {
+    animation: webSnap 0.22s cubic-bezier(.18, 1.7, .35, 1) forwards;
+  }
+  @keyframes webSnap {
+    0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+    65%  { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+  }
+  #webShot .web line,
+  #webShot .web polygon {
+    stroke: #fff;
+    stroke-width: 1.6;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Polaroid frame — white border, fat bottom strip; sits BEHIND the web. */
+  #webShot .polaroid {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 62vmin;
+    max-width: 380px;
+    background: #fefefe;
+    padding: 14px 14px 56px 14px;
+    border-radius: 3px;
+    box-shadow:
+      0 18px 40px rgba(0,0,0,0.55),
+      0 2px 6px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%) scale(0.45) rotate(0deg);
+    opacity: 0;
+    z-index: 1;                 /* below the web */
+  }
+  #webShot .polaroid img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 56vh;
+    object-fit: contain;
+    background: #000;
+  }
+  #webShot.active .polaroid {
+    animation: polaroidStick 0.32s cubic-bezier(.35, 1.6, .55, 1) 0.18s forwards;
+  }
+  @keyframes polaroidStick {
+    0%   { transform: translate(-50%, -50%) scale(0.45) rotate(0deg);   opacity: 0; }
+    60%  { transform: translate(-50%, -50%) scale(1.05) rotate(-2deg);  opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1)    rotate(-3deg);  opacity: 1; }
+  }
+
+  /* Camera-shutter flash */
+  #flash {
+    position: fixed; inset: 0;
+    background: #fff; z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #flash.flash { animation: flashAnim 0.45s ease-out; }
+  @keyframes flashAnim {
+    0%   { opacity: 0; }
+    20%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ---------- Status / errors ---------- */
+  #status {
+    position: fixed; inset: 0; z-index: 40;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    background:
+      var(--bg-metal-sheen),
+      var(--bg-suit-relief),
+      var(--bg-fabric-close),
+      var(--bg-suit-weave),
+      rgba(0,0,0,0.72),
+      linear-gradient(180deg, #0a1426 0%, #02060f 100%);
+    padding: 32px; text-align: center;
+  }
+  #status.visible { display: flex; }
+  #status h2 { font-size: 20px; margin-bottom: 12px; }
+  #status p { font-size: 14px; color: #aab8d4; max-width: 320px; line-height: 1.6; margin-bottom: 24px; }
+  #status button {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 12px 28px; border-radius: 999px;
+    background: linear-gradient(90deg, #e22e38, #2b5fc8);
+    color: #fff; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(226, 54, 54, 0.35);
+  }
+
+  /* ---------- In-app-browser block screen (fallback when auto-redirect is blocked) ---------- */
+  #inapp-warn {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(226,54,54,0.28), transparent 55%),
+      radial-gradient(circle at 70% 80%, rgba(43,95,200,0.26), transparent 55%),
+      var(--bg-metal-sheen),
+      var(--bg-suit-relief),
+      var(--bg-fabric-close),
+      var(--bg-suit-weave),
+      linear-gradient(180deg, #101e38 0%, #070f1d 50%, #000 100%);
+    text-align: center;
+  }
+  #inapp-warn.visible { display: flex; }
+  .inapp-card {
+    max-width: 360px; width: 100%;
+    padding: 32px 28px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
+  .inapp-icon {
+    font-size: 48px; margin-bottom: 12px;
+    filter: drop-shadow(0 4px 14px rgba(226, 54, 54, 0.5));
+  }
+  .inapp-card h2 {
+    font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    background: linear-gradient(90deg, #ff9a2e, #ff3b45);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .inapp-card p {
+    font-size: 14px; line-height: 1.75; color: #b8c4dc;
+    margin-bottom: 22px;
+  }
+  .inapp-card .url {
+    display: block;
+    margin: 0 0 22px;
+    padding: 10px 14px;
+    font-size: 12px; color: #8d92a0;
+    background: rgba(0,0,0,0.4);
+    border-radius: 10px;
+    word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .inapp-actions { display: flex; flex-direction: column; gap: 10px; }
+  .inapp-btn {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 14px 24px; border-radius: 999px;
+    font-size: 15px; font-weight: 600;
+    background: linear-gradient(90deg, #e22e38, #2b5fc8);
+    color: #fff;
+  }
+  .inapp-btn.secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #fff;
+  }
+  .inapp-toast {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+    padding: 10px 20px; background: rgba(0,0,0,0.9);
+    border-radius: 999px; font-size: 13px; color: #fff;
+    opacity: 0; transition: opacity 0.25s;
+    pointer-events: none;
+  }
+  .inapp-toast.show { opacity: 1; }
+
+  /* ---------- Photo preview / share sheet ---------- */
+  #photoPreview {
+    position: fixed; inset: 0; z-index: 60;
+    display: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(226,54,54,0.32), transparent 55%),
+      radial-gradient(circle at 80% 90%, rgba(43,95,200,0.28), transparent 55%),
+      rgba(0,0,0,0.64),
+      var(--bg-metal-sheen),
+      var(--bg-suit-relief),
+      var(--bg-fabric-close),
+      var(--bg-suit-weave),
+      linear-gradient(180deg, #0c1628 0%, #030810 100%);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  #photoPreview.visible { display: flex; }
+  .preview-inner {
+    margin: auto;
+    width: 100%;
+    min-height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: max(env(safe-area-inset-top, 0px), 64px) 20px max(env(safe-area-inset-bottom, 0px), 28px);
+    gap: 18px;
+  }
+
+  .photo-frame {
+    position: relative;
+    width: 220px;       /* JS overrides this to match captured image aspect */
+    max-width: 86vw;
+    padding: 12px 12px 48px;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.55),
+      0 0 0 1px rgba(255,255,255,0.06);
+    transform: rotate(-1.2deg);
+    flex: 0 0 auto;
+  }
+  .photo-frame::after {
+    content: '蜘蛛人 AR';
+    position: absolute; left: 0; right: 0; bottom: 12px;
+    text-align: center;
+    font-family: "Snell Roundhand", "Brush Script MT", "Apple Chancery", cursive;
+    font-size: 20px; font-weight: 600;
+    background: linear-gradient(90deg, #ff3b45, #3b7de8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    pointer-events: none;
+  }
+  .photo-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+    background: #111;
+  }
+
+  .share-actions {
+    margin-top: 4px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .share-btn {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 0; background: none;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 12px; font-weight: 500;
+    transition: transform 0.12s ease;
+  }
+  .share-btn:active { transform: scale(0.92); }
+  .share-btn .ic {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    color: #fff;
+  }
+  .share-btn .ic svg { width: 24px; height: 24px; display: block; }
+  .share-btn.ig .ic {
+    background:
+      radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+  }
+  .share-btn.line .ic { background: #06C755; }
+  .share-btn.fb .ic   { background: #1877F2; }
+  .share-btn.save .ic { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2); }
+
+  .share-hint {
+    margin-top: 0;
+    font-size: 12px; color: #8898b4;
+    text-align: center; max-width: 340px; line-height: 1.55;
+  }
+
+  #closePreview {
+    position: fixed; top: max(env(safe-area-inset-top, 0px), 14px); right: 18px;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 0; cursor: pointer;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: #fff; font-size: 22px; line-height: 1;
+    z-index: 65;
+  }
+  #retakeBtn {
+    margin-top: 0;
+    appearance: none; border: 1px solid rgba(255,255,255,0.18); cursor: pointer;
+    padding: 10px 24px; border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    color: #fff; font-size: 13px; font-weight: 500;
+  }
+  #shareToast {
+    position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+    padding: 10px 20px; background: rgba(0,0,0,0.9);
+    border-radius: 999px; font-size: 13px; color: #fff;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    z-index: 70;
+  }
+  #shareToast.show { opacity: 1; }
+
+  /* WebXR ARButton (Android) */
+  #ARButton, .ar-button {
+    position: absolute !important;
+    bottom: 32px !important; left: 50% !important; transform: translateX(-50%) !important;
+    padding: 14px 32px !important;
+    background: linear-gradient(90deg, #e22e38, #2b5fc8) !important;
+    color: #fff !important; border: 0 !important; border-radius: 999px !important;
+    font-size: 15px !important; font-weight: 600 !important;
+    box-shadow: 0 10px 32px rgba(226, 54, 54, 0.42), 0 8px 24px rgba(43, 95, 200, 0.28) !important;
+    pointer-events: auto !important;
+  }
+
+  /* 左下角：去背 PNG（alpha）；不依賴 mask / blend，避免整塊白底 */
+  .corner-spider-emblem {
+    position: absolute;
+    left: max(4px, env(safe-area-inset-left, 0px));
+    bottom: max(4px, env(safe-area-inset-bottom, 0px));
+    width: clamp(104px, 42vmin, 260px);
+    height: clamp(104px, 42vmin, 260px);
+    z-index: 4;
+    pointer-events: none;
+    /* 再往左下挪一點，避開中央／底部的說明文字 */
+    transform: translate(-14px, 12px);
+  }
+  .corner-spider-emblem__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: rotate(45deg) scale(1.06);
+    transform-origin: center center;
+    filter: drop-shadow(0 3px 14px rgba(0, 0, 0, 0.5));
+  }
+</style>
+</head>
+<body>
+
+<!-- 內建瀏覽器警告 (備援：當自動跳轉被阻擋時顯示) -->
+<div id="inapp-warn">
+  <div class="inapp-card">
+    <div class="inapp-icon">📱</div>
+    <h2>請在外部瀏覽器開啟</h2>
+    <p id="inappMsg">此 AR 體驗需要相機與動作感測權限，無法在 App 內建瀏覽器運作。請點擊右上角選單，選擇「在瀏覽器開啟」。</p>
+    <code class="url" id="inappUrl"></code>
+    <div class="inapp-actions">
+      <button class="inapp-btn" id="openExternalBtn">在外部瀏覽器開啟</button>
+      <button class="inapp-btn secondary" id="copyLinkBtn">複製連結</button>
+    </div>
+  </div>
+  <div class="inapp-toast" id="inappToast">已複製！</div>
+  <div class="corner-spider-emblem" aria-hidden="true">
+    <img class="corner-spider-emblem__img" src="assets/spider-emblem-alpha.png" alt="" decoding="async" />
+  </div>
+</div>
+
+<!-- 啟始畫面 -->
+<div id="splash">
+  <div class="poster"></div>
+  <h1>蜘蛛人 AR</h1>
+  <p>此體驗將透過您的相機，把 3D 模型放置在您房間的地板上。</p>
+  <button id="startBtn">允許相機並開始 AR</button>
+  <div class="hint">支援 iPhone（任何瀏覽器）及 Android Chrome。</div>
+  <div class="corner-spider-emblem" aria-hidden="true">
+    <img class="corner-spider-emblem__img" src="assets/spider-emblem-alpha.png" alt="" decoding="async" />
+  </div>
+</div>
+
+<!-- 相機畫面 (inline AR 背景) -->
+<video id="cam" playsinline webkit-playsinline muted autoplay></video>
+
+<!-- AR overlay -->
+<div id="ar-overlay">
+  <div id="instructions">緩慢移動手機以掃描平坦表面…</div>
+  <button id="exitBtn" aria-label="離開 AR">×</button>
+
+  <div id="loading">
+    <svg id="loaderRing" viewBox="0 0 100 100" width="88" height="88" aria-hidden="true">
+      <defs>
+        <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"  stop-color="#e22e38"/>
+          <stop offset="100%" stop-color="#2b5fc8"/>
+        </linearGradient>
+      </defs>
+      <circle class="track" cx="50" cy="50" r="42" fill="none" stroke-width="6"/>
+      <circle id="loaderFill" class="fill"
+              cx="50" cy="50" r="42" fill="none" stroke-width="6"
+              stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+    </svg>
+    <div id="loadingText">正在載入模型…</div>
+    <div id="loadingPct">0%</div>
+  </div>
+
+  <button id="captureBtn" aria-label="拍照"></button>
+  <button id="replaceBtn" aria-label="重新放置">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-3.1-6.8"/>
+      <polyline points="21 4 21 10 15 10"/>
+    </svg>
+  </button>
+
+  <video id="trailer"
+         src="assets/trailer.mp4"
+         loop muted playsinline webkit-playsinline autoplay
+         preload="auto"
+         style="position:absolute;right:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;"></video>
+</div>
+
+<!-- 拍照閃光 -->
+<div id="flash"></div>
+
+<!-- 蜘蛛絲拍照特效：整張網一次蓋上 → 照片在網下方浮現 → 整組向左上 45° 黏扯出鏡頭 -->
+<div id="webShot" aria-hidden="true">
+  <div class="webContainer">
+    <!-- Polaroid (behind the web) -->
+    <div class="polaroid">
+      <img class="polaroidImg" alt=""/>
+    </div>
+    <!-- 12-spoke web with 5 rings; outermost ring r=180 in a 400×400 viewBox
+         ensures the SVG (sized 150vmax via CSS) covers every screen corner. -->
+    <svg class="web" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet">
+      <g class="spokes">
+        <line x1="0" y1="0" x2="0"        y2="-200"/>
+        <line x1="0" y1="0" x2="100"      y2="-173.2"/>
+        <line x1="0" y1="0" x2="173.2"    y2="-100"/>
+        <line x1="0" y1="0" x2="200"      y2="0"/>
+        <line x1="0" y1="0" x2="173.2"    y2="100"/>
+        <line x1="0" y1="0" x2="100"      y2="173.2"/>
+        <line x1="0" y1="0" x2="0"        y2="200"/>
+        <line x1="0" y1="0" x2="-100"     y2="173.2"/>
+        <line x1="0" y1="0" x2="-173.2"   y2="100"/>
+        <line x1="0" y1="0" x2="-200"     y2="0"/>
+        <line x1="0" y1="0" x2="-173.2"   y2="-100"/>
+        <line x1="0" y1="0" x2="-100"     y2="-173.2"/>
+      </g>
+      <g class="rings">
+        <polygon class="ring" points="0,-26 13,-22.5 22.5,-13 26,0 22.5,13 13,22.5 0,26 -13,22.5 -22.5,13 -26,0 -22.5,-13 -13,-22.5"/>
+        <polygon class="ring" points="0,-60 30,-52 52,-30 60,0 52,30 30,52 0,60 -30,52 -52,30 -60,0 -52,-30 -30,-52"/>
+        <polygon class="ring" points="0,-100 50,-86.6 86.6,-50 100,0 86.6,50 50,86.6 0,100 -50,86.6 -86.6,50 -100,0 -86.6,-50 -50,-86.6"/>
+        <polygon class="ring" points="0,-140 70,-121.2 121.2,-70 140,0 121.2,70 70,121.2 0,140 -70,121.2 -121.2,70 -140,0 -121.2,-70 -70,-121.2"/>
+        <polygon class="ring" points="0,-180 90,-155.9 155.9,-90 180,0 155.9,90 90,155.9 0,180 -90,155.9 -155.9,90 -180,0 -155.9,-90 -90,-155.9"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- 拍照預覽 / 分享 -->
+<div id="photoPreview">
+  <button id="closePreview" aria-label="關閉">×</button>
+  <div class="preview-inner">
+  <div class="photo-frame">
+    <img id="capturedPhoto" alt="蜘蛛人 AR 照片" />
+  </div>
+  <div class="share-actions">
+    <button class="share-btn ig" id="shareIG" aria-label="分享到 Instagram">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+        </svg>
+      </span>
+      <span>Instagram</span>
+    </button>
+    <button class="share-btn line" id="shareLine" aria-label="分享到 LINE">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3C6.48 3 2 6.58 2 10.99c0 3.95 3.6 7.27 8.46 7.9.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.9.56 1.1-.46 5.92-3.49 8.07-5.97C21.6 14.16 22 12.62 22 10.99 22 6.58 17.52 3 12 3zM8 13.4H6c-.22 0-.4-.18-.4-.4V9.4c0-.22.18-.4.4-.4s.4.18.4.4v3.2H8c.22 0 .4.18.4.4s-.18.4-.4.4zm1.6-.4c0 .22-.18.4-.4.4s-.4-.18-.4-.4V9.4c0-.22.18-.4.4-.4s.4.18.4.4V13zm4 0c0 .17-.11.32-.27.38-.04.01-.08.02-.13.02-.13 0-.25-.06-.32-.16l-1.88-2.55V13c0 .22-.18.4-.4.4s-.4-.18-.4-.4V9.4c0-.17.11-.32.27-.38.04-.01.08-.02.13-.02.13 0 .25.06.32.16L13 11.71V9.4c0-.22.18-.4.4-.4s.4.18.4.4V13zm3-2.2c.22 0 .4.18.4.4s-.18.4-.4.4h-1.2v.8h1.2c.22 0 .4.18.4.4s-.18.4-.4.4H15c-.22 0-.4-.18-.4-.4V9.4c0-.22.18-.4.4-.4h1.6c.22 0 .4.18.4.4s-.18.4-.4.4h-1.2v.8h1.2z"/>
+        </svg>
+      </span>
+      <span>LINE</span>
+    </button>
+    <button class="share-btn fb" id="shareFB" aria-label="分享到 Facebook">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.6 1.6-1.6h1.7V4.2c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.4H7.6V14h2.7v8h3.2z"/>
+        </svg>
+      </span>
+      <span>Facebook</span>
+    </button>
+    <button class="share-btn save" id="savePhoto" aria-label="儲存照片">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </span>
+      <span>儲存</span>
+    </button>
+  </div>
+  <button id="retakeBtn">重新拍照</button>
+  <p class="share-hint">「儲存」會將照片保存至相簿；點擊 Instagram / LINE / Facebook 圖示，請於系統選單中選取對應的 App 直接分享。</p>
+  </div>
+  <div class="corner-spider-emblem" aria-hidden="true">
+    <img class="corner-spider-emblem__img" src="assets/spider-emblem-alpha.png" alt="" decoding="async" />
+  </div>
+</div>
+<div id="shareToast"></div>
+
+<!-- 狀態 / 錯誤 -->
+<div id="status">
+  <h2 id="statusTitle">不支援</h2>
+  <p id="statusMsg"></p>
+  <button id="statusBtn">返回</button>
+  <div class="corner-spider-emblem" aria-hidden="true">
+    <img class="corner-spider-emblem__img" src="assets/spider-emblem-alpha.png" alt="" decoding="async" />
+  </div>
+</div>
+
+<script>
+// ---------- In-app-browser detection ----------
+// In-app webviews (LINE, Facebook, Instagram, WeChat, TikTok, …) often
+// block camera, DeviceMotion, and WebXR permissions silently — so we
+// detect them up front and ask the user to open in Safari / Chrome.
+(function () {
+  const ua = navigator.userAgent || '';
+  const apps = [
+    { re: /FBAN|FBAV|FB_IAB|FB_IA/i,             name: 'Facebook' },
+    { re: /Instagram/i,                           name: 'Instagram' },
+    { re: /Line\//i,                              name: 'LINE' },
+    { re: /MicroMessenger/i,                      name: '微信 / WeChat' },
+    { re: /Twitter|TwitterAndroid/i,              name: 'Twitter / X' },
+    { re: /TikTok|Bytedance|musical_ly/i,         name: 'TikTok' },
+    { re: /Snapchat/i,                            name: 'Snapchat' },
+    { re: /Pinterest/i,                           name: 'Pinterest' },
+    { re: /LinkedInApp/i,                         name: 'LinkedIn' },
+    { re: /KAKAOTALK/i,                           name: 'KakaoTalk' },
+    { re: /WhatsApp/i,                            name: 'WhatsApp' },
+    { re: /DingTalk/i,                            name: 'DingTalk' },
+    { re: /Threads/i,                             name: 'Threads' }
+  ];
+  let matched = null;
+  for (const a of apps) { if (a.re.test(ua)) { matched = a.name; break; } }
+  if (!matched) return;
+
+  // Mark globally so the AR module knows we're in a webview that will
+  // refuse camera / motion permissions; the splash button uses this to
+  // retry the bounce-out instead of failing into an error dialog.
+  window.__INAPP_BROWSER__ = matched;
+
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+
+  // Try to bounce out of the in-app webview to the system browser. The
+  // trick is per-platform:
+  //   * LINE      → ?openExternalBrowser=1 is LINE's official escape
+  //                 parameter; their webview detects it and reopens in
+  //                 Safari/Chrome automatically.
+  //   * Android   → intent://…#Intent;scheme=https;package=com.android.chrome
+  //                 launches Chrome from most webviews.
+  //   * iOS FB/IG → x-safari-https:// works from a script-level navigation
+  //                 in many iOS webviews. If swallowed, we silently fall
+  //                 back to the regular splash.
+  // We mark the URL with #_inapp_redirected so retries don't loop.
+  const ALREADY = '#_inapp_redirected';
+
+  function redirectToExternal() {
+    const here = window.location.href;
+    const stripped = here.replace(/^https?:\/\//, '').replace(ALREADY, '');
+
+    if (matched === 'LINE' && !/[?&]openExternalBrowser=1/.test(here)) {
+      const sep = here.includes('?') ? '&' : '?';
+      window.location.replace(here + sep + 'openExternalBrowser=1');
+      return true;
+    }
+    if (isAndroid) {
+      try { history.replaceState(null, '', here.replace(ALREADY, '') + ALREADY); } catch (_) {}
+      window.location.href =
+        'intent://' + stripped +
+        '#Intent;scheme=https;package=com.android.chrome;end';
+      return true;
+    }
+    if (isIOS) {
+      try { history.replaceState(null, '', here.replace(ALREADY, '') + ALREADY); } catch (_) {}
+      window.location.href = 'x-safari-https://' + stripped;
+      return true;
+    }
+    return false;
+  }
+
+  // Expose so the splash "start" button can re-trigger with a user
+  // gesture (some webviews block auto-redirects on page load but allow
+  // navigation that originates from a tap).
+  window.__redirectToExternal = redirectToExternal;
+
+  // Fire once on page load, but only if we haven't already tried.
+  const alreadyTried = window.location.href.indexOf(ALREADY) !== -1;
+  if (!alreadyTried) {
+    redirectToExternal();
+  }
+
+  // Fallback UI: if the auto-redirect was silently blocked by the
+  // webview, show the manual prompt so the user still has a path out.
+  // Delay it so the bounce-out has a chance to take effect first; users
+  // who get redirected successfully never see this card.
+  document.addEventListener('DOMContentLoaded', () => {
+    const warn   = document.getElementById('inapp-warn');
+    const msg    = document.getElementById('inappMsg');
+    const urlEl  = document.getElementById('inappUrl');
+    const copyBtn = document.getElementById('copyLinkBtn');
+    const extBtn  = document.getElementById('openExternalBtn');
+    const toast  = document.getElementById('inappToast');
+
+    msg.textContent =
+      `此 AR 體驗需要相機與動作感測權限，無法在 ${matched} 內建瀏覽器運作。` +
+      (isIOS ? '若未自動開啟 Safari，請點擊下方按鈕，或從右上角分享圖示選擇「以 Safari 開啟」。'
+             : '若未自動開啟 Chrome，請點擊下方按鈕，或從右上角選單選擇「在瀏覽器中開啟」。');
+
+    urlEl.textContent = window.location.href.replace(ALREADY, '');
+
+    // Show after a short delay so an in-flight auto-redirect (e.g. iOS
+    // x-safari-https://) lands first. If we already retried once, show
+    // immediately — the previous attempt clearly didn't take.
+    setTimeout(() => warn.classList.add('visible'), alreadyTried ? 0 : 1200);
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    copyBtn.addEventListener('click', async () => {
+      const u = window.location.href.replace(ALREADY, '');
+      try {
+        await navigator.clipboard.writeText(u);
+        showToast('已複製連結');
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = u; ta.style.position = 'fixed'; ta.style.top = '-1000px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('已複製連結'); }
+        catch (_) { showToast('請手動複製網址'); }
+        ta.remove();
+      }
+    });
+
+    // The button uses the same redirect helper as the auto-load attempt,
+    // but a tap-originated navigation passes some webview restrictions
+    // that the page-load attempt couldn't.
+    extBtn.addEventListener('click', () => {
+      redirectToExternal();
+    });
+  });
+})();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/",
+    "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// MediaPipe selfie segmentation is loaded lazily on inline-AR start; the
+// import below is a static one so the dependency is visible, but the heavy
+// model file is only fetched when we actually need it.
+let MP_ImageSegmenter = null;
+let MP_FilesetResolver = null;
+async function loadMediaPipe() {
+  if (MP_ImageSegmenter) return true;
+  try {
+    const mod = await import('@mediapipe/tasks-vision');
+    MP_ImageSegmenter = mod.ImageSegmenter;
+    MP_FilesetResolver = mod.FilesetResolver;
+    return true;
+  } catch (e) {
+    console.warn('MediaPipe load failed; person-occlusion disabled.', e);
+    return false;
+  }
+}
+
+const splash      = document.getElementById('splash');
+const startBtn    = document.getElementById('startBtn');
+const overlay     = document.getElementById('ar-overlay');
+const instructions= document.getElementById('instructions');
+const exitBtn     = document.getElementById('exitBtn');
+const loadingEl   = document.getElementById('loading');
+const loaderFill  = document.getElementById('loaderFill');
+const loadingPct  = document.getElementById('loadingPct');
+const captureBtn  = document.getElementById('captureBtn');
+const replaceBtn  = document.getElementById('replaceBtn');
+const flashEl     = document.getElementById('flash');
+const webShotEl   = document.getElementById('webShot');
+const stuckPhotoEl= webShotEl.querySelector('.polaroidImg');
+const statusEl    = document.getElementById('status');
+const statusTitle = document.getElementById('statusTitle');
+const statusMsg   = document.getElementById('statusMsg');
+const statusBtn   = document.getElementById('statusBtn');
+const camVideo    = document.getElementById('cam');
+const video       = document.getElementById('trailer');
+
+const RING_CIRC = 2 * Math.PI * 42;  // matches r=42 in SVG (≈263.89)
+
+function showStatus(title, msg) {
+  statusTitle.textContent = title;
+  statusMsg.textContent = msg;
+  statusEl.classList.add('visible');
+}
+statusBtn.addEventListener('click', () => {
+  statusEl.classList.remove('visible');
+  splash.classList.remove('hidden');
+});
+function setInstructions(text) { instructions.textContent = text; }
+
+function setLoaderProgress(pct) {
+  // pct is 0-100 or null (= indeterminate)
+  if (pct == null || isNaN(pct)) {
+    loadingPct.textContent = '…';
+    loaderFill.style.strokeDashoffset = RING_CIRC * 0.75; // 25% arc
+  } else {
+    const p = Math.max(0, Math.min(100, pct));
+    loadingPct.textContent = Math.round(p) + '%';
+    loaderFill.style.strokeDashoffset = RING_CIRC * (1 - p / 100);
+  }
+}
+
+// =====================================================================
+// Splash → AR
+// =====================================================================
+startBtn.addEventListener('click', async () => {
+  // If we're inside an in-app webview (LINE / FB / IG / …), getUserMedia
+  // and DeviceMotion will fail silently. Don't try the AR flow — instead
+  // re-attempt the bounce-out to the system browser. A user-gesture
+  // navigation passes some webview restrictions that the auto-redirect
+  // on page load couldn't.
+  if (window.__INAPP_BROWSER__) {
+    if (typeof window.__redirectToExternal === 'function') {
+      window.__redirectToExternal();
+    }
+    return;
+  }
+
+  // 1. iOS motion permission FIRST (gesture-required, no awaits before)
+  let motionGranted = true;
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      motionGranted = (perm === 'granted');
+    } catch (e) { motionGranted = false; console.warn(e); }
+    if (!motionGranted) {
+      showStatus('需要動作存取權限',
+        '若沒有動作與方向存取權限，模型將無法固定在空間中。' +
+        '請開啟 Safari 設定 → 隱私 → 動作與方向存取，然後重新整理頁面。');
+      return;
+    }
+  }
+
+  // 2. Trailer playback within user gesture
+  video.muted = true; video.playsInline = true;
+  try { await video.play(); } catch (e) { console.warn('video.play():', e); }
+
+  // 3. WebXR probe
+  let webxrAR = false;
+  if ('xr' in navigator) {
+    try { webxrAR = await navigator.xr.isSessionSupported('immersive-ar'); }
+    catch (e) { webxrAR = false; }
+  }
+
+  splash.classList.add('hidden');
+
+  try {
+    if (webxrAR) await startWebXR();
+    else         await startInlineAR();
+  } catch (err) {
+    console.error(err);
+    splash.classList.remove('hidden');
+    showStatus('無法啟動 AR',
+      err && err.message ? err.message : '請允許相機與動作存取後再試一次。');
+  }
+});
+
+exitBtn.addEventListener('click', () => {
+  if (renderer && renderer.xr && renderer.xr.getSession()) {
+    renderer.xr.getSession().end();
+  } else {
+    teardownInline();
+    splash.classList.remove('hidden');
+  }
+});
+
+// =====================================================================
+// Capture (camera button)
+// =====================================================================
+captureBtn.addEventListener('click', captureFrame);
+replaceBtn.addEventListener('click', () => { rePlace(); });
+
+function captureFrame() {
+  if (!renderer || !scene || !camera) return;
+
+  // Hide reticle so it doesn't appear in the photo
+  const reticleWasVisible = reticle && reticle.visible;
+  if (reticle) reticle.visible = false;
+
+  // Re-render so the framebuffer is fresh and ring-free
+  renderer.render(scene, camera);
+
+  // Compose: camera feed (background) + WebGL canvas (foreground)
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.round(window.innerWidth * dpr);
+  const h = Math.round(window.innerHeight * dpr);
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const ctx = out.getContext('2d');
+
+  // Camera background (only present in inline-AR mode)
+  if (camVideo.readyState >= 2 && camVideo.videoWidth > 0) {
+    const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
+    const scale = Math.max(w / vw, h / vh);   // matches CSS object-fit: cover
+    const dw = vw * scale, dh = vh * scale;
+    ctx.drawImage(camVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  } else {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+  }
+  // WebGL canvas on top
+  ctx.drawImage(renderer.domElement, 0, 0, w, h);
+
+  // Restore reticle visibility for the ongoing AR session
+  if (reticle) reticle.visible = reticleWasVisible;
+
+  // Shutter flash
+  flashEl.classList.remove('flash');
+  void flashEl.offsetWidth;
+  flashEl.classList.add('flash');
+
+  out.toBlob((blob) => {
+    if (!blob) return;
+    playWebShotAndPreview(blob);
+  }, 'image/jpeg', 0.92);
+}
+
+// ---- Spider-web capture animation ----------------------------------------
+// CSS keyframe timings (must stay in sync with #webShot rules):
+//   web snap (all at once):  0.00–0.22s
+//   polaroid sticks behind:  0.18–0.50s
+//   hold:                    0.50–0.90s
+//   45° yank out of frame:   0.90–1.75s
+const WEB_RECOIL_DELAY  = 900;   // ms — when to add .retract
+const WEB_RECOIL_END    = 1750;  // ms — when DOM hands off to preview
+
+function playWebShotAndPreview(blob) {
+  // Show blob inside the web so the photo materialises stuck on the threads.
+  const objUrl = URL.createObjectURL(blob);
+  stuckPhotoEl.onload = () => URL.revokeObjectURL(objUrl);
+  stuckPhotoEl.src = objUrl;
+
+  // Reset animation state in case a previous shot is still on screen.
+  webShotEl.classList.remove('active', 'retract');
+  // Force reflow so removing+adding .active re-triggers the keyframes.
+  void webShotEl.offsetWidth;
+  webShotEl.classList.add('active');
+
+  setTimeout(() => webShotEl.classList.add('retract'), WEB_RECOIL_DELAY);
+  setTimeout(() => {
+    webShotEl.classList.remove('active', 'retract');
+    stuckPhotoEl.removeAttribute('src');
+    showPhotoPreview(blob);
+  }, WEB_RECOIL_END);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+// =====================================================================
+// Photo preview + share sheet
+// =====================================================================
+const photoPreview  = document.getElementById('photoPreview');
+const capturedPhoto = document.getElementById('capturedPhoto');
+const photoFrameEl  = document.querySelector('#photoPreview .photo-frame');
+const closePreview  = document.getElementById('closePreview');
+const retakeBtn     = document.getElementById('retakeBtn');
+const shareIGBtn    = document.getElementById('shareIG');
+const shareLineBtn  = document.getElementById('shareLine');
+const shareFBBtn    = document.getElementById('shareFB');
+const savePhotoBtn  = document.getElementById('savePhoto');
+const shareToast    = document.getElementById('shareToast');
+
+let currentBlob = null;
+let currentBlobUrl = null;
+let currentFilename = '';
+
+function showPhotoPreview(blob) {
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  currentBlob = blob;
+  currentFilename = `super-girl-ar-${Date.now()}.jpg`;
+  currentBlobUrl = URL.createObjectURL(blob);
+  capturedPhoto.src = currentBlobUrl;
+  photoPreview.classList.add('visible');
+}
+
+// The captured JPEG inherits the user's viewport aspect ratio (we draw it
+// at window.innerWidth × innerHeight), so a portrait phone photo is much
+// taller than wide. Sizing the frame purely by `width:100%` would overflow
+// the viewport vertically; capping with `max-height` letterboxed the
+// photo and produced black bars on the sides. Instead we measure the
+// captured image, then set the frame's width to whatever fits inside the
+// remaining viewport area while preserving the photo's exact aspect.
+const FRAME_PADDING_X     = 24;   // 12px each side
+const FRAME_PADDING_BOTTOM = 60;  // 12px + 48px caption space
+const FRAME_PADDING_TOP   = 12;
+const PREVIEW_VERTICAL_RESERVE = 230; // share buttons + retake + hint + safe areas
+
+function fitPhotoFrame() {
+  if (!capturedPhoto.naturalWidth || !capturedPhoto.naturalHeight) return;
+  const imgRatio = capturedPhoto.naturalWidth / capturedPhoto.naturalHeight;
+
+  const maxImgW = Math.min(window.innerWidth * 0.85, 360) - FRAME_PADDING_X;
+  const maxImgH = Math.max(
+    window.innerHeight - PREVIEW_VERTICAL_RESERVE - FRAME_PADDING_TOP - FRAME_PADDING_BOTTOM,
+    180
+  );
+
+  let imgW = maxImgW;
+  let imgH = imgW / imgRatio;
+  if (imgH > maxImgH) {
+    imgH = maxImgH;
+    imgW = imgH * imgRatio;
+  }
+
+  photoFrameEl.style.width = Math.round(imgW + FRAME_PADDING_X) + 'px';
+}
+
+capturedPhoto.addEventListener('load', fitPhotoFrame);
+window.addEventListener('resize', () => {
+  if (photoPreview.classList.contains('visible')) fitPhotoFrame();
+});
+
+function hidePhotoPreview() {
+  photoPreview.classList.remove('visible');
+  if (currentBlobUrl) {
+    URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = null;
+  }
+  currentBlob = null;
+  capturedPhoto.removeAttribute('src');
+}
+
+function showShareToast(text) {
+  shareToast.textContent = text;
+  shareToast.classList.add('show');
+  setTimeout(() => shareToast.classList.remove('show'), 2200);
+}
+
+closePreview.addEventListener('click', hidePhotoPreview);
+retakeBtn.addEventListener('click', hidePhotoPreview);
+
+// All four buttons hand the JPEG file to navigator.share. The share sheet
+// then exposes the OS-level "Save Image" action and the Instagram / LINE /
+// Facebook app icons as direct, one-tap targets that receive the file.
+// This is the only route from a web page — the platforms' public web URLs
+// (sharer.php, line.me/R/share) accept text/links only, never image files.
+//
+// If the browser lacks Web Share API for files (older Android Chrome,
+// desktop), we fall back to: download the file, then deep-link into the
+// app so the user can attach the just-saved photo.
+async function shareFile(opts = {}) {
+  if (!currentBlob) return false;
+  const file = new File([currentBlob], currentFilename, { type: 'image/jpeg' });
+  const shareData = { files: [file] };
+  if (opts.text) shareData.text = opts.text;
+
+  if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return true;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return true; // user cancelled, but flow is done
+      console.warn('share failed:', err);
+    }
+  }
+  return false;
+}
+
+savePhotoBtn.addEventListener('click', async () => {
+  // iOS Safari & Android Chrome: share sheet has "Save Image" / "Save to
+  // Photos" front and center for image files, which writes directly to
+  // the camera roll / gallery. Web pages have no programmatic API for
+  // this — going through the sheet is the platform-required path.
+  const ok = await shareFile();
+  if (!ok) {
+    downloadBlob(currentBlob, currentFilename);
+    showShareToast('已下載照片');
+  }
+});
+
+shareIGBtn.addEventListener('click', async () => {
+  const ok = await shareFile({ text: '#蜘蛛人AR' });
+  if (ok) return;
+  // Fallback (no Web Share API): save the photo, then deep-link to the
+  // Instagram app's library tab so the user can post the just-saved shot.
+  downloadBlob(currentBlob, currentFilename);
+  showShareToast('已儲存照片，正在開啟 Instagram…');
+  setTimeout(() => { window.location.href = 'instagram://library'; }, 400);
+});
+
+shareLineBtn.addEventListener('click', async () => {
+  const ok = await shareFile({ text: '蜘蛛人 AR' });
+  if (ok) return;
+  downloadBlob(currentBlob, currentFilename);
+  showShareToast('已儲存照片，正在開啟 LINE…');
+  setTimeout(() => {
+    window.location.href = 'https://line.me/R/share?text=' +
+      encodeURIComponent('蜘蛛人 AR ' + window.location.href);
+  }, 400);
+});
+
+shareFBBtn.addEventListener('click', async () => {
+  const ok = await shareFile({ text: '蜘蛛人 AR' });
+  if (ok) return;
+  downloadBlob(currentBlob, currentFilename);
+  showShareToast('已儲存照片，正在開啟 Facebook…');
+  // fb:// opens the Facebook app's composer; user picks the saved image.
+  setTimeout(() => { window.location.href = 'fb://publish/profile/me'; }, 400);
+});
+
+// =====================================================================
+// Shared scene state
+// =====================================================================
+let renderer, scene, camera;
+let model, monitorMesh, videoTexture;
+let reticle;
+let modelPlaced = false;
+
+function buildScene() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+
+  // Bright sky, neutral ground — favours lighting from above as the
+  // dominant direction.
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb8b8c0, 1.6));
+
+  // Key from upper-right but raised higher so it lights more from above
+  // the head than straight onto the face. Intensity dialled back a notch
+  // to keep the face from blowing out.
+  const key = new THREE.DirectionalLight(0xffffff, 1.0);
+  key.position.set(1.5, 2.2, 0.2);
+  scene.add(key);
+
+  // Front fill at chest height
+  const frontFill = new THREE.DirectionalLight(0xffffff, 0.55);
+  frontFill.position.set(-0.3, 0.15, 0.6);
+  scene.add(frontFill);
+
+  // *** Upward fill *** — shines from below toward +Y so the underside
+  // of the model (boot soles, leg-bottoms, anything facing the floor)
+  // actually receives direct light, not just hemisphere bounce.
+  // Small upward fill — just enough so the base isn't pitch-black.
+  const upFill = new THREE.DirectionalLight(0xffffff, 0.45);
+  upFill.position.set(0, -1, 0.3);
+  scene.add(upFill);
+  scene.add(upFill.target);
+
+  const ringGeo = new THREE.RingGeometry(0.10, 0.13, 64).rotateX(-Math.PI / 2);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xe22e38, transparent: true, opacity: 0.88, depthTest: false
+  });
+  reticle = new THREE.Mesh(ringGeo, ringMat);
+  reticle.renderOrder = 999;
+  reticle.visible = false;
+  scene.add(reticle);
+}
+
+function installEnvMap() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+}
+
+function loadModel() {
+  loadingEl.classList.add('visible');
+  setLoaderProgress(0);
+
+  return new Promise((resolve, reject) => {
+    new GLTFLoader().load(
+      'assets/demo.glb',
+      (gltf) => {
+        model = gltf.scene;
+        model.visible = false;
+
+        videoTexture = new THREE.VideoTexture(video);
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.generateMipmaps = false;
+        // Mirror horizontally so the video reads correctly on the
+        // viewer-facing side of the monitor plane.
+        videoTexture.wrapS = THREE.RepeatWrapping;
+        videoTexture.repeat.x = -1;
+        videoTexture.offset.x = 1;
+
+        monitorMesh = null;
+        model.traverse((node) => {
+          if (!node.isMesh) return;
+          const m = node.material;
+          if (m) {
+            // Slight metalness cap so direct lights still fill the metals
+            // (otherwise pure-metal PBR samples only the env map and reads
+            // dark), but high enough to keep the rich saturated colours.
+            if ('metalness' in m) m.metalness = Math.min(m.metalness ?? 0, 0.85);
+            // Leave authored roughness alone — flooring it was making
+            // everything matte and pale.
+            if ('envMapIntensity' in m) m.envMapIntensity = 1.5;
+            // Clamp any baked-in emissive — some character GLBs author the
+            // face slightly self-glowing, which makes it look over-lit no
+            // matter what scene lights do.
+            if ('emissiveIntensity' in m) m.emissiveIntensity = Math.min(m.emissiveIntensity ?? 0, 0.25);
+            if (m.emissive) m.emissive.multiplyScalar(0.5);
+          }
+          const nameMatch = /plane|monitor|screen|tv|display/i.test(node.name || '');
+          const matName  = m && m.name;
+          const matMatch = matName && /monitor|screen|tv|display/i.test(matName);
+          if (nameMatch || matMatch) monitorMesh = monitorMesh || node;
+        });
+
+        if (monitorMesh) {
+          const mat = new THREE.MeshBasicMaterial({ map: videoTexture, toneMapped: false });
+          mat.side = THREE.DoubleSide;
+          monitorMesh.material = mat;
+          monitorMesh.visible = false;
+          const reveal = () => { if (video.readyState >= 2) monitorMesh.visible = true; };
+          video.addEventListener('playing', reveal);
+          video.addEventListener('loadeddata', reveal);
+          video.addEventListener('canplay', reveal);
+          reveal();
+
+          if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+            const onFrame = () => {
+              videoTexture.needsUpdate = true;
+              if (monitorMesh && !monitorMesh.visible) monitorMesh.visible = true;
+              video.requestVideoFrameCallback(onFrame);
+            };
+            video.requestVideoFrameCallback(onFrame);
+          }
+        }
+
+        scene.add(model);
+
+        // Compute final display scale ONCE at load time, so the preview
+        // ghost is already the right size (and we don't snap-rescale on
+        // first commit).
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        if (size.y > 0) model.scale.setScalar(1.6 / size.y);
+
+        applyGhostMode();
+
+        setLoaderProgress(100);
+        // Brief beat at 100% so the ring snaps closed before disappearing.
+        setTimeout(() => loadingEl.classList.remove('visible'), 200);
+        resolve();
+      },
+      (progress) => {
+        if (progress.lengthComputable && progress.total > 0) {
+          setLoaderProgress((progress.loaded / progress.total) * 100);
+        } else {
+          setLoaderProgress(null); // indeterminate
+        }
+      },
+      (err) => {
+        loadingEl.classList.remove('visible');
+        reject(err);
+      }
+    );
+  });
+}
+
+// ---- Ghost-preview helpers -------------------------------------------------
+// While the user hasn't committed a placement, the model follows the reticle
+// at reduced opacity ("hologram" look). On commit we restore the original
+// material state so the model looks solid in the final shot.
+const GHOST_OPACITY = 0.4;
+
+function applyGhostMode() {
+  if (!model) return;
+  model.traverse((node) => {
+    if (!node.isMesh || !node.material) return;
+    const mats = Array.isArray(node.material) ? node.material : [node.material];
+    mats.forEach((m) => {
+      if (!m.userData._origMat) {
+        m.userData._origMat = {
+          transparent: m.transparent,
+          opacity: m.opacity,
+          depthWrite: m.depthWrite,
+        };
+      }
+      m.transparent = true;
+      m.opacity = GHOST_OPACITY;
+      m.depthWrite = false;
+      m.needsUpdate = true;
+    });
+  });
+}
+
+function applyPlacedMode() {
+  if (!model) return;
+  model.traverse((node) => {
+    if (!node.isMesh || !node.material) return;
+    const mats = Array.isArray(node.material) ? node.material : [node.material];
+    mats.forEach((m) => {
+      const o = m.userData._origMat;
+      if (!o) return;
+      m.transparent = o.transparent;
+      m.opacity = o.opacity;
+      m.depthWrite = o.depthWrite;
+      m.needsUpdate = true;
+    });
+  });
+}
+
+const _reticlePos = new THREE.Vector3();
+function reticleWorldPos() {
+  return reticle.matrixAutoUpdate
+    ? _reticlePos.copy(reticle.position)
+    : _reticlePos.setFromMatrixPosition(reticle.matrix);
+}
+
+// Each frame in preview mode: snap the model to where the reticle is, and
+// keep it facing the camera (around the vertical axis).
+function previewAtReticle() {
+  if (!model || modelPlaced) return;
+  if (!reticle.visible) { model.visible = false; return; }
+  const p = reticleWorldPos();
+  model.position.copy(p);
+  const camPos = new THREE.Vector3();
+  camera.getWorldPosition(camPos);
+  model.lookAt(camPos.x, model.position.y, camPos.z);
+  model.rotateY(Math.PI);
+  model.visible = true;
+}
+
+function commitPlacement() {
+  if (!model || modelPlaced) return;
+  modelPlaced = true;
+  applyPlacedMode();
+  reticle.visible = false;
+  if (video.paused) video.play().catch(() => {});
+  captureBtn.classList.add('visible');
+  replaceBtn.classList.add('visible');
+  setInstructions('點擊新位置移動 • 拖曳旋轉 • 雙指縮放');
+}
+
+function rePlace() {
+  if (!model) return;
+  modelPlaced = false;
+  applyGhostMode();
+  captureBtn.classList.remove('visible');
+  replaceBtn.classList.remove('visible');
+  setInstructions('移動手機尋找位置 — 點擊確認放置');
+}
+
+// After commit: move the placed model to a new spot (keeps current rotation
+// and scale; user can still drag/pinch).
+function placeModelAt(position) {
+  if (!model) return;
+  model.position.copy(position);
+  model.visible = true;
+}
+
+// =====================================================================
+// Path A: Android / WebXR with hit-test
+// =====================================================================
+let controller, hitTestSource = null, hitTestSourceRequested = false;
+// Depth-sensing occlusion mesh (Android ARCore). Polled each frame until the
+// device produces depth data; once attached, three.js auto-updates it.
+let depthSensingMesh = null;
+
+async function startWebXR() {
+  buildScene();
+
+  // preserveDrawingBuffer is required so the capture button can read pixels
+  // from the canvas after a frame has been presented.
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // Linear tone mapping with a light exposure bump preserves the rich
+  // colours of the GLB textures. ACES was washing them out.
+  renderer.toneMapping = THREE.LinearToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.xr.enabled = true;
+  document.body.appendChild(renderer.domElement);
+  installEnvMap();
+
+  reticle.matrixAutoUpdate = false;
+
+  const arBtn = ARButton.createButton(renderer, {
+    requiredFeatures: ['hit-test'],
+    // depth-sensing is optional — devices without ARCore depth API (older
+    // phones) just skip it and the model renders without real-world
+    // occlusion, same as before.
+    optionalFeatures: ['dom-overlay', 'depth-sensing'],
+    domOverlay: { root: overlay },
+    depthSensing: {
+      usagePreference: ['gpu-optimized', 'cpu-optimized'],
+      dataFormatPreference: ['luminance-alpha', 'float32'],
+    },
+  });
+  arBtn.classList.add('ar-button');
+  arBtn.textContent = '進入 AR';
+  document.body.appendChild(arBtn);
+
+  controller = renderer.xr.getController(0);
+  controller.addEventListener('select', () => {
+    if (!model) return;
+    if (!modelPlaced) {
+      if (!reticle.visible) return;
+      commitPlacement();
+    } else {
+      if (!reticle.visible) return;
+      const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+      placeModelAt(pos);
+    }
+  });
+  scene.add(controller);
+
+  await loadModel();
+
+  renderer.xr.addEventListener('sessionstart', () => {
+    overlay.classList.add('visible');
+    setInstructions('緩慢移動手機以掃描平坦表面…');
+    video.muted = true;
+    video.play().catch(() => {});
+  });
+  renderer.xr.addEventListener('sessionend', () => {
+    overlay.classList.remove('visible');
+    captureBtn.classList.remove('visible');
+    replaceBtn.classList.remove('visible');
+    splash.classList.remove('hidden');
+    hitTestSource = null;
+    hitTestSourceRequested = false;
+    modelPlaced = false;
+    if (model) { model.visible = false; applyGhostMode(); }
+    if (depthSensingMesh) { scene.remove(depthSensingMesh); depthSensingMesh = null; }
+  });
+
+  window.addEventListener('resize', onResize);
+  renderer.setAnimationLoop(renderWebXR);
+}
+
+function renderWebXR(timestamp, frame) {
+  if (frame) {
+    const session = renderer.xr.getSession();
+    const refSpace = renderer.xr.getReferenceSpace();
+    if (!hitTestSourceRequested) {
+      session.requestReferenceSpace('viewer').then((vs) => {
+        session.requestHitTestSource({ space: vs }).then((s) => { hitTestSource = s; });
+      });
+      session.addEventListener('end', () => { hitTestSourceRequested = false; hitTestSource = null; });
+      hitTestSourceRequested = true;
+    }
+    // Once the device starts producing depth data, three.js makes the
+    // occlusion mesh available. We add it once; the renderer keeps its
+    // depth texture in sync each frame.
+    if (!depthSensingMesh && typeof renderer.xr.getDepthSensingMesh === 'function') {
+      const m = renderer.xr.getDepthSensingMesh();
+      if (m) {
+        m.renderOrder = -1; // write depth before the model draws
+        scene.add(m);
+        depthSensingMesh = m;
+      }
+    }
+    if (hitTestSource) {
+      const hits = frame.getHitTestResults(hitTestSource);
+      if (hits.length > 0) {
+        reticle.visible = true;
+        reticle.matrix.fromArray(hits[0].getPose(refSpace).transform.matrix);
+        if (instructions.textContent.startsWith('緩慢')) {
+          setInstructions('已偵測到表面 — 點擊確認放置');
+        }
+      } else {
+        reticle.visible = false;
+      }
+    }
+    previewAtReticle();
+  }
+  if (videoTexture && !video.paused && video.readyState >= 2) videoTexture.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+// =====================================================================
+// Path B: iOS / inline AR — getUserMedia + DeviceOrientation
+// =====================================================================
+const FLOOR_Y = -1.4;
+
+let camStream = null;
+let inlineRAF = 0;
+let orientationHandler = null;
+
+// ---- Person-occlusion (inline AR only) ------------------------------------
+// MediaPipe Selfie Segmentation gives us a per-pixel "is this a person?"
+// confidence mask. We render a fullscreen quad with that mask as alpha and
+// a CustomBlending equation that ERASES the WebGL canvas at those pixels;
+// the camera <video> sitting behind the canvas then shows through, so the
+// person visually occludes the AR model on every frame.
+let segmenter = null;
+let segmenterReady = false;
+let maskTexture = null;
+let maskRgbaBuf = null;
+let maskW = 0, maskH = 0;
+let occluder = null;
+let lastSegTs = 0;
+
+async function initSegmenter() {
+  if (segmenter || segmenterReady === 'failed') return;
+  const ok = await loadMediaPipe();
+  if (!ok) { segmenterReady = 'failed'; return; }
+  try {
+    const vision = await MP_FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm'
+    );
+    // GPU delegate sometimes fails on iOS WKWebView/embedded contexts; fall
+    // back to CPU so we still get occlusion (just a bit slower).
+    let built = null;
+    try {
+      built = await MP_ImageSegmenter.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        outputCategoryMask: false,
+        outputConfidenceMasks: true,
+      });
+    } catch (gpuErr) {
+      console.warn('Segmenter GPU delegate failed, retrying on CPU:', gpuErr);
+      built = await MP_ImageSegmenter.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+          delegate: 'CPU',
+        },
+        runningMode: 'VIDEO',
+        outputCategoryMask: false,
+        outputConfidenceMasks: true,
+      });
+    }
+    segmenter = built;
+    segmenterReady = true;
+    console.log('[occlusion] segmenter ready');
+  } catch (e) {
+    console.warn('Segmenter create failed:', e);
+    segmenterReady = 'failed';
+  }
+}
+
+function ensureOccluder() {
+  if (occluder) return;
+  // Start with a tiny all-zero RGBA buffer so the texture is valid before
+  // the first segmentation frame lands (everything reads as "not person",
+  // so the custom-blend below is a no-op until masks start flowing).
+  maskW = 4; maskH = 4;
+  maskRgbaBuf = new Uint8Array(maskW * maskH * 4);
+  maskTexture = new THREE.DataTexture(
+    maskRgbaBuf, maskW, maskH, THREE.RGBAFormat, THREE.UnsignedByteType
+  );
+  maskTexture.minFilter = THREE.LinearFilter;
+  maskTexture.magFilter = THREE.LinearFilter;
+  maskTexture.generateMipmaps = false;
+  maskTexture.needsUpdate = true;
+
+  const geom = new THREE.PlaneGeometry(2, 2);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uMask:      { value: maskTexture },
+      uCamUv:     { value: new THREE.Vector4(0, 0, 1, 1) }, // offX, offY, scaleX, scaleY
+      uMaskTexel: { value: new THREE.Vector2(1 / 4, 1 / 4) }, // 1 / mask size
+      // How many mask-pixels to expand the silhouette outward before
+      // cutting. ANY positive value adds a halo of "erased canvas" around
+      // the person — and in that halo we see whatever the camera sees
+      // (i.e. the real world that lives behind the model). So keep this
+      // at 0 unless you specifically need to cover a bright model rim,
+      // in which case 1 is usually enough.
+      uDilate:    { value: 0.0 },
+    },
+    vertexShader: /* glsl */`
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, 0.0, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      #ifdef GL_OES_standard_derivatives
+      #extension GL_OES_standard_derivatives : enable
+      #endif
+      uniform sampler2D uMask;
+      uniform vec4 uCamUv;
+      uniform vec2 uMaskTexel;
+      uniform float uDilate;
+      varying vec2 vUv;
+
+      // Cheap morphological dilation: sample the mask at a ring of offsets
+      // and take MAX, expanding the person silhouette outwards by ~uDilate
+      // mask-pixels so the cut sits well past the model's bright rim.
+      float dilatedMask(vec2 uv) {
+        vec2 r = uMaskTexel * uDilate;
+        float c = texture2D(uMask, uv).r;
+        c = max(c, texture2D(uMask, uv + vec2( r.x,  0.0)).r);
+        c = max(c, texture2D(uMask, uv + vec2(-r.x,  0.0)).r);
+        c = max(c, texture2D(uMask, uv + vec2( 0.0,  r.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2( 0.0, -r.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2( r.x,  r.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2(-r.x,  r.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2( r.x, -r.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2(-r.x, -r.y)).r);
+        vec2 r2 = r * 1.6;
+        c = max(c, texture2D(uMask, uv + vec2( r2.x,  r2.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2(-r2.x,  r2.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2( r2.x, -r2.y)).r);
+        c = max(c, texture2D(uMask, uv + vec2(-r2.x, -r2.y)).r);
+        return c;
+      }
+
+      void main() {
+        // Screen UV → video UV (matches CSS object-fit: cover)
+        vec2 vidUv = (vUv - uCamUv.xy) / uCamUv.zw;
+        if (vidUv.x < 0.0 || vidUv.x > 1.0 || vidUv.y < 0.0 || vidUv.y > 1.0) discard;
+        vec2 mUv = vec2(vidUv.x, 1.0 - vidUv.y);
+        float c = dilatedMask(mUv);
+        // Derivative-based binary cut: the transition band is exactly one
+        // screen pixel wide, just enough for AA. Outside that single pixel
+        // alpha is *exactly* 0 or 1, so no real-world background bleeds
+        // through the silhouette edge.
+        #ifdef GL_OES_standard_derivatives
+          float w = fwidth(c) * 0.6;
+          float a = smoothstep(0.5 - w, 0.5 + w, c);
+        #else
+          float a = step(0.5, c);
+        #endif
+        gl_FragColor = vec4(0.0, 0.0, 0.0, a);
+      }
+    `,
+    extensions: { derivatives: true },
+    transparent: true,
+    blending: THREE.CustomBlending,
+    blendSrc:      THREE.ZeroFactor,
+    blendDst:      THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha: THREE.ZeroFactor,
+    blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+    depthTest: false,
+    depthWrite: false,
+  });
+  occluder = new THREE.Mesh(geom, mat);
+  occluder.frustumCulled = false;
+  occluder.renderOrder = 1000;
+  scene.add(occluder);
+}
+
+function updateOccluderUv() {
+  if (!occluder || !camVideo.videoWidth) return;
+  const sw = window.innerWidth, sh = window.innerHeight;
+  const vw = camVideo.videoWidth, vh = camVideo.videoHeight;
+  const scale = Math.max(sw / vw, sh / vh);  // CSS object-fit: cover
+  const dw = vw * scale, dh = vh * scale;
+  const offX = (sw - dw) / 2 / sw;
+  const offY = (sh - dh) / 2 / sh;
+  const scaleX = dw / sw;
+  const scaleY = dh / sh;
+  occluder.material.uniforms.uCamUv.value.set(offX, offY, scaleX, scaleY);
+}
+
+function updateMask(nowMs) {
+  if (!segmenter || !camVideo.videoWidth) return;
+  // segmentForVideo requires strictly-increasing timestamps.
+  if (nowMs <= lastSegTs) nowMs = lastSegTs + 1;
+  lastSegTs = nowMs;
+  try {
+    const result = segmenter.segmentForVideo(camVideo, nowMs);
+    const cm = result && result.confidenceMasks && result.confidenceMasks[0];
+    if (cm) {
+      const w = cm.width, h = cm.height;
+      // MPMask only guarantees getAsUint8Array / getAsFloat32Array — there
+      // is no getAsCanvas. Prefer Uint8 (smaller / faster on iOS Safari).
+      const single = cm.getAsUint8Array(); // length = w * h, values 0..255
+      const need = w * h * 4;
+      if (!maskRgbaBuf || maskRgbaBuf.length !== need) {
+        maskRgbaBuf = new Uint8Array(need);
+      }
+      for (let i = 0, j = 0; i < single.length; i++, j += 4) {
+        const v = single[i];
+        maskRgbaBuf[j] = v;
+        maskRgbaBuf[j + 1] = v;
+        maskRgbaBuf[j + 2] = v;
+        maskRgbaBuf[j + 3] = 255;
+      }
+      if (maskW !== w || maskH !== h) {
+        // Texture size changed — recreate (DataTexture can't be resized
+        // in place).
+        if (maskTexture) maskTexture.dispose();
+        maskTexture = new THREE.DataTexture(
+          maskRgbaBuf, w, h, THREE.RGBAFormat, THREE.UnsignedByteType
+        );
+        maskTexture.minFilter = THREE.LinearFilter;
+        maskTexture.magFilter = THREE.LinearFilter;
+        maskTexture.generateMipmaps = false;
+        if (occluder) {
+          occluder.material.uniforms.uMask.value = maskTexture;
+          occluder.material.uniforms.uMaskTexel.value.set(1 / w, 1 / h);
+        }
+        maskW = w; maskH = h;
+      } else {
+        maskTexture.image.data = maskRgbaBuf;
+      }
+      maskTexture.needsUpdate = true;
+    }
+    if (result && result.confidenceMasks) {
+      result.confidenceMasks.forEach((m) => { try { m.close(); } catch (_) {} });
+    }
+  } catch (e) {
+    // Keep noisy errors out of the hot loop, but surface the first one
+    // so debugging is possible in DevTools.
+    if (!updateMask._loggedErr) { console.warn('[occlusion] frame failed:', e); updateMask._loggedErr = true; }
+  }
+}
+
+function teardownOcclusion() {
+  if (occluder) {
+    scene.remove(occluder);
+    occluder.geometry.dispose();
+    occluder.material.dispose();
+    occluder = null;
+  }
+  if (maskTexture) { maskTexture.dispose(); maskTexture = null; }
+  maskRgbaBuf = null;
+  maskW = 0; maskH = 0;
+  if (segmenter) { try { segmenter.close(); } catch (_) {} segmenter = null; }
+  segmenterReady = false;
+  lastSegTs = 0;
+}
+
+async function startInlineAR() {
+  camStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'environment' } }, audio: false
+  });
+  camVideo.srcObject = camStream;
+  camVideo.classList.add('visible');
+  await camVideo.play().catch(() => {});
+
+  buildScene();
+  reticle.matrixAutoUpdate = true;
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // Linear tone mapping with a light exposure bump preserves the rich
+  // colours of the GLB textures. ACES was washing them out.
+  renderer.toneMapping = THREE.LinearToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.setClearColor(0x000000, 0);
+  document.body.appendChild(renderer.domElement);
+  installEnvMap();
+
+  overlay.classList.add('visible');
+  setInstructions('正在載入模型…');
+
+  await loadModel();
+  setInstructions('將手機對準地板 — 預覽出現後點擊確認放置');
+
+  // Person occlusion: fire-and-forget; AR works without it but the model
+  // will keep painting over people if MediaPipe never loads.
+  ensureOccluder();
+  initSegmenter();
+
+  enableDeviceOrientation();
+  installGestures();
+
+  window.addEventListener('resize', onResize);
+
+  const tick = () => {
+    inlineRAF = requestAnimationFrame(tick);
+    updateReticle();
+    previewAtReticle();
+    if (segmenterReady === true) {
+      updateMask(performance.now());
+      updateOccluderUv();
+    }
+    if (videoTexture && !video.paused && video.readyState >= 2) videoTexture.needsUpdate = true;
+    renderer.render(scene, camera);
+  };
+  tick();
+}
+
+function pickFloorTarget() {
+  const camPos = new THREE.Vector3();
+  camera.getWorldPosition(camPos);
+  const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+
+  if (camDir.y < -0.05) {
+    const t = (FLOOR_Y - camPos.y) / camDir.y;
+    if (t > 0.3 && t < 8) {
+      return { ok: true, point: new THREE.Vector3(camPos.x + camDir.x * t, FLOOR_Y, camPos.z + camDir.z * t) };
+    }
+  }
+  const flat = new THREE.Vector3(camDir.x, 0, camDir.z);
+  if (flat.lengthSq() < 1e-4) flat.set(0, 0, -1); else flat.normalize();
+  return {
+    ok: false,
+    point: new THREE.Vector3(camPos.x + flat.x * 2.0, FLOOR_Y, camPos.z + flat.z * 2.0)
+  };
+}
+
+function updateReticle() {
+  const { ok, point } = pickFloorTarget();
+  if (ok) {
+    reticle.position.copy(point);
+    reticle.visible = true;
+    if (!modelPlaced && instructions.textContent.startsWith('將手機對準')) {
+      setInstructions('點擊確認放置 • 拖曳旋轉 • 雙指縮放');
+    }
+  } else {
+    reticle.visible = false;
+  }
+}
+
+function enableDeviceOrientation() {
+  const euler = new THREE.Euler();
+  const q = new THREE.Quaternion();
+  const deg2rad = Math.PI / 180;
+  const screenAlign = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+
+  orientationHandler = (event) => {
+    const alpha = (event.alpha || 0) * deg2rad;
+    const beta  = (event.beta  || 0) * deg2rad;
+    const gamma = (event.gamma || 0) * deg2rad;
+    const screenAngle = ((screen.orientation && screen.orientation.angle) || 0) * deg2rad;
+
+    euler.set(beta, alpha, -gamma, 'YXZ');
+    q.setFromEuler(euler);
+    q.multiply(screenAlign);
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -screenAngle));
+    camera.quaternion.copy(q);
+  };
+  window.addEventListener('deviceorientation', orientationHandler);
+}
+
+function installGestures() {
+  const canvas = renderer.domElement;
+  let pStart = null;
+  let pMoved = false;
+  let initialRotY = 0;
+  let pinchStartDist = null;
+  let pinchStartScale = 1;
+
+  function dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      pinchStartDist = dist(e.touches[0], e.touches[1]);
+      pinchStartScale = model ? model.scale.x : 1;
+      pStart = null;
+    } else if (e.touches.length === 1) {
+      pStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: performance.now() };
+      pMoved = false;
+      if (model) initialRotY = model.rotation.y;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchStartDist !== null && model && modelPlaced) {
+      e.preventDefault();
+      const d = dist(e.touches[0], e.touches[1]);
+      const s = pinchStartScale * (d / pinchStartDist);
+      model.scale.setScalar(THREE.MathUtils.clamp(s, 0.05, 10));
+      return;
+    }
+    if (e.touches.length === 1 && pStart) {
+      const dx = e.touches[0].clientX - pStart.x;
+      const dy = e.touches[0].clientY - pStart.y;
+      if (!pMoved && Math.hypot(dx, dy) > 8) pMoved = true;
+      if (pMoved && model && modelPlaced) {
+        e.preventDefault();
+        model.rotation.y = initialRotY + dx * 0.012;
+      }
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    if (pinchStartDist !== null && e.touches.length < 2) pinchStartDist = null;
+    if (pStart && !pMoved && performance.now() - pStart.time < 500) tryPlace();
+    pStart = null;
+  });
+
+  canvas.addEventListener('click', () => { if (!pStart) tryPlace(); });
+}
+
+function tryPlace() {
+  if (!model) return;
+  if (!modelPlaced) {
+    if (!reticle.visible) return; // require a valid floor target before committing
+    commitPlacement();
+  } else {
+    const { point } = pickFloorTarget();
+    placeModelAt(point);
+  }
+}
+
+function teardownInline() {
+  cancelAnimationFrame(inlineRAF);
+  if (orientationHandler) window.removeEventListener('deviceorientation', orientationHandler);
+  orientationHandler = null;
+  if (camStream) { camStream.getTracks().forEach((t) => t.stop()); camStream = null; }
+  camVideo.srcObject = null;
+  camVideo.classList.remove('visible');
+  overlay.classList.remove('visible');
+  captureBtn.classList.remove('visible');
+  replaceBtn.classList.remove('visible');
+  teardownOcclusion();
+  if (renderer) {
+    renderer.domElement.remove();
+    renderer.dispose();
+    renderer = null;
+  }
+  modelPlaced = false;
+  if (model) { model.visible = false; applyGhostMode(); }
+}
+
+function onResize() {
+  if (!renderer || !camera) return;
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  updateOccluderUv();
+}
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>一土製陶所・指尖拉坯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --bg:#211915; --bg2:#2e231d; --clay:#b66a45; --clay-d:#7e4527;
+    --cream:#f3e7d6; --ink:#3a2a1f; --gold:#d9a441;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Serif TC",serif;color:var(--cream);
+    background:radial-gradient(120% 90% at 50% 0%,#3a2c23 0%,var(--bg) 60%,#160f0c 100%);
+    overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center}
+
+  header{padding:14px 16px 4px;text-align:center;z-index:5}
+  .brand{font-size:12px;letter-spacing:.5em;color:var(--gold);opacity:.9;padding-left:.5em}
+  h1{font-weight:900;font-size:clamp(20px,6.2vw,30px);margin-top:4px;line-height:1.15}
+  .sub{font-size:12px;opacity:.7;margin-top:4px}
+
+  #stageWrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative}
+  canvas{display:block;touch-action:none}
+  #hint{
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    font-size:12.5px;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:20px;
+    border:1px solid rgba(217,164,65,.35);white-space:nowrap;transition:opacity .4s;
+  }
+
+  .panel{width:100%;max-width:520px;padding:6px 18px calc(16px + env(safe-area-inset-bottom));z-index:5}
+
+  .glazes{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
+  .glaze{
+    width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+    cursor:pointer;transition:transform .15s,border-color .15s;position:relative;
+  }
+  .glaze.sel{border-color:var(--gold);transform:scale(1.12)}
+  .glaze span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;opacity:.7;white-space:nowrap}
+
+  .row{display:flex;gap:10px}
+  button{
+    font-family:inherit;font-weight:600;font-size:15px;border:none;border-radius:14px;
+    padding:14px 18px;cursor:pointer;flex:1;transition:transform .1s,filter .15s;
+  }
+  button:active{transform:scale(.97)}
+  .ghost{background:rgba(255,255,255,.08);color:var(--cream);border:1px solid rgba(255,255,255,.18)}
+  .primary{background:linear-gradient(135deg,#e8b24f,#c97a2c);color:#231406}
+
+  /* result overlay */
+  #result{
+    position:fixed;inset:0;background:rgba(15,10,8,.82);backdrop-filter:blur(6px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    z-index:20;padding:24px;text-align:center;animation:fade .4s;
+  }
+  #result.show{display:flex}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  #result h2{font-size:26px;font-weight:900;color:var(--gold)}
+  .potName{font-size:34px;font-weight:900;margin:6px 0 2px}
+  .scoreLine{font-size:14px;opacity:.85;margin-bottom:6px}
+  .desc{font-size:13.5px;line-height:1.7;opacity:.85;max-width:320px;margin:8px 0 22px}
+  .stars{font-size:22px;letter-spacing:4px;color:var(--gold);margin:4px 0}
+  #resultCanvasWrap{margin:8px 0}
+  .cta{background:linear-gradient(135deg,#e8b24f,#c97a2c);color:#231406;font-size:17px;padding:16px 30px;border-radius:16px;width:100%;max-width:300px}
+  .again{background:none;color:var(--cream);opacity:.7;font-size:13px;margin-top:14px;padding:8px}
+  .badge{display:inline-block;font-size:11px;letter-spacing:.3em;color:var(--gold);border:1px solid rgba(217,164,65,.4);padding:4px 12px;border-radius:20px;margin-bottom:10px;padding-left:.3em}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">一 土 製 陶 所</div>
+    <h1>指尖拉坯・捏一只屬於你的器</h1>
+    <div class="sub">在轉動的陶土上左右拖曳，塑出你的形狀</div>
+  </header>
+
+  <div id="stageWrap">
+    <canvas id="c"></canvas>
+    <div id="hint">↔ 上下不同高度左右拖曳，向外拉寬、向內收窄</div>
+  </div>
+
+  <div class="panel">
+    <div class="glazes" id="glazes"></div>
+    <div class="row">
+      <button class="ghost" id="resetBtn">重新一塊土</button>
+      <button class="primary" id="fireBtn">入窯燒製 →</button>
+    </div>
+  </div>
+</div>
+
+<div id="result">
+  <div class="badge">作 品 完 成</div>
+  <h2 id="rTitle">出窯了！</h2>
+  <div class="potName" id="rName">—</div>
+  <div class="stars" id="rStars">★★★☆☆</div>
+  <div class="scoreLine" id="rScore"></div>
+  <div id="resultCanvasWrap"><canvas id="rc"></canvas></div>
+  <div class="desc" id="rDesc"></div>
+  <button class="cta" id="ctaBtn">預約手拉坯體驗課 ➜</button>
+  <button class="again" id="againBtn">再捏一只</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  // ---- 防止雙擊放大 ----
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+  let _lt=0;
+  document.addEventListener('touchend',e=>{const n=Date.now();if(n-_lt<320){e.preventDefault();}_lt=n;},{passive:false});
+  document.addEventListener('gesturestart',e=>e.preventDefault());
+
+  const canvas=document.getElementById('c');
+  const ctx=canvas.getContext('2d');
+  const hint=document.getElementById('hint');
+
+  // 視圖尺寸
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2.5);
+  // 陶土輪廓:沿高度的半徑陣列(profile of revolution)
+  const N=64;                      // 取樣段數
+  let r=new Float32Array(N);       // 目前半徑
+  let target=new Float32Array(N);  // 目標半徑
+  let topY,botY,axisX,baseR,maxR;  // 幾何
+  let spin=0;                      // 旋轉相位
+  let lastDragIdx=-1, lastDragR=0; // 偵測抖動
+  let wobble=0;                    // 失手抖動量
+  let glaze=0;
+
+  const GLAZES=[
+    {name:'天目黑',top:'#6b5340',mid:'#2c211b',low:'#120c09',rim:'#9c7e5e'},
+    {name:'青瓷',  top:'#cfe6dd',mid:'#7fae9f',low:'#3c5f55',rim:'#e6f3ee'},
+    {name:'柿紅',  top:'#f0a35e',mid:'#c25a25',low:'#6e2c12',rim:'#ffd29a'},
+    {name:'霽藍',  top:'#acc6ec',mid:'#3f6bb3',low:'#1c2f5c',rim:'#d6e6ff'},
+  ];
+
+  function layout(){
+    const wrap=document.getElementById('stageWrap');
+    W=wrap.clientWidth; H=wrap.clientHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    axisX=W/2;
+    const m=Math.min(H*0.10,60);
+    topY=m; botY=H-m;
+    maxR=Math.min(W*0.42, (botY-topY)*0.42);
+    baseR=maxR*0.34;
+  }
+
+  function initClay(){
+    layout();
+    // 初始為一塊圓柱土胚,略帶錐度
+    for(let i=0;i<N;i++){
+      const t=i/(N-1);
+      const base=baseR*(1.05-0.12*t);
+      r[i]=base; target[i]=base;
+    }
+    wobble=0; spin=0;
+  }
+
+  function rowToY(i){ return topY + (botY-topY)*(i/(N-1)); }
+  function yToRow(y){ return Math.round((y-topY)/(botY-topY)*(N-1)); }
+
+  // ---- 互動:拖曳塑形 ----
+  let dragging=false;
+  function pointer(ev){
+    const rect=canvas.getBoundingClientRect();
+    const p=ev.touches?ev.touches[0]:ev;
+    return {x:p.clientX-rect.left, y:p.clientY-rect.top};
+  }
+  function shape(x,y){
+    const idx=yToRow(y);
+    if(idx<0||idx>=N) return;
+    // 與中軸的水平距離 = 想要的牆面半徑
+    let want=Math.abs(x-axisX);
+    want=Math.max(baseR*0.12, Math.min(maxR, want));
+    // 高斯擴散到鄰近段,塑形手感
+    const spread=5;
+    for(let k=-spread;k<=spread;k++){
+      const j=idx+k; if(j<0||j>=N) continue;
+      const w=Math.exp(-(k*k)/(2*2.0*2.0));
+      target[j]=target[j]*(1-w*0.55)+want*(w*0.55);
+    }
+    // 偵測急拉造成「失手」抖動
+    if(lastDragIdx>=0){
+      const d=Math.abs(want-lastDragR);
+      if(d>maxR*0.22) wobble=Math.min(1,wobble+0.35);
+    }
+    lastDragIdx=idx; lastDragR=want;
+    hideHint();
+  }
+  let hintHidden=false;
+  function hideHint(){ if(!hintHidden){hintHidden=true;hint.style.opacity='0';} }
+
+  function down(ev){dragging=true;lastDragIdx=-1;shape(...Object.values(pointer(ev)));ev.preventDefault();}
+  function move(ev){if(dragging){shape(...Object.values(pointer(ev)));}ev.preventDefault();}
+  function up(){dragging=false;lastDragIdx=-1;}
+
+  canvas.addEventListener('mousedown',down);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',up);
+  canvas.addEventListener('touchstart',down,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('touchend',up);
+
+  // ---- 算分(對稱平滑度 + 高度造型) ----
+  function evaluate(){
+    let smooth=0;
+    for(let i=1;i<N;i++) smooth+=Math.abs(r[i]-r[i-1]);
+    smooth/=(N-1);
+    const smoothScore=Math.max(0,1-smooth/(maxR*0.085)); // 牆越順越高分
+    // 造型變化(太單調或太狂都扣)
+    let mn=1e9,mx=-1e9;
+    for(let i=0;i<N;i++){mn=Math.min(mn,r[i]);mx=Math.max(mx,r[i]);}
+    const range=(mx-mn)/maxR;
+    const formScore=Math.max(0,1-Math.abs(range-0.45)/0.55);
+    const wob=Math.max(0,1-wobble);
+    const total=smoothScore*0.5+formScore*0.3+wob*0.2;
+    return {total, smoothScore, formScore, wob, range};
+  }
+
+  function potNameByForm(ev){
+    // 依造型挑名稱
+    const mid=r[Math.floor(N*0.5)], top=r[Math.floor(N*0.12)], bot=r[Math.floor(N*0.9)];
+    const neck = top < mid*0.7;
+    const belly = mid > top*1.25 && mid>bot*1.05;
+    const tall = (botY-topY) > 0; // always
+    let name,desc;
+    if(neck && belly){name='梅瓶';desc='小口、豐肩、收腰——古來插一枝梅的雅器。你的手很懂留白。';}
+    else if(belly){name='鼓腹罐';desc='飽滿的腹身能裝下整個秋天的米與光。憨厚而誠實的好器。';}
+    else if(neck){name='細頸瓶';desc='收斂的瓶口，像一句說到一半的話，餘韻最迷人。';}
+    else if(ev.range<0.18){name='直身杯';desc='不多話的直筒，最適合裝一口熱茶與安靜。';}
+    else {name='侈口缽';desc='開闊的口沿迎著光，盛湯盛果都大方。';}
+    return {name,desc};
+  }
+
+  // ---- 著色繪製(2D 旋轉體) ----
+  function drawPot(g,cw,ch,ax,ty,by,arr,gz,phase,wob){
+    g.clearRect(0,0,cw,ch);
+    // 轉盤
+    g.save();
+    g.translate(ax,by+8);
+    const wr=Math.min(cw*0.46, (arr.reduce((a,b)=>Math.max(a,b),0))*1.7+18);
+    let wg=g.createLinearGradient(0,-6,0,14);
+    wg.addColorStop(0,'#5b4636');wg.addColorStop(1,'#2a201a');
+    g.fillStyle=wg;
+    g.beginPath();g.ellipse(0,6,wr,12,0,0,Math.PI*2);g.fill();
+    g.fillStyle='rgba(0,0,0,.25)';
+    g.beginPath();g.ellipse(0,10,wr*0.96,9,0,0,Math.PI*2);g.fill();
+    g.restore();
+
+    const segH=(by-ty)/(arr.length-1);
+    const wb=wob*Math.sin(phase*1.3)*6*wob;
+
+    // 主體填色:逐段水平條 + 直向漸層做出立體
+    const gz0=GLAZES[gz];
+    for(let i=0;i<arr.length-1;i++){
+      const y0=ty+segH*i, y1=ty+segH*(i+1);
+      const off=wb*(i/arr.length);              // 抖動位移
+      const r0=arr[i], r1=arr[i+1];
+      const x0=ax+off;
+      // 直向釉色漸層
+      const t=i/(arr.length-1);
+      const col = mix3(gz0,t);
+      g.beginPath();
+      g.moveTo(x0-r0,y0);
+      g.lineTo(x0+r0,y0);
+      g.lineTo(x0+r1,y1);
+      g.lineTo(x0-r1,y1);
+      g.closePath();
+      // 橫向打光:左右兩側暗、中間亮(模擬圓柱)
+      const lg=g.createLinearGradient(x0-r0,0,x0+r0,0);
+      lg.addColorStop(0,shade(col,-0.45));
+      lg.addColorStop(0.32,shade(col,0.12));
+      lg.addColorStop(0.5,shade(col,0.30));
+      lg.addColorStop(0.68,shade(col,0.05));
+      lg.addColorStop(1,shade(col,-0.5));
+      g.fillStyle=lg;
+      g.fill();
+    }
+
+    // 拉坯旋轉紋(隨 phase 流動的水平亮線)
+    g.save();
+    g.globalAlpha=0.16;
+    for(let i=2;i<arr.length-1;i+=3){
+      const y=ty+segH*i + (Math.sin(i*0.9+phase)*0.6);
+      const off=wb*(i/arr.length);
+      const rr=arr[i];
+      g.strokeStyle = (Math.sin(i*1.7+phase*2)>0)?'#ffffff':'#000000';
+      g.lineWidth=1;
+      g.beginPath();g.moveTo(ax+off-rr*0.85,y);g.lineTo(ax+off+rr*0.85,y);g.stroke();
+    }
+    g.restore();
+
+    // 口沿橢圓(厚度感)
+    const topOff=wb*(0/arr.length);
+    const rt=arr[0];
+    g.fillStyle=shade(hex(gz0.rim),0);
+    g.beginPath();g.ellipse(ax+topOff,ty,rt,rt*0.26,0,0,Math.PI*2);g.fill();
+    g.fillStyle=shade(mix3(gz0,0),-0.35);
+    g.beginPath();g.ellipse(ax+topOff,ty,rt*0.72,rt*0.19,0,0,Math.PI*2);g.fill();
+
+    // 高光弧
+    g.save();g.globalAlpha=0.22;
+    g.strokeStyle='#fff';g.lineWidth=Math.max(3,rt*0.16);g.lineCap='round';
+    g.beginPath();
+    for(let i=0;i<arr.length;i++){
+      const y=ty+segH*i, off=wb*(i/arr.length);
+      const x=ax+off-arr[i]*0.45;
+      i===0?g.moveTo(x,y):g.lineTo(x,y);
+    }
+    g.stroke();g.restore();
+  }
+
+  // 顏色工具
+  function hex(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+  function mix3(gz,t){
+    const a=hex(gz.top),b=hex(gz.mid),c=hex(gz.low);
+    let p,q,f;
+    if(t<0.5){p=a;q=b;f=t/0.5;}else{p=b;q=c;f=(t-0.5)/0.5;}
+    return [p[0]+(q[0]-p[0])*f,p[1]+(q[1]-p[1])*f,p[2]+(q[2]-p[2])*f];
+  }
+  function shade(rgb,amt){
+    let [R,G,B]=rgb;
+    if(amt>=0){R+=(255-R)*amt;G+=(255-G)*amt;B+=(255-B)*amt;}
+    else{R*=(1+amt);G*=(1+amt);B*=(1+amt);}
+    return 'rgb('+(R|0)+','+(G|0)+','+(B|0)+')';
+  }
+
+  // ---- 主迴圈 ----
+  function tick(){
+    spin+=0.12;
+    wobble*=0.96;
+    // 半徑平滑趨近目標 + 旋轉自動微整(離心讓牆面更勻)
+    for(let i=0;i<N;i++){
+      r[i]+=(target[i]-r[i])*0.18;
+    }
+    drawPot(ctx,W,H,axisX,topY,botY,r,glaze,spin,wobble);
+    requestAnimationFrame(tick);
+  }
+
+  // ---- 釉色選單 ----
+  const gw=document.getElementById('glazes');
+  GLAZES.forEach((g,i)=>{
+    const d=document.createElement('div');
+    d.className='glaze'+(i===0?' sel':'');
+    d.style.background='linear-gradient(135deg,'+g.top+','+g.mid+' 55%,'+g.low+')';
+    d.innerHTML='<span>'+g.name+'</span>';
+    d.onclick=()=>{glaze=i;[...gw.children].forEach(c=>c.classList.remove('sel'));d.classList.add('sel');};
+    gw.appendChild(d);
+  });
+
+  // ---- 結果 ----
+  const result=document.getElementById('result');
+  function fire(){
+    const ev=evaluate();
+    const stars=Math.max(1,Math.min(5,Math.round(ev.total*5)));
+    document.getElementById('rStars').textContent='★★★★★☆☆☆☆☆'.slice(5-stars,10-stars);
+    const {name,desc}=potNameByForm(ev);
+    document.getElementById('rName').textContent=name+'・'+GLAZES[glaze].name;
+    document.getElementById('rDesc').textContent=desc;
+    document.getElementById('rScore').textContent='匠心指數 '+Math.round(ev.total*100)+'　·　窯變評等 '+['素樸','可喜','上品','逸品','神品'][stars-1];
+    // 繪製成品到結果 canvas
+    const rc=document.getElementById('rc');
+    const cw=Math.min(W*0.7,240), chh=Math.min(H*0.42,300);
+    rc.width=cw*DPR; rc.height=chh*DPR; rc.style.width=cw+'px';rc.style.height=chh+'px';
+    const rctx=rc.getContext('2d'); rctx.setTransform(DPR,0,0,DPR,0,0);
+    // 縮放輪廓到結果框
+    const sc=Math.min(1,(cw*0.4)/maxR);
+    const sArr=Array.from(r,v=>v*sc);
+    drawPot(rctx,cw,chh,cw/2,chh*0.08,chh*0.86,sArr,glaze,1.2,0);
+    result.classList.add('show');
+    try{
+      confetti({particleCount:90,spread:70,origin:{y:0.4},colors:['#d9a441','#c97a2c','#f3e7d6']});
+    }catch(e){}
+  }
+  document.getElementById('fireBtn').onclick=fire;
+  document.getElementById('resetBtn').onclick=initClay;
+  document.getElementById('againBtn').onclick=()=>{result.classList.remove('show');initClay();};
+  document.getElementById('ctaBtn').onclick=()=>{
+    document.getElementById('rTitle').textContent='已為你保留窯位 🎉';
+    alert('一土製陶所｜手拉坯體驗課\n本週末・大稻埕工作室\n憑此頁折抵 NT$200，名額有限！');
+  };
+
+  window.addEventListener('resize',()=>{const ot=Array.from(target);initClay();});
+
+  initClay();
+  tick();
+})();
+</script>
+</body>
+</html>

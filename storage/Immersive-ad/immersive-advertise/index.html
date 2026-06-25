@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>今天，要帶什麼去約會？ — 沉浸式互動遊戲</title>
+<style>
+  :root {
+    --gold: #e9c46a;
+    --rose: #e76f8e;
+    --paper: #f5efe6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: #0c0810;
+    color: var(--paper);
+    overflow: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(231,111,142,0.18), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(233,196,106,0.15), transparent 45%),
+      linear-gradient(160deg, #140d1c 0%, #0c0810 60%, #1a0f17 100%);
+  }
+
+  /* 漂浮愛心粒子 */
+  .particles { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  .heart { position: absolute; bottom: -40px; opacity: 0; animation: float linear infinite; }
+  @keyframes float {
+    0% { transform: translateY(0) scale(0.6) rotate(0deg); opacity: 0; }
+    10%, 90% { opacity: 0.7; }
+    100% { transform: translateY(-110vh) scale(1.1) rotate(40deg); opacity: 0; }
+  }
+
+  .stage { position: relative; height: 100%; }
+
+  .screen { position: absolute; inset: 0; display: none; }
+  .screen.active { display: block; animation: fade 0.7s ease both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 影片鋪滿背景 */
+  .scene-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    background: #000;
+    z-index: 0;
+  }
+  .shade {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(to bottom, rgba(8,5,12,0.55) 0%, rgba(8,5,12,0.25) 35%, rgba(8,5,12,0.7) 100%);
+    transition: background 0.6s;
+  }
+
+  .overlay {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5.5vw, 50px);
+    letter-spacing: 4px; line-height: 1.3; margin-bottom: 16px;
+    background: linear-gradient(90deg, var(--gold), var(--rose));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 2px 30px rgba(0,0,0,0.4);
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 2.4vw, 18px);
+    color: #efe7da; line-height: 1.9; margin-bottom: 26px;
+    max-width: 620px; text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  }
+
+  .btn {
+    display: inline-block; cursor: pointer; border: none;
+    padding: 14px 34px; font-size: 17px; letter-spacing: 2px;
+    border-radius: 999px; color: #2a1a0f; font-weight: 700;
+    background: linear-gradient(90deg, var(--gold), #f0d68a);
+    box-shadow: 0 8px 24px rgba(233,196,106,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 30px rgba(233,196,106,0.55); }
+  .btn:active { transform: translateY(0) scale(0.99); }
+  .btn.ghost {
+    background: transparent; color: var(--gold); font-weight: 600;
+    box-shadow: inset 0 0 0 1.5px rgba(233,196,106,0.6);
+  }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1.5px var(--gold); }
+  .btn.small { padding: 10px 22px; font-size: 14px; }
+
+  /* 開場播放時的「出門」提示鈕，固定在下方 */
+  .skip-bar {
+    position: absolute; left: 0; right: 0; bottom: 32px; z-index: 3;
+    display: flex; justify-content: center; gap: 12px;
+  }
+
+  /* ====== 選擇東西：直接點擊定格畫面上的物品 ====== */
+  /* 預設 intro 狀態：隱藏物品層 */
+  #scene .choose-layer { display: none; }
+  #scene.choosing .intro-layer { display: none; }
+  #scene.choosing .skip-bar { display: none; }
+  /* 物品層改為鋪滿整個畫面、絕對定位散佈物品 */
+  #scene.choosing .choose-layer {
+    display: block; padding: 0;
+    align-items: stretch; justify-content: flex-start;
+  }
+  #scene.choosing .shade {
+    background: linear-gradient(to bottom, rgba(8,5,12,0.55), rgba(8,5,12,0.45));
+  }
+
+  /* 畫面上方的提示文字 */
+  .choose-hint {
+    position: absolute; top: 6%; left: 50%; transform: translateX(-50%);
+    text-align: center; width: 90%; max-width: 620px; z-index: 4;
+    pointer-events: none;
+  }
+  .choose-hint h1 { font-size: clamp(22px, 4vw, 38px); margin-bottom: 10px; }
+  .choose-hint p { font-size: clamp(13px, 2vw, 16px); color: #efe7da; text-shadow: 0 2px 12px rgba(0,0,0,0.85); }
+
+  /* 可點擊的物品熱區 */
+  .item {
+    position: absolute; z-index: 4; cursor: pointer;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .item-icon {
+    font-size: clamp(46px, 7vw, 76px); line-height: 1;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
+    transition: transform 0.25s ease, filter 0.25s ease;
+    animation: bob 3.4s ease-in-out infinite;
+  }
+  /* 發光的點擊提示光環 */
+  .item-icon::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 116%; height: 116%; transform: translate(-50%, -50%);
+    border-radius: 50%; z-index: -1;
+    background: radial-gradient(circle, rgba(233,196,106,0.45), transparent 70%);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .item:hover .item-icon {
+    transform: scale(1.18) translateY(-4px);
+    filter: drop-shadow(0 10px 22px rgba(231,111,142,0.75));
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(0.9); }
+    50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  /* hover 浮出的物品介紹氣泡 */
+  .item-tip {
+    position: absolute; bottom: calc(100% + 14px); left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: max-content; max-width: 240px; text-align: center;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(20,13,28,0.92);
+    border: 1px solid rgba(233,196,106,0.45);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+  .item:hover .item-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* 氣泡下方的小三角 */
+  .item-tip::after {
+    content: ""; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent; border-top-color: rgba(20,13,28,0.92);
+  }
+  .item-tip .name { display: block; font-size: 17px; font-weight: 700; color: var(--gold); letter-spacing: 2px; margin-bottom: 5px; }
+  .item-tip .hint { display: block; font-size: 12.5px; color: #d8cfc2; line-height: 1.6; }
+
+  /* ====== 結局頁 ====== */
+  .ending-wrap {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 20px; overflow-y: auto;
+  }
+  .ending-tag {
+    display: inline-block; font-size: 12px; letter-spacing: 3px;
+    padding: 6px 16px; border-radius: 999px; margin-bottom: 12px;
+    background: rgba(231,111,142,0.18); color: var(--rose);
+  }
+  .ending-wrap .subtitle { margin-bottom: 18px; }
+  .video-frame {
+    width: 100%; max-width: 760px; aspect-ratio: 16 / 9;
+    border-radius: 16px; overflow: hidden; margin: 0 auto 22px; background: #000;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(233,196,106,0.25);
+  }
+  .video-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  .progress-hint { margin-top: 18px; font-size: 12px; color: #cbbfd0; letter-spacing: 1px; text-shadow: 0 1px 8px rgba(0,0,0,0.8); }
+</style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <div class="stage">
+
+    <!-- ===== 場景：開場 + 選擇（共用同一支定格影片） ===== -->
+    <section class="screen active" id="scene">
+      <video class="scene-video" id="introVideo" muted playsinline preload="auto"
+             src="https://videos.pexels.com/video-files/7390076/7390076-hd_1920_1080_25fps.mp4"></video>
+      <div class="shade"></div>
+
+      <!-- 開場文字 -->
+      <div class="overlay intro-layer">
+        <h1>今天，要帶什麼去約會？</h1>
+        <p class="subtitle">
+          鏡子前，你深吸一口氣。<br/>
+          今天是你期待已久的約會日。<br/>
+          出門前，你只能再挑一樣東西帶上——<br/>
+          而這個小小的選擇，將悄悄改寫今天的故事。
+        </p>
+        <button class="btn" id="startBtn">開始這場約會 ❤</button>
+      </div>
+
+      <!-- 播放中的略過鈕 -->
+      <div class="skip-bar" id="skipBar" style="display:none;">
+        <button class="btn small" id="chooseNowBtn">我選好了，出門 →</button>
+      </div>
+
+      <!-- 選擇東西：直接點擊定格畫面上的物品 -->
+      <div class="overlay choose-layer">
+        <div class="choose-hint">
+          <h1>出門前的最後一步</h1>
+          <p>把滑鼠移到畫面上的物品看看它的故事，點一下就帶它出門。</p>
+        </div>
+
+        <!-- 物品：手錶（左下） -->
+        <div class="item" data-go="ending-watch" style="left:24%; top:68%;">
+          <span class="item-icon">⌚</span>
+          <span class="item-tip">
+            <span class="name">手錶</span>
+            <span class="hint">守時的人，總把對方放在心上。</span>
+          </span>
+        </div>
+
+        <!-- 物品：眼鏡（中間） -->
+        <div class="item" data-go="ending-glasses" style="left:50%; top:55%;">
+          <span class="item-icon">👓</span>
+          <span class="item-tip">
+            <span class="name">眼鏡</span>
+            <span class="hint">看清每個細節，也看清自己的心意。</span>
+          </span>
+        </div>
+
+        <!-- 物品：帽子（右下） -->
+        <div class="item" data-go="ending-hat" style="left:76%; top:70%;">
+          <span class="item-icon">🎩</span>
+          <span class="item-tip">
+            <span class="name">帽子</span>
+            <span class="hint">帶點玩心與神秘，今天想當個有故事的人。</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 結局：手錶 ===== -->
+    <section class="screen" id="ending-watch">
+      <div class="shade"></div>
+      <div class="ending-wrap">
+        <span class="ending-tag">結局 A · 準時的浪漫</span>
+        <h1>剛剛好的時間</h1>
+        <p class="subtitle">
+          你戴上手錶，提早十分鐘抵達。當對方轉過街角，看見早已等候的你，笑了。<br/>
+          「你總是這麼準時。」——這一天，從一個被珍惜的瞬間開始。
+        </p>
+        <div class="video-frame">
+          <video controls muted playsinline preload="none"
+                 src="https://videos.pexels.com/video-files/28952501/12526885_1440_2560_30fps.mp4"></video>
+        </div>
+        <div class="actions">
+          <button class="btn" data-go="scene-choose">換個選擇再試一次</button>
+          <button class="btn ghost" data-go="scene-intro">回到開頭</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 結局：眼鏡 ===== -->
+    <section class="screen" id="ending-glasses">
+      <div class="shade"></div>
+      <div class="ending-wrap">
+        <span class="ending-tag">結局 B · 看清楚的心動</span>
+        <h1>原來你一直都在</h1>
+        <p class="subtitle">
+          你戴上眼鏡，世界忽然清晰。你看清了對方眼裡的緊張，也看清了那杯為你準備的咖啡——<br/>
+          這份喜歡，藏不住了。
+        </p>
+        <div class="video-frame">
+          <video controls muted playsinline preload="none"
+                 src="https://videos.pexels.com/video-files/28964045/12530104_1440_2560_30fps.mp4"></video>
+        </div>
+        <div class="actions">
+          <button class="btn" data-go="scene-choose">換個選擇再試一次</button>
+          <button class="btn ghost" data-go="scene-intro">回到開頭</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 結局：帽子 ===== -->
+    <section class="screen" id="ending-hat">
+      <div class="shade"></div>
+      <div class="ending-wrap">
+        <span class="ending-tag">結局 C · 有故事的人</span>
+        <h1>一場意外的浪漫</h1>
+        <p class="subtitle">
+          你戴上帽子，多了幾分神秘。傍晚的風把帽子吹起，你們笑著追過整條街，<br/>
+          在夕陽下氣喘吁吁地對望——最好的約會，是計畫之外的那些瞬間。
+        </p>
+        <div class="video-frame">
+          <video controls muted playsinline preload="none"
+                 src="https://videos.pexels.com/video-files/18294808/18294808-hd_1080_1920_30fps.mp4"></video>
+        </div>
+        <div class="actions">
+          <button class="btn" data-go="scene-choose">換個選擇再試一次</button>
+          <button class="btn ghost" data-go="scene-intro">回到開頭</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+  var scene = document.getElementById('scene');
+  var introVideo = document.getElementById('introVideo');
+  var skipBar = document.getElementById('skipBar');
+
+  // 暫停所有結局影片
+  function pauseEndingVideos() {
+    document.querySelectorAll('.video-frame video').forEach(function (v) { v.pause(); });
+  }
+
+  // 顯示某個畫面
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+  }
+
+  // 開始：播放開場影片
+  document.getElementById('startBtn').addEventListener('click', function () {
+    introVideo.currentTime = 0;
+    var p = introVideo.play();
+    skipBar.style.display = 'flex';
+    // 隱藏開場文字（保留影片播放）
+    document.querySelector('.intro-layer').style.display = 'none';
+    if (p && p.catch) { p.catch(function () { freezeAndChoose(); }); }
+  });
+
+  // 影片播完 → 自動定格並進入選擇
+  introVideo.addEventListener('ended', freezeAndChoose);
+  // 略過鈕 → 立刻定格在當前畫面並選擇
+  document.getElementById('chooseNowBtn').addEventListener('click', freezeAndChoose);
+
+  // 定格（暫停影片，停在目前這一格）並顯示選項
+  function freezeAndChoose() {
+    introVideo.pause();              // 暫停 = 畫面定格在這一格
+    document.querySelector('.intro-layer').style.display = 'none';
+    scene.classList.add('choosing'); // 顯示浮在定格畫面上的卡片
+  }
+
+  // 所有 data-go 的點擊行為
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-go]');
+    if (!el) return;
+    var dest = el.getAttribute('data-go');
+
+    if (dest === 'scene-intro') {
+      // 回到開頭：重置
+      pauseEndingVideos();
+      scene.classList.remove('choosing');
+      skipBar.style.display = 'none';
+      document.querySelector('.intro-layer').style.display = 'flex';
+      introVideo.currentTime = 0;
+      showScreen('scene');
+      return;
+    }
+
+    if (dest === 'scene-choose') {
+      // 回到「定格選擇」狀態
+      pauseEndingVideos();
+      scene.classList.add('choosing');
+      showScreen('scene');
+      return;
+    }
+
+    if (dest.indexOf('ending-') === 0) {
+      // 進入結局並播放該結局影片
+      showScreen(dest);
+      var v = document.querySelector('#' + dest + ' video');
+      if (v) { v.currentTime = 0; var pp = v.play(); if (pp && pp.catch) pp.catch(function(){}); }
+      return;
+    }
+  });
+
+  // 漂浮愛心
+  (function () {
+    var box = document.getElementById('particles');
+    var emojis = ['❤', '💕', '✨', '🤍', '💛'];
+    for (var i = 0; i < 22; i++) {
+      var h = document.createElement('span');
+      h.className = 'heart';
+      h.textContent = emojis[i % emojis.length];
+      h.style.left = (Math.random() * 100) + 'vw';
+      h.style.fontSize = (12 + Math.random() * 18) + 'px';
+      h.style.animationDuration = (9 + Math.random() * 10) + 's';
+      h.style.animationDelay = (Math.random() * 12) + 's';
+      box.appendChild(h);
+    }
+  })();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

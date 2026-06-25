@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>福氣咖啡館 × 幸運拉霸</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: radial-gradient(ellipse at top, #3d1010 0%, #1a0505 60%, #0d0000 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      color: #fff;
+      overflow: hidden;
+      padding: 16px;
+      gap: 14px;
+    }
+
+    /* Floating sparkles */
+    .sparkle {
+      position: fixed;
+      font-size: 1.1rem;
+      pointer-events: none;
+      animation: floatUp 4s ease-in infinite;
+      opacity: 0;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 0; transform: translateY(0) rotate(0deg); }
+      20%  { opacity: 0.8; }
+      80%  { opacity: 0.3; }
+      100% { opacity: 0; transform: translateY(-130px) rotate(360deg); }
+    }
+
+    .brand-area { text-align: center; }
+    .brand-name {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #f5c842;
+      letter-spacing: 0.15em;
+      text-shadow: 0 0 24px rgba(245,200,66,0.6);
+    }
+    .brand-sub { font-size: 0.78rem; color: #cc9933; letter-spacing: 0.25em; margin-top: 3px; }
+
+    .machine {
+      background: linear-gradient(180deg, #6b0000 0%, #3d0000 70%, #2a0000 100%);
+      border-radius: 24px;
+      padding: 18px 20px 20px;
+      border: 3px solid #f5c842;
+      box-shadow:
+        0 0 0 1px rgba(245,200,66,0.15),
+        0 0 50px rgba(180,0,0,0.5),
+        inset 0 1px 0 rgba(255,200,100,0.15);
+      width: min(340px, 100%);
+    }
+
+    .machine-header {
+      background: linear-gradient(90deg, #f5c842, #ff9800, #f5c842);
+      border-radius: 10px;
+      text-align: center;
+      padding: 7px 0;
+      font-size: 1rem;
+      font-weight: 900;
+      color: #3d0000;
+      letter-spacing: 0.2em;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(245,200,66,0.35);
+    }
+
+    .reels-frame {
+      background: #060606;
+      border-radius: 12px;
+      border: 3px solid #8b6914;
+      box-shadow: inset 0 2px 14px rgba(0,0,0,0.9), 0 0 14px rgba(245,200,66,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 8px;
+      position: relative;
+    }
+    .reels-frame::after {
+      content: '';
+      position: absolute;
+      left: 8px; right: 8px;
+      top: 50%; transform: translateY(-50%);
+      height: 80px;
+      border-top: 2px solid rgba(245,200,66,0.4);
+      border-bottom: 2px solid rgba(245,200,66,0.4);
+      pointer-events: none;
+    }
+
+    .reel-wrap {
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #0e0e0e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .reel-sym {
+      font-size: 3.2rem;
+      line-height: 1;
+      user-select: none;
+      transition: transform 0.1s;
+    }
+    .reel-sym.blurred { filter: blur(3px); }
+    .reel-sym.win-glow { animation: winPulse 0.45s ease infinite alternate; }
+    @keyframes winPulse {
+      from { transform: scale(1);    filter: drop-shadow(0 0 6px gold); }
+      to   { transform: scale(1.18); filter: drop-shadow(0 0 18px gold); }
+    }
+
+    .reel-divider { width: 2px; height: 50px; background: linear-gradient(180deg, transparent, #5c3c00, transparent); border-radius: 2px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .stat-box {
+      flex: 1;
+      background: #0d0000;
+      border: 2px solid #5c3c00;
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .stat-label { font-size: 0.58rem; color: #888; letter-spacing: 0.08em; margin-bottom: 2px; }
+    .stat-value { font-size: 1.5rem; font-weight: 900; color: #f5c842; }
+
+    .spin-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff8c42, #c44200);
+      border: 3px solid #ff6b20;
+      box-shadow: 0 6px 0 #7a2400, 0 0 22px rgba(255,107,53,0.45), inset 0 1px 0 rgba(255,180,100,0.25);
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.05em;
+      transition: transform 0.08s, box-shadow 0.08s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      flex-shrink: 0;
+      touch-action: manipulation;
+    }
+    .spin-btn .spin-icon { font-size: 1.3rem; }
+    .spin-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #7a2400; }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .result-banner {
+      margin-top: 12px;
+      text-align: center;
+      min-height: 28px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #f5c842;
+      letter-spacing: 0.04em;
+    }
+
+    .prize-table {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+    .prize-row {
+      background: rgba(245,200,66,0.06);
+      border: 1px solid rgba(245,200,66,0.12);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.67rem;
+      color: #bb9;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cta-section { text-align: center; width: min(340px, 100%); }
+    .cta-btn {
+      width: 100%;
+      padding: 14px 0;
+      background: linear-gradient(90deg, #f5c842, #ff9800, #f5c842);
+      background-size: 200% 100%;
+      animation: shineBtn 2.8s ease infinite;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.02rem;
+      font-weight: 900;
+      color: #1a0000;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.1em;
+      box-shadow: 0 4px 20px rgba(245,200,66,0.35);
+      transition: transform 0.2s;
+      touch-action: manipulation;
+    }
+    @keyframes shineBtn {
+      0%   { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .cta-btn:hover { transform: scale(1.03); }
+    .cta-sub { font-size: 0.7rem; color: #777; margin-top: 6px; }
+
+    /* Win overlay */
+    .win-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .win-overlay.show { opacity: 1; pointer-events: auto; }
+    .win-card {
+      background: linear-gradient(135deg, #1a0505, #3d0000);
+      border: 3px solid #f5c842;
+      border-radius: 20px;
+      padding: 32px 36px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(245,200,66,0.35);
+      animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .win-emoji { font-size: 3rem; }
+    .win-title { font-size: 1.5rem; font-weight: 900; color: #f5c842; margin: 8px 0 4px; }
+    .win-desc  { font-size: 0.88rem; color: #ccc; margin-bottom: 20px; line-height: 1.5; }
+    .win-close {
+      background: #f5c842; color: #1a0000;
+      border: none; border-radius: 50px;
+      padding: 10px 28px;
+      font-size: 0.95rem; font-weight: 900;
+      cursor: pointer; font-family: inherit;
+      touch-action: manipulation;
+    }
+
+    /* Confetti canvas */
+    #confettiCanvas {
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      width: 100%; height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+<div id="sparkles"></div>
+
+<div class="brand-area">
+  <div class="brand-name">☕ Fortune Café</div>
+  <div class="brand-sub">福氣咖啡館 幸運拉霸</div>
+</div>
+
+<div class="machine">
+  <div class="machine-header">🎰 LUCKY SPIN 拉霸 🎰</div>
+
+  <div class="reels-frame">
+    <div class="reel-wrap"><div class="reel-sym" id="r0">☕</div></div>
+    <div class="reel-divider"></div>
+    <div class="reel-wrap"><div class="reel-sym" id="r1">🍰</div></div>
+    <div class="reel-divider"></div>
+    <div class="reel-wrap"><div class="reel-sym" id="r2">🌟</div></div>
+  </div>
+
+  <div class="controls-row">
+    <div class="stat-box">
+      <div class="stat-label">剩餘次數</div>
+      <div class="stat-value" id="spinsLeft">5</div>
+    </div>
+    <button class="spin-btn" id="spinBtn" onclick="spin()">
+      <span class="spin-icon">🎰</span>
+      <span>SPIN!</span>
+    </button>
+    <div class="stat-box">
+      <div class="stat-label">中獎次數</div>
+      <div class="stat-value" id="winsCount">0</div>
+    </div>
+  </div>
+
+  <div class="result-banner" id="resultBanner">點擊 SPIN 開始抽獎！</div>
+
+  <div class="prize-table">
+    <div class="prize-row">☕☕☕ 免費拿鐵一杯</div>
+    <div class="prize-row">💎💎💎 季度喝到飽</div>
+    <div class="prize-row">🌟🌟🌟 精品甜點套餐</div>
+    <div class="prize-row">🎁🎁🎁 門市禮品卡500</div>
+  </div>
+</div>
+
+<div class="cta-section">
+  <button class="cta-btn" onclick="ctaAction()">立即兌換咖啡優惠券 →</button>
+  <div class="cta-sub">中獎者憑畫面至門市出示，即可兌換對應獎品</div>
+</div>
+
+<!-- Win popup -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-emoji" id="winEmoji">🎉</div>
+    <div class="win-title">恭喜中獎！</div>
+    <div class="win-desc" id="winDesc">您獲得免費拿鐵一杯！</div>
+    <button class="win-close" onclick="document.getElementById('winOverlay').classList.remove('show')">收下獎品 🎁</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const SYMBOLS  = ['☕','🍰','🌟','💎','🎁','🍵'];
+const PRIZES   = { '☕':'免費拿鐵一杯！', '💎':'季度咖啡喝到飽！', '🌟':'招牌精品甜點一份！', '🎁':'門市禮品卡 $500！', '🍰':'下午茶套餐乙份！', '🍵':'手作抹茶拿鐵！' };
+
+let spinsLeft = 5, winsCount = 0, isSpinning = false;
+
+/* ── sparkles ── */
+const sparkContainer = document.getElementById('sparkles');
+['✨','⭐','💫','🌟'].forEach((ch, i) => {
+  for (let j = 0; j < 3; j++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    s.textContent = ch;
+    s.style.cssText = `left:${Math.random()*100}vw;top:${55+Math.random()*35}vh;animation-delay:${Math.random()*4}s;animation-duration:${3+Math.random()*2}s`;
+    sparkContainer.appendChild(s);
+  }
+});
+
+/* ── self-contained confetti ── */
+function launchConfetti(opts) {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#f5c842','#ff6b35','#90ff90','#ff90d0','#70b0ff','#ff4466'];
+  const count   = opts.particleCount || 80;
+  const ox = canvas.width  * (opts.origin?.x ?? 0.5);
+  const oy = canvas.height * (opts.origin?.y ?? 0.5);
+  const spread = (opts.spread || 70) * 0.015;
+  const particles = Array.from({length: count}, () => ({
+    x: ox, y: oy,
+    vx: (Math.random()-0.5) * spread * 60,
+    vy: -(Math.random()*9+4),
+    size: Math.random()*7+3,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    life: 1,
+    decay: 0.013 + Math.random()*0.01,
+    rot: Math.random()*360, rv: (Math.random()-0.5)*8
+  }));
+
+  let running = true;
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let any = false;
+    for (const p of particles) {
+      if (p.life <= 0) continue;
+      any = true;
+      p.x  += p.vx; p.y  += p.vy;
+      p.vy += 0.25;  p.vx *= 0.98;
+      p.rot += p.rv; p.life -= p.decay;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle   = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size*0.5);
+      ctx.restore();
+    }
+    if (any && running) requestAnimationFrame(frame);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  running = true;
+  requestAnimationFrame(frame);
+  setTimeout(() => { running = false; }, 4000);
+}
+
+/* ── reel spin ── */
+function spinReel(el, finalSym, duration) {
+  return new Promise(resolve => {
+    el.classList.add('blurred');
+    const start = Date.now();
+    function tick() {
+      const remaining = duration - (Date.now() - start);
+      if (remaining <= 80) {
+        el.textContent = finalSym;
+        el.classList.remove('blurred');
+        resolve();
+        return;
+      }
+      const interval = remaining < 250 ? 140 : remaining < 550 ? 85 : 52;
+      el.textContent = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
+      setTimeout(tick, interval);
+    }
+    tick();
+  });
+}
+
+async function spin() {
+  if (isSpinning || spinsLeft <= 0) return;
+  isSpinning = true;
+  spinsLeft--;
+  document.getElementById('spinsLeft').textContent = spinsLeft;
+  document.getElementById('spinBtn').disabled = true;
+  [0,1,2].forEach(i => document.getElementById('r'+i).classList.remove('win-glow'));
+
+  const banner = document.getElementById('resultBanner');
+  banner.style.color = '#f5c842';
+  banner.textContent = '🎰 轉動中… 幸運降臨！';
+
+  const isWin = Math.random() < 0.35;
+  const winSym = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
+  let finals;
+  if (isWin) {
+    finals = [winSym, winSym, winSym];
+  } else {
+    finals = [0,1,2].map(() => SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]);
+    // ensure not accidentally 3-of-a-kind
+    if (finals[0] === finals[1] && finals[1] === finals[2])
+      finals[2] = SYMBOLS[(SYMBOLS.indexOf(finals[2])+1) % SYMBOLS.length];
+  }
+
+  await Promise.all([
+    spinReel(document.getElementById('r0'), finals[0], 900),
+    spinReel(document.getElementById('r1'), finals[1], 1300),
+    spinReel(document.getElementById('r2'), finals[2], 1750),
+  ]);
+
+  if (isWin) {
+    winsCount++;
+    document.getElementById('winsCount').textContent = winsCount;
+    [0,1,2].forEach(i => document.getElementById('r'+i).classList.add('win-glow'));
+    banner.style.color = '#90ff90';
+    banner.textContent = '🎉 恭喜中獎！';
+    launchConfetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+    setTimeout(() => {
+      document.getElementById('winEmoji').textContent = winSym;
+      document.getElementById('winDesc').textContent = '您獲得：' + (PRIZES[winSym]||'特別獎品！');
+      document.getElementById('winOverlay').classList.add('show');
+    }, 700);
+  } else {
+    banner.style.color = '#ff9090';
+    const msgs = ['再試一次～好運就在下一轉！','差一點！繼續加油！','幸運女神正在靠近…','別灰心，下一轉必中！'];
+    banner.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+  }
+
+  isSpinning = false;
+  if (spinsLeft > 0) {
+    document.getElementById('spinBtn').disabled = false;
+  } else {
+    const btn = document.getElementById('spinBtn');
+    btn.innerHTML = '<span style="font-size:0.6rem;letter-spacing:0">次數已用完</span>';
+    if (!isWin) { banner.textContent = '☕ 加入會員可獲得更多次數！'; banner.style.color='#f5c842'; }
+  }
+}
+
+function ctaAction() {
+  const banner = document.getElementById('resultBanner');
+  banner.textContent = '🎫 優惠券已發送！請至門市出示此畫面';
+  banner.style.color = '#90ff90';
+  launchConfetti({ particleCount: 60, spread: 100, origin: { y: 0.7 } });
+}
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

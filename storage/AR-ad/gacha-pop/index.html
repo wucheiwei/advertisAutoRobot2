@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>啵啵星球 AR 盲盒站</title>
+<style>
+  :root{
+    --pink:#ff5fa2; --grape:#9b6cff; --soda:#39c5ff; --mint:#3ce6b0;
+    --lemon:#ffd24d; --ink:#1b1030; --cream:#fff4fb;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;font-family:"Noto Sans TC",system-ui,sans-serif;background:#120824;color:#fff;user-select:none;-webkit-user-select:none}
+  #stage{position:fixed;inset:0;overflow:hidden}
+
+  /* 展示模式漸層背景(無相機時) */
+  #demoBg{position:absolute;inset:0;background:
+      radial-gradient(120% 90% at 20% 10%, #ff8ec8 0%, transparent 55%),
+      radial-gradient(120% 90% at 85% 20%, #7d6bff 0%, transparent 55%),
+      radial-gradient(140% 120% at 50% 110%, #2bd8ff 0%, transparent 60%),
+      linear-gradient(160deg,#2a1350,#120824);
+    animation:hue 14s ease-in-out infinite alternate}
+  @keyframes hue{from{filter:hue-rotate(0deg) saturate(1)}to{filter:hue-rotate(40deg) saturate(1.2)}}
+  #cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s}
+  #cam.on{opacity:1}
+  /* 漂浮光點裝飾 */
+  .floaty{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,rgba(255,255,255,0));opacity:.55;animation:rise linear infinite}
+  @keyframes rise{0%{transform:translateY(20px) scale(.6);opacity:0}15%{opacity:.6}100%{transform:translateY(-120px) scale(1.1);opacity:0}}
+
+  #gl{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+
+  /* 頂部品牌列 */
+  #top{position:absolute;top:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;z-index:6;
+    background:linear-gradient(180deg,rgba(18,8,36,.55),transparent)}
+  .logo{width:38px;height:38px;border-radius:12px;background:conic-gradient(from 20deg,var(--pink),var(--grape),var(--soda),var(--mint),var(--lemon),var(--pink));
+    display:grid;place-items:center;font-size:20px;box-shadow:0 6px 18px rgba(255,95,162,.5)}
+  #top .name{font-weight:900;letter-spacing:.5px;font-size:16px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  #top .name small{display:block;font-weight:500;font-size:10px;opacity:.8;letter-spacing:3px}
+  #badge{margin-left:auto;font-size:11px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:5px 10px;border-radius:999px;backdrop-filter:blur(6px);display:none}
+  #badge.show{display:block}
+
+  /* 中央提示 */
+  #hint{position:absolute;left:50%;top:18%;transform:translateX(-50%);z-index:5;text-align:center;pointer-events:none;
+    font-weight:800;font-size:15px;text-shadow:0 2px 10px rgba(0,0,0,.6);transition:opacity .3s}
+  #hint .sub{font-weight:500;font-size:12px;opacity:.85;margin-top:4px}
+
+  /* 搖一搖能量條 */
+  #charge{position:absolute;left:50%;bottom:148px;transform:translateX(-50%);width:min(78vw,340px);z-index:5;transition:opacity .3s}
+  #charge .lab{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px;opacity:.95;text-shadow:0 1px 4px #000}
+  #charge .bar{height:14px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.35)}
+  #charge .fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--mint),var(--lemon),var(--pink));transition:width .12s ease-out}
+
+  /* 圖鑑底座 */
+  #dock{position:absolute;left:0;right:0;bottom:0;z-index:6;padding:12px 14px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,rgba(18,8,36,.85),transparent)}
+  #dock .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  #dock .head b{font-size:13px}
+  #dock .head span{font-size:12px;opacity:.85}
+  #slots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .slot{aspect-ratio:1;border-radius:14px;background:rgba(255,255,255,.08);border:1.5px dashed rgba(255,255,255,.28);
+    display:grid;place-items:center;font-size:22px;color:rgba(255,255,255,.25);position:relative;transition:transform .25s,box-shadow .25s}
+  .slot.got{border-style:solid;color:#fff;background:rgba(255,255,255,.14)}
+  .slot.got.rare{box-shadow:0 0 0 2px #fff inset,0 0 16px var(--lemon);animation:rareglow 1.6s ease-in-out infinite}
+  @keyframes rareglow{50%{box-shadow:0 0 0 2px #fff inset,0 0 26px var(--pink)}}
+  .slot.pop{transform:scale(1.18)}
+  .slot .nm{position:absolute;bottom:3px;font-size:8px;opacity:.85;white-space:nowrap}
+
+  /* 起始海報 */
+  #poster{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:30px;
+    background:radial-gradient(130% 90% at 50% 0%,#ff5fa2 0%,#6b3bff 45%,#1a0c34 100%)}
+  #poster h1{font-size:31px;font-weight:900;line-height:1.2;text-shadow:0 4px 0 rgba(0,0,0,.18)}
+  #poster h1 em{font-style:normal;color:#fff;background:rgba(255,255,255,.18);padding:0 8px;border-radius:10px}
+  #poster p{font-size:14px;opacity:.95;max-width:300px;line-height:1.7}
+  #poster .cap{font-size:74px;filter:drop-shadow(0 12px 18px rgba(0,0,0,.4));animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-12px) rotate(-4deg)}}
+  .btn{cursor:pointer;border:none;font-weight:900;font-family:inherit;border-radius:999px;padding:15px 34px;font-size:17px;
+    background:linear-gradient(180deg,#fff,#ffe1f0);color:#c01f63;box-shadow:0 10px 0 #a0144e,0 16px 24px rgba(0,0,0,.35);transition:transform .08s,box-shadow .08s}
+  .btn:active{transform:translateY(6px);box-shadow:0 4px 0 #a0144e,0 8px 12px rgba(0,0,0,.35)}
+  #poster .tag{font-size:12px;opacity:.85;letter-spacing:4px}
+
+  /* 揭曉卡 */
+  #reveal{position:absolute;inset:0;z-index:18;display:none;align-items:flex-end;justify-content:center;padding-bottom:0;pointer-events:none}
+  #reveal.show{display:flex}
+  #card{width:100%;max-width:460px;background:linear-gradient(180deg,#241147,#160a2c);border-top-left-radius:26px;border-top-right-radius:26px;
+    padding:20px 22px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -18px 40px rgba(0,0,0,.5);transform:translateY(110%);transition:transform .45s cubic-bezier(.2,1.1,.3,1);pointer-events:auto;
+    border-top:2px solid rgba(255,255,255,.18)}
+  #reveal.show #card{transform:translateY(0)}
+  #card .rk{font-size:12px;font-weight:800;letter-spacing:3px;opacity:.8}
+  #card .ttl{display:flex;align-items:baseline;gap:10px;margin:4px 0 6px}
+  #card .ttl h2{font-size:26px;font-weight:900}
+  #card .rare-pill{font-size:11px;font-weight:800;background:linear-gradient(90deg,var(--lemon),var(--pink));color:#2a0a1a;padding:3px 10px;border-radius:999px}
+  #card .desc{font-size:13px;opacity:.9;line-height:1.6;margin-bottom:14px}
+  #card .row{display:flex;gap:10px}
+  #card .row .btn{flex:1;padding:14px 10px;font-size:15px;box-shadow:0 7px 0 #a0144e}
+  #card .row .btn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:0 7px 0 rgba(0,0,0,.4)}
+
+  /* 集滿橫幅 */
+  #cta{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:19;display:none;width:min(86vw,380px);text-align:center;
+    background:linear-gradient(180deg,#fff,#ffe6f2);color:#3a0a25;border-radius:24px;padding:26px 22px;box-shadow:0 24px 50px rgba(0,0,0,.5)}
+  #cta.show{display:block;animation:pin .4s ease}
+  @keyframes pin{from{transform:translate(-50%,-50%) scale(.7);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+  #cta h3{font-size:23px;font-weight:900;color:#c01f63}
+  #cta p{font-size:13px;margin:8px 0 16px;line-height:1.6;color:#5a1a3a}
+
+  .center-cta{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:5}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="demoBg"></div>
+  <video id="cam" playsinline muted autoplay></video>
+  <canvas id="gl"></canvas>
+
+  <div id="top">
+    <div class="logo">🫧</div>
+    <div class="name">啵啵星球 AR 盲盒站<small>BOBO PLANET · AR GACHA</small></div>
+    <div id="badge">📷 展示模式</div>
+  </div>
+
+  <div id="hint">把盲盒放進你的空間
+    <div class="sub">點擊盲盒用力「搖一搖」!</div>
+  </div>
+
+  <div id="charge">
+    <div class="lab"><span>搖一搖能量</span><span id="pct">0%</span></div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+
+  <div id="dock">
+    <div class="head"><b>限定圖鑑</b><span id="count">已收集 0 / 6</span></div>
+    <div id="slots"></div>
+  </div>
+</div>
+
+<!-- 揭曉卡 -->
+<div id="reveal">
+  <div id="card">
+    <div class="rk" id="cardRk">NEW DROP</div>
+    <div class="ttl"><h2 id="cardName">—</h2><span class="rare-pill" id="cardRare" style="display:none">隱藏款</span></div>
+    <div class="desc" id="cardDesc">—</div>
+    <div class="row">
+      <button class="btn ghost" id="againBtn">再抽一隻</button>
+      <button class="btn" id="keepBtn">收進圖鑑</button>
+    </div>
+  </div>
+</div>
+
+<!-- 集滿 CTA -->
+<div id="cta">
+  <h3>🎉 圖鑑全收集!</h3>
+  <p>恭喜解鎖「啵啵星球」全六款限定角色!出示這個畫面到門市,即可兌換 <b>限量隱藏款氣泡飲一瓶</b>。</p>
+  <button class="btn" id="ctaBtn">立即兌換 / 逛逛口味</button>
+</div>
+
+<!-- 起始海報 -->
+<div id="poster">
+  <div class="tag">AR · 限定盲盒抽抽樂</div>
+  <div class="cap">🎁</div>
+  <h1>把<em>限定盲盒</em><br>抽進你的房間</h1>
+  <p>啟動相機,讓盲盒漂浮在你眼前。狂點搖一搖,啵一聲拆開,集滿六款啵啵星人!</p>
+  <button class="btn" id="startBtn">啟動 AR · 開抽 🎲</button>
+  <div class="tag" style="opacity:.6">無相機也能玩(自動展示模式)</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.165.0/build/three.module.js" } }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script type="module">
+import * as THREE from 'three';
+(function(){
+  "use strict";
+
+  // ---------- 角色資料 ----------
+  const CHARS = [
+    {key:'bear', name:'啵啵熊', color:0xff5fa2, acc:'ears',  rare:false, desc:'草莓汽水口味的領頭羊,臉頰永遠紅通通,愛抱著瓶蓋睡覺。'},
+    {key:'cat',  name:'蘇打喵', color:0x39c5ff, acc:'cat',   rare:false, desc:'碳酸量爆表的海洋藍貓,打嗝會冒出小泡泡,超欠摸。'},
+    {key:'bun',  name:'氣泡兔', color:0x3ce6b0, acc:'bun',   rare:false, desc:'薄荷青提口味,跳一下就釋放清涼氣泡,夏天必備。'},
+    {key:'dino', name:'葡萄龍', color:0x9b6cff, acc:'horn',  rare:false, desc:'紫葡萄風味的小恐龍,打噴嚏會噴出果香氣泡雲。'},
+    {key:'duck', name:'檸檬鴨', color:0xffd24d, acc:'beak',  rare:false, desc:'酸甜檸檬味,嘴一張就「啵」一聲,療癒度滿分。'},
+    {key:'star', name:'銀河星仔', color:0xe9e9ff, acc:'star', rare:true,  desc:'隱藏款!傳說只有 1% 機率拆到的星際限定,全身會閃爍銀河光。'},
+  ];
+
+  const $ = s=>document.querySelector(s);
+  const slotsEl=$('#slots'), countEl=$('#count'), pctEl=$('#pct'), fillEl=$('#fill');
+  const hintEl=$('#hint'), chargeEl=$('#charge'), badgeEl=$('#badge');
+  const collected = new Set();
+
+  // 建立圖鑑格
+  CHARS.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='slot'+(c.rare?' rare-slot':'');
+    d.id='slot-'+c.key;
+    d.innerHTML='<span class="ic">?</span><span class="nm"></span>';
+    slotsEl.appendChild(d);
+  });
+
+  // ---------- Three.js 場景 ----------
+  let renderer, scene, camera, boxGroup, lid, charGroup=null, raf;
+  let webglOK=true;
+  const canvas=$('#gl');
+
+  try{
+    renderer=new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  }catch(e){ webglOK=false; }
+
+  function setSize(){
+    if(!webglOK) return;
+    const w=window.innerWidth, h=window.innerHeight;
+    renderer.setSize(w,h,false);
+    if(camera){ camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  }
+
+  if(webglOK){
+    scene=new THREE.Scene();
+    camera=new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(0,0.3,8.5);
+    camera.lookAt(0,0,0);
+
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));
+    const key=new THREE.DirectionalLight(0xffffff,1.1); key.position.set(3,5,4); scene.add(key);
+    const rim=new THREE.DirectionalLight(0xff9ad5,0.7); rim.position.set(-4,-2,3); scene.add(rim);
+
+    setSize();
+    buildBox();
+  }
+  window.addEventListener('resize', setSize);
+
+  function roundMat(color,opts){
+    return new THREE.MeshStandardMaterial(Object.assign({color, roughness:0.4, metalness:0.05},opts||{}));
+  }
+
+  // 盲盒(可愛禮盒)
+  function buildBox(){
+    boxGroup=new THREE.Group();
+    const body=new THREE.Mesh(new THREE.BoxGeometry(2,1.7,2),
+      roundMat(0xff5fa2,{roughness:0.35}));
+    boxGroup.add(body);
+    // 蓋子
+    lid=new THREE.Mesh(new THREE.BoxGeometry(2.18,0.5,2.18), roundMat(0xff86bd));
+    lid.position.y=1.1; boxGroup.add(lid);
+    // 緞帶(十字)
+    const goldMat=roundMat(0xffd24d,{metalness:0.4,roughness:0.3});
+    const r1=new THREE.Mesh(new THREE.BoxGeometry(2.05,1.78,0.34),goldMat); boxGroup.add(r1);
+    const r2=new THREE.Mesh(new THREE.BoxGeometry(0.34,1.78,2.05),goldMat); boxGroup.add(r2);
+    const r3=new THREE.Mesh(new THREE.BoxGeometry(2.24,0.52,0.34),goldMat); r3.position.y=1.1; lid.add(toLocal(r3,lid));
+    // 蝴蝶結
+    const bow=new THREE.Group(); bow.position.set(0,1.42,0);
+    const lobeGeo=new THREE.SphereGeometry(0.34,18,14);
+    const lobeL=new THREE.Mesh(lobeGeo,goldMat); lobeL.position.set(-0.3,0,0); lobeL.scale.set(1,0.7,0.55);
+    const lobeR=lobeL.clone(); lobeR.position.x=0.3;
+    const knot=new THREE.Mesh(new THREE.SphereGeometry(0.18,16,12),goldMat);
+    bow.add(lobeL,lobeR,knot); boxGroup.add(bow);
+    // 問號貼紙感:用一個白色小球當亮點(裝飾)
+    scene.add(boxGroup);
+  }
+  // 讓 r3 直接掛在 lid 下也行,這裡簡化:不做 toLocal,直接加到 boxGroup
+  function toLocal(mesh,parent){ mesh.position.y=0; return mesh; }
+
+  // 建立角色
+  function buildChar(c){
+    const g=new THREE.Group();
+    const bodyMat=roundMat(c.color,{roughness:0.35, metalness:c.rare?0.5:0.05,
+      emissive:c.rare?0x554488:0x000000, emissiveIntensity:c.rare?0.5:0});
+    const body=new THREE.Mesh(new THREE.SphereGeometry(0.95,32,28),bodyMat);
+    body.scale.set(1,0.92,1); g.add(body);
+    // 眼睛
+    const white=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.3});
+    const black=new THREE.MeshStandardMaterial({color:0x1b1030,roughness:0.4});
+    for(const sx of [-1,1]){
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(0.2,20,16),white);
+      eye.position.set(0.32*sx,0.18,0.82); eye.scale.set(1,1.2,0.6); g.add(eye);
+      const pup=new THREE.Mesh(new THREE.SphereGeometry(0.1,16,12),black);
+      pup.position.set(0.34*sx,0.18,0.96); g.add(pup);
+      const shine=new THREE.Mesh(new THREE.SphereGeometry(0.035,8,8),white);
+      shine.position.set(0.30*sx,0.26,1.02); g.add(shine);
+    }
+    // 腮紅
+    const blush=new THREE.MeshStandardMaterial({color:0xff7eb6,roughness:0.6,transparent:true,opacity:0.8});
+    for(const sx of [-1,1]){
+      const b=new THREE.Mesh(new THREE.CircleGeometry(0.16,16),blush);
+      b.position.set(0.55*sx,-0.05,0.78); b.lookAt(0.55*sx,-0.05,3); g.add(b);
+    }
+    // 配件
+    const accMat=roundMat(c.color,{roughness:0.4});
+    if(c.acc==='ears'){ // 熊耳
+      for(const sx of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(0.32,20,16),accMat);e.position.set(0.62*sx,0.78,0);g.add(e);}
+    }else if(c.acc==='cat'){ // 貓耳(尖)
+      for(const sx of[-1,1]){const e=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.55,16),accMat);e.position.set(0.55*sx,0.95,0);e.rotation.z=-0.3*sx;g.add(e);}
+    }else if(c.acc==='bun'){ // 兔耳(長)
+      for(const sx of[-1,1]){const e=new THREE.Mesh(new THREE.CapsuleGeometry(0.16,0.7,6,12),accMat);e.position.set(0.4*sx,1.15,0);e.rotation.z=-0.18*sx;g.add(e);}
+    }else if(c.acc==='horn'){ // 龍角 + 背刺
+      for(const sx of[-1,1]){const e=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.5,12),roundMat(0xfff0a0));e.position.set(0.4*sx,0.95,0.1);e.rotation.z=-0.2*sx;g.add(e);}
+      for(let i=0;i<3;i++){const s=new THREE.Mesh(new THREE.ConeGeometry(0.13,0.3,8),roundMat(0xfff0a0));s.position.set(0,0.55-i*0.35,-0.85);s.rotation.x=-0.5;g.add(s);}
+    }else if(c.acc==='beak'){ // 鴨嘴
+      const beak=new THREE.Mesh(new THREE.ConeGeometry(0.28,0.4,16),roundMat(0xff9a3d));
+      beak.position.set(0,-0.05,0.92);beak.rotation.x=Math.PI/2;beak.scale.set(1,0.5,1);g.add(beak);
+    }else if(c.acc==='star'){ // 星仔光環 + 角
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(0.7,0.05,12,40),
+        new THREE.MeshStandardMaterial({color:0xfff2a8,emissive:0xffd24d,emissiveIntensity:0.9,metalness:0.6,roughness:0.2}));
+      ring.position.y=1.0;ring.rotation.x=1.2;g.add(ring); g.userData.ring=ring;
+      for(let i=0;i<5;i++){const sp=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.22,4),
+        new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xfff0a0,emissiveIntensity:0.8}));
+        const a=i/5*Math.PI*2;sp.position.set(Math.cos(a)*1.05,Math.sin(a)*1.05,0);g.add(sp);}
+    }
+    g.scale.setScalar(0.001);
+    g.position.y=-0.2;
+    return g;
+  }
+
+  // ---------- 狀態機 ----------
+  let state='idle';   // idle -> shaking -> opening -> revealed
+  let charge=0, t0=performance.now();
+  let openT=0, currentChar=null;
+
+  function setCharge(v){
+    charge=Math.max(0,Math.min(100,v));
+    fillEl.style.width=charge+'%';
+    pctEl.textContent=Math.round(charge)+'%';
+  }
+
+  function tap(){
+    if(state==='idle' || state==='shaking'){
+      state='shaking';
+      setCharge(charge+12+Math.random()*4);
+      blip(420+charge*4, 0.05);
+      if(boxGroup){ boxGroup.userData.kick=(boxGroup.userData.kick||0)+0.9; }
+      if(charge>=100) openBox();
+    }
+  }
+
+  function pickChar(){
+    // 隱藏款低機率;優先給未收集的一般款
+    const star=CHARS[5];
+    const rareHit = Math.random()<0.12 && !collected.has('star');
+    if(rareHit) return star;
+    const normals=CHARS.filter(c=>!c.rare);
+    const missing=normals.filter(c=>!collected.has(c.key));
+    const pool = missing.length?missing:normals;
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+
+  function openBox(){
+    if(state==='opening'||state==='revealed') return;
+    state='opening'; openT=performance.now();
+    currentChar=pickChar();
+    if(webglOK){
+      charGroup=buildChar(currentChar);
+      scene.add(charGroup);
+    }
+    blip(180,0.18); setTimeout(()=>blip(880,0.12),120);
+    burst(currentChar.rare);
+    hintEl.style.opacity=0; chargeEl.style.opacity=0;
+  }
+
+  function showCard(){
+    state='revealed';
+    $('#cardName').textContent=currentChar.name;
+    $('#cardDesc').textContent=currentChar.desc;
+    const rp=$('#cardRare'); rp.style.display=currentChar.rare?'inline-block':'none';
+    $('#cardRk').textContent=currentChar.rare?'★ SECRET DROP ★':'NEW DROP';
+    $('#reveal').classList.add('show');
+  }
+
+  function keep(){
+    if(collected.has(currentChar.key)===false){
+      collected.add(currentChar.key);
+      const el=document.getElementById('slot-'+currentChar.key);
+      el.classList.add('got','pop'); if(currentChar.rare) el.classList.add('rare');
+      el.querySelector('.ic').textContent=accEmoji(currentChar.acc);
+      el.querySelector('.nm').textContent=currentChar.name;
+      el.style.setProperty('--clr','#'+currentChar.color.toString(16));
+      setTimeout(()=>el.classList.remove('pop'),300);
+      countEl.textContent='已收集 '+collected.size+' / 6';
+    }
+    closeReveal();
+    if(collected.size>=6){ setTimeout(()=>$('#cta').classList.add('show'),500); }
+  }
+
+  function accEmoji(a){return {ears:'🐻',cat:'🐱',bun:'🐰',horn:'🦖',beak:'🦆',star:'🌟'}[a]||'❓';}
+
+  function closeReveal(){
+    $('#reveal').classList.remove('show');
+    if(charGroup){ scene.remove(charGroup); charGroup=null; }
+    setCharge(0);
+    if(lid){ lid.position.set(0,1.1,0); lid.rotation.set(0,0,0); lid.material.opacity=1; lid.material.transparent=false; lid.visible=true; }
+    if(boxGroup){ boxGroup.scale.setScalar(1); boxGroup.visible=true; }
+    state='idle';
+    hintEl.style.opacity=1; chargeEl.style.opacity=1;
+  }
+
+  $('#keepBtn').addEventListener('click', keep);
+  $('#againBtn').addEventListener('click', ()=>{ if(collected.has(currentChar.key)===false){/* 放生不收 */} closeReveal(); });
+  $('#ctaBtn').addEventListener('click', ()=>{ $('#cta').classList.remove('show'); flash(); });
+
+  // ---------- 渲染迴圈 ----------
+  let dragX=0, dragY=0, tgtX=0, tgtY=0;
+  function loop(){
+    raf=requestAnimationFrame(loop);
+    const now=performance.now(), t=(now-t0)/1000;
+
+    // 視差(陀螺儀或拖曳)
+    dragX += (tgtX-dragX)*0.08; dragY += (tgtY-dragY)*0.08;
+
+    if(boxGroup && boxGroup.visible){
+      boxGroup.rotation.y = t*0.5 + dragX;
+      boxGroup.rotation.x = dragY;
+      // 上下漂浮
+      boxGroup.position.y = Math.sin(t*1.4)*0.12;
+      // 搖一搖抖動
+      const k=boxGroup.userData.kick||0;
+      const wob = (charge/100)*0.25 + k*0.5;
+      boxGroup.rotation.z = Math.sin(now*0.04)*wob;
+      boxGroup.position.x = Math.sin(now*0.05)*wob*0.4;
+      boxGroup.userData.kick = Math.max(0,k-0.06);
+      boxGroup.scale.setScalar(1 + (charge/100)*0.06 + k*0.05);
+    }
+
+    // 開盒動畫
+    if(state==='opening'){
+      const p=Math.min(1,(now-openT)/700);
+      if(lid){ lid.position.y = 1.1 + p*3.5; lid.rotation.z = p*1.5; lid.position.x = p*1.2;
+        lid.material.transparent=true; lid.material.opacity=1-p; }
+      if(boxGroup){ boxGroup.scale.setScalar(1+0.1*Math.sin(p*Math.PI)); }
+      if(charGroup){
+        const sp=Math.min(1, p*1.3);
+        const e=1-Math.pow(1-sp,3);
+        charGroup.scale.setScalar(0.001+ e*1.0*(1+0.15*Math.sin(p*Math.PI)));
+        charGroup.position.y = -0.2 + e*0.3;
+        charGroup.rotation.y = t*1.2;
+      }
+      if(boxGroup && p>0.45){ boxGroup.visible=false; }
+      if(p>=1) showCard();
+    }
+
+    if(state==='revealed' && charGroup){
+      charGroup.rotation.y = t*1.0;
+      charGroup.position.y = -0.2+0.3 + Math.sin(t*2)*0.06;
+      if(charGroup.userData.ring) charGroup.userData.ring.rotation.z = t*2;
+    }
+
+    if(webglOK) renderer.render(scene,camera);
+  }
+
+  // ---------- 互動輸入 ----------
+  function onTap(e){
+    if(state==='revealed') return;
+    tap();
+  }
+  canvas.addEventListener('pointerdown', onTap);
+  // 整個 stage 上半部也可點(避開底座與卡片)
+  $('#stage').addEventListener('pointerdown', function(e){
+    if(e.target.closest('#dock')||e.target.closest('#top')) return;
+    if(e.target===canvas) return; // 已由 canvas 處理
+    if(state==='idle'||state==='shaking') tap();
+  });
+
+  // 拖曳視差
+  let dragging=false, lastX=0,lastY=0;
+  canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;});
+  window.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    tgtX += (e.clientX-lastX)*0.01; tgtY += (e.clientY-lastY)*0.006;
+    tgtY=Math.max(-0.6,Math.min(0.6,tgtY));
+    lastX=e.clientX;lastY=e.clientY;
+  });
+  window.addEventListener('pointerup',()=>dragging=false);
+  window.addEventListener('pointercancel',()=>dragging=false);
+
+  // 陀螺儀視差
+  function onOrient(e){
+    if(e.gamma==null) return;
+    tgtX = (e.gamma/45)*0.5;
+    tgtY = Math.max(-0.6,Math.min(0.6,((e.beta-45)/45)*0.4));
+  }
+
+  // ---------- 音效(可選,失敗不報錯) ----------
+  let actx=null;
+  function audio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
+  function blip(freq,dur){
+    try{ if(!actx) return; const o=actx.createOscillator(),g=actx.createGain();
+      o.type='triangle'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001,actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25,actx.currentTime+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+dur);
+      o.start(); o.stop(actx.currentTime+dur+0.02);
+    }catch(e){}
+  }
+
+  // ---------- 彩帶 ----------
+  function burst(rare){
+    try{
+      const opt={particleCount:rare?160:90, spread:rare?110:80, startVelocity:42, origin:{y:0.42},
+        colors:rare?['#ffd24d','#fff','#ff5fa2','#9b6cff','#39c5ff']:['#ff5fa2','#ffd24d','#3ce6b0','#fff']};
+      confetti(opt);
+      if(rare){ setTimeout(()=>confetti({particleCount:80,spread:120,origin:{y:0.4},scalar:1.2}),200); }
+    }catch(e){}
+  }
+  function flash(){ try{ confetti({particleCount:120,spread:100,origin:{y:0.5}}); }catch(e){} }
+
+  // ---------- 漂浮光點 ----------
+  function floaties(){
+    const stage=$('#stage');
+    for(let i=0;i<10;i++){
+      const f=document.createElement('div'); f.className='floaty';
+      const s=6+Math.random()*16; f.style.width=f.style.height=s+'px';
+      f.style.left=Math.random()*100+'%'; f.style.bottom=(-10+Math.random()*40)+'%';
+      f.style.animationDuration=(4+Math.random()*5)+'s'; f.style.animationDelay=(-Math.random()*5)+'s';
+      stage.appendChild(f);
+    }
+  }
+  floaties();
+
+  // ---------- 相機 ----------
+  const video=$('#cam');
+  function startCamera(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ demoMode(); return; }
+    let settled=false;
+    const fail=()=>{ if(!settled){ settled=true; demoMode(); } };
+    const timer=setTimeout(fail, 2500);
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+      .then(stream=>{ settled=true; clearTimeout(timer); video.srcObject=stream;
+        video.play().catch(()=>{}); video.classList.add('on'); badgeEl.classList.remove('show'); })
+      .catch(()=>{ clearTimeout(timer); fail(); });
+  }
+  function demoMode(){ badgeEl.classList.add('show'); /* 漸層背景已是預設 */ }
+
+  // ---------- 啟動 ----------
+  function start(){
+    $('#poster').style.display='none';
+    audio();
+    startCamera();
+    // 請求陀螺儀(iOS 需手勢觸發)
+    try{
+      if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+        DeviceOrientationEvent.requestPermission().then(p=>{ if(p==='granted') window.addEventListener('deviceorientation',onOrient); }).catch(()=>{});
+      }else if(typeof DeviceOrientationEvent!=='undefined'){
+        window.addEventListener('deviceorientation',onOrient);
+      }
+    }catch(e){}
+  }
+  $('#startBtn').addEventListener('click', start);
+
+  // 無頭/驗證環境:若海報長時間沒被點(自動化),也自動啟動進入展示模式並可被煙霧測試點擊
+  setTimeout(()=>{ if($('#poster').style.display!=='none'){ start(); } }, 1200);
+
+  // 啟動渲染迴圈(放最後,確保所有狀態變數已初始化)
+  if(webglOK) loop();
+
+})();
+</script>
+</body>
+</html>

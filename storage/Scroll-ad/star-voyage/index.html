@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>星際旅行者｜探索你的下一個宇宙假期</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --deep: #03001e; --mid: #0a0050; --sky: #1a1a6e;
+    --star: #e8f4ff; --gold: #ffd700; --cyan: #00e5ff;
+    --pink: #ff6eb4; --white: #f0f8ff;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
+    background: var(--deep); color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* ═══ Fixed starfield background ═══ */
+  #starfield {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 30%, #0a0050 0%, #03001e 70%);
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: white; animation: twinkle linear infinite;
+  }
+  @keyframes twinkle {
+    0%,100%{opacity:0.2} 50%{opacity:1}
+  }
+
+  /* ═══ Nebula layers ═══ */
+  .nebula {
+    position: fixed; border-radius: 50%; filter: blur(60px);
+    pointer-events: none; z-index: 0;
+    animation: nebulaDrift ease-in-out infinite alternate;
+  }
+  @keyframes nebulaDrift {
+    0%{transform:translateX(-20px) translateY(-10px)}
+    100%{transform:translateX(20px) translateY(10px)}
+  }
+
+  /* ═══ Scroll container ═══ */
+  .scroll-root { position: relative; z-index: 1; }
+
+  /* ═══ Sections ═══ */
+  .scene {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 24px;
+    position: relative;
+    opacity: 0; transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .scene.visible { opacity: 1; transform: translateY(0); }
+
+  /* ═══ Hero ═══ */
+  #scene-hero { min-height: 100vh; }
+  .hero-badge {
+    font-size: 12px; letter-spacing: 0.3em;
+    color: var(--cyan); border: 1px solid var(--cyan);
+    padding: 5px 14px; border-radius: 100px;
+    margin-bottom: 20px; display: inline-block;
+    animation: pulseBorder 2s ease-in-out infinite;
+  }
+  @keyframes pulseBorder {
+    0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0)} 50%{box-shadow:0 0 0 6px rgba(0,229,255,0.15)}
+  }
+  .hero-title {
+    font-size: clamp(36px, 9vw, 72px); font-weight: 900;
+    line-height: 1.1; text-align: center;
+    background: linear-gradient(135deg, #fff 0%, var(--cyan) 40%, var(--pink) 80%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-sub {
+    margin-top: 16px; font-size: clamp(15px, 3.5vw, 19px);
+    color: rgba(240,248,255,0.7); text-align: center; max-width: 480px;
+  }
+  .scroll-cue {
+    margin-top: 48px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: rgba(240,248,255,0.4); font-size: 13px; letter-spacing: 0.1em;
+    animation: fadeUpDown 2s ease-in-out infinite;
+  }
+  @keyframes fadeUpDown { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(8px);opacity:0.8} }
+  .scroll-arrow { font-size: 22px; }
+
+  /* Planet */
+  .planet-wrap {
+    margin: 32px auto;
+    width: min(220px, 60vw); height: min(220px, 60vw);
+    position: relative;
+  }
+  .planet {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #4a90e2 0%, #1a1a8a 50%, #000030 100%);
+    box-shadow: 0 0 60px rgba(74,144,226,0.5), inset -20px -20px 40px rgba(0,0,30,0.8);
+    animation: rotatePlanet 20s linear infinite;
+    overflow: hidden;
+  }
+  @keyframes rotatePlanet { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(30deg)} }
+  .planet-ring {
+    position: absolute; top: 50%; left: 50%;
+    width: 135%; height: 30%;
+    border: 3px solid rgba(255,215,0,0.35);
+    border-radius: 50%;
+    transform: translate(-50%,-50%) rotateX(75deg);
+    box-shadow: 0 0 20px rgba(255,215,0,0.2);
+    pointer-events: none;
+  }
+  .planet-spots { position: absolute; inset: 0; }
+  .spot {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* ═══ Stats scene ═══ */
+  #scene-stats { background: transparent; }
+  .stats-title { font-size: clamp(22px,6vw,36px); font-weight: 900; text-align: center; margin-bottom: 32px; color: var(--gold); }
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 480px; }
+  .stat-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 16px; padding: 24px 16px; text-align: center;
+    backdrop-filter: blur(6px);
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .stat-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.5); }
+  .stat-num { font-size: clamp(28px,7vw,44px); font-weight: 900; color: var(--cyan); }
+  .stat-label { font-size: 13px; color: rgba(240,248,255,0.6); margin-top: 4px; }
+  .stat-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* ═══ Destinations scene ═══ */
+  #scene-destinations {}
+  .dest-title { font-size: clamp(22px,6vw,36px); font-weight: 900; text-align: center; margin-bottom: 24px; }
+  .dest-cards { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 480px; }
+  .dest-card {
+    border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px;
+    border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+    transition: transform 0.25s, background 0.25s;
+    background: rgba(255,255,255,0.04);
+  }
+  .dest-card:hover { transform: translateX(6px); background: rgba(255,255,255,0.09); }
+  .dest-icon { font-size: 42px; flex-shrink: 0; }
+  .dest-name { font-size: 18px; font-weight: 700; }
+  .dest-info { font-size: 13px; color: rgba(240,248,255,0.6); margin-top: 3px; }
+  .dest-price { margin-left: auto; flex-shrink: 0; }
+  .dest-price-num { font-size: 18px; font-weight: 900; color: var(--gold); }
+  .dest-price-unit { font-size: 11px; color: rgba(240,248,255,0.5); }
+
+  /* ═══ Parallax ship ═══ */
+  #scene-ship {}
+  .ship-text { text-align: center; max-width: 440px; }
+  .ship-text h2 { font-size: clamp(24px,6vw,38px); font-weight: 900; margin-bottom: 16px; }
+  .ship-text p { font-size: 15px; color: rgba(240,248,255,0.7); line-height: 1.6; }
+  .spaceship {
+    margin: 32px auto;
+    width: min(200px, 55vw);
+    animation: floatShip 3.5s ease-in-out infinite;
+  }
+  @keyframes floatShip {
+    0%,100%{transform:translateY(0) rotate(-3deg)}
+    50%{transform:translateY(-18px) rotate(3deg)}
+  }
+
+  /* ═══ CTA scene ═══ */
+  #scene-cta { text-align: center; }
+  .cta-title { font-size: clamp(28px,8vw,52px); font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--pink));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .cta-sub { font-size: 15px; color: rgba(240,248,255,0.65); margin: 14px 0 32px; }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffd700, #ff6eb4);
+    color: #1a0030; font-weight: 900; font-size: 18px;
+    padding: 18px 48px; border-radius: 100px; border: none; cursor: pointer;
+    box-shadow: 0 0 30px rgba(255,215,0,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+  .cta-btn:active { transform: scale(0.97); }
+  .cta-fine { margin-top: 14px; font-size: 12px; color: rgba(240,248,255,0.35); }
+
+  /* ═══ Progress indicator ═══ */
+  .progress-dots {
+    position: fixed; right: 16px; top: 50%;
+    transform: translateY(-50%); z-index: 10;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(240,248,255,0.25); cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .dot.active { background: var(--cyan); transform: scale(1.4); }
+
+  /* ═══ Shooting star ═══ */
+  .shoot {
+    position: fixed; height: 1px;
+    background: linear-gradient(90deg, transparent, white, transparent);
+    z-index: 1; pointer-events: none; opacity: 0;
+    animation: shoot 0.6s ease-out forwards;
+  }
+  @keyframes shoot {
+    0%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(200px)}
+  }
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div id="starfield"></div>
+
+<!-- Progress dots -->
+<div class="progress-dots" id="dots"></div>
+
+<!-- Scroll content -->
+<div class="scroll-root">
+
+  <!-- Hero -->
+  <section class="scene" id="scene-hero">
+    <div class="hero-badge">✦ 2027 宇宙旅遊開放報名</div>
+    <h1 class="hero-title">探索<br/>你的宇宙</h1>
+    <p class="hero-sub">StarVoyage 讓你踏上人類史上最壯闊的旅程——星際假期，現在出發</p>
+    <div class="planet-wrap" id="planetWrap">
+      <div class="planet" id="planet">
+        <div class="planet-spots" id="planetSpots"></div>
+      </div>
+      <div class="planet-ring"></div>
+    </div>
+    <div class="scroll-cue"><span class="scroll-arrow">↓</span><span>向下捲動探索</span></div>
+  </section>
+
+  <!-- Stats -->
+  <section class="scene" id="scene-stats">
+    <h2 class="stats-title">✦ 為什麼選擇我們</h2>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">🚀</div><div class="stat-num" data-count="847">0</div><div class="stat-label">已完成航班</div></div>
+      <div class="stat-card"><div class="stat-icon">🌌</div><div class="stat-num" data-count="12">0</div><div class="stat-label">目的地星系</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-num" data-count="99">0</div><div class="stat-label">旅客滿意度 %</div></div>
+      <div class="stat-card"><div class="stat-icon">🛸</div><div class="stat-num" data-count="24">0</div><div class="stat-label">艙等選擇</div></div>
+    </div>
+  </section>
+
+  <!-- Destinations -->
+  <section class="scene" id="scene-destinations">
+    <h2 class="dest-title">熱門目的地</h2>
+    <div class="dest-cards">
+      <div class="dest-card">
+        <div class="dest-icon">🌑</div>
+        <div><div class="dest-name">月球假期</div><div class="dest-info">3 天 2 夜・低重力體驗</div></div>
+        <div class="dest-price"><div class="dest-price-num">$98,000</div><div class="dest-price-unit">起 / 人</div></div>
+      </div>
+      <div class="dest-card">
+        <div class="dest-icon">🔴</div>
+        <div><div class="dest-name">火星探索營</div><div class="dest-info">7 天 6 夜・紅色沙漠徒步</div></div>
+        <div class="dest-price"><div class="dest-price-num">$380,000</div><div class="dest-price-unit">起 / 人</div></div>
+      </div>
+      <div class="dest-card">
+        <div class="dest-icon">💫</div>
+        <div><div class="dest-name">軌道飯店</div><div class="dest-info">14 天・零重力 SPA</div></div>
+        <div class="dest-price"><div class="dest-price-num">$1,200,000</div><div class="dest-price-unit">起 / 人</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ship -->
+  <section class="scene" id="scene-ship">
+    <div class="ship-text">
+      <h2>乘坐星際一號<br/>感受宇宙的壯闊</h2>
+      <p>全新研發的太空艙設計，搭載 AI 飛行管理系統與 360° 全景觀星窗，讓每一刻都是無法忘懷的宇宙記憶。</p>
+    </div>
+    <div class="spaceship">
+      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Engine glow -->
+        <ellipse cx="100" cy="170" rx="25" ry="14" fill="rgba(0,229,255,0.3)"/>
+        <ellipse cx="100" cy="175" rx="14" ry="7" fill="rgba(0,229,255,0.6)"/>
+        <!-- Body -->
+        <path d="M100 30 C130 60 145 100 140 140 L100 155 L60 140 C55 100 70 60 100 30Z" fill="url(#shipGrad)"/>
+        <!-- Wings -->
+        <path d="M60 140 L25 165 L50 148 L60 140Z" fill="#1a3a6e"/>
+        <path d="M140 140 L175 165 L150 148 L140 140Z" fill="#1a3a6e"/>
+        <!-- Window -->
+        <circle cx="100" cy="90" r="22" fill="rgba(0,229,255,0.15)" stroke="#00e5ff" stroke-width="2"/>
+        <circle cx="100" cy="90" r="14" fill="rgba(0,229,255,0.25)"/>
+        <circle cx="94" cy="84" r="5" fill="rgba(255,255,255,0.4)"/>
+        <!-- Exhaust nozzles -->
+        <rect x="86" y="148" width="12" height="14" rx="3" fill="#0a2050"/>
+        <rect x="102" y="148" width="12" height="14" rx="3" fill="#0a2050"/>
+        <!-- Flame -->
+        <path d="M88 162 C90 180 98 185 100 185 C102 185 110 180 112 162 C108 170 100 172 100 172 C100 172 92 170 88 162Z" fill="url(#flameGrad)" opacity="0.9"/>
+        <defs>
+          <linearGradient id="shipGrad" x1="60" y1="30" x2="140" y2="155" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#4a90e2"/>
+            <stop offset="60%" stop-color="#1a3a8a"/>
+            <stop offset="100%" stop-color="#060830"/>
+          </linearGradient>
+          <linearGradient id="flameGrad" x1="100" y1="162" x2="100" y2="185" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e5ff"/>
+            <stop offset="50%" stop-color="#ffd700"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="scene" id="scene-cta">
+    <h2 class="cta-title">你的宇宙之旅<br/>從這裡啟程</h2>
+    <p class="cta-sub">限額早鳥優惠・立即預訂享 20% 折扣</p>
+    <button class="cta-btn" onclick="alert('🚀 感謝您的預訂意向！\n\nStarVoyage 顧問將在 24 小時內與您聯繫。\n限額早鳥席位，先訂先得！')">立即預訂旅程</button>
+    <p class="cta-fine">*早鳥優惠限前 200 名報名旅客・2027年起航</p>
+  </section>
+
+</div><!-- /scroll-root -->
+
+<script>
+(function(){
+  /* ── Starfield ── */
+  const sf = document.getElementById('starfield');
+  for(let i=0;i<200;i++){
+    const s=document.createElement('div'); s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${2+Math.random()*4}s;animation-delay:-${Math.random()*4}s;`;
+    sf.appendChild(s);
+  }
+
+  /* ── Nebulae ── */
+  const nebulaDefs=[
+    {w:400,h:300,t:'10%',l:'-10%',color:'rgba(74,0,200,0.12)',dur:'8s'},
+    {w:350,h:250,t:'60%',r:'-5%',color:'rgba(0,180,200,0.1)',dur:'11s'},
+    {w:300,h:200,t:'40%',l:'40%',color:'rgba(200,0,100,0.08)',dur:'14s'},
+  ];
+  nebulaDefs.forEach(d=>{
+    const n=document.createElement('div'); n.className='nebula';
+    Object.assign(n.style,{width:d.w+'px',height:d.h+'px',top:d.t,background:d.color,animationDuration:d.dur});
+    if(d.l) n.style.left=d.l; if(d.r) n.style.right=d.r;
+    sf.appendChild(n);
+  });
+
+  /* ── Planet spots ── */
+  const ps=document.getElementById('planetSpots');
+  for(let i=0;i<8;i++){
+    const sp=document.createElement('div'); sp.className='spot';
+    const sz=15+Math.random()*30;
+    sp.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*80}%;left:${Math.random()*80}%;`;
+    ps.appendChild(sp);
+  }
+
+  /* ── Scroll reveal ── */
+  const scenes=['scene-hero','scene-stats','scene-destinations','scene-ship','scene-cta'];
+  const dotsEl=document.getElementById('dots');
+
+  scenes.forEach((id,i)=>{
+    const d=document.createElement('div'); d.className='dot';
+    d.dataset.i=i;
+    d.addEventListener('click',()=>{
+      document.getElementById(scenes[i]).scrollIntoView({behavior:'smooth'});
+    });
+    dotsEl.appendChild(d);
+  });
+  const dotEls=dotsEl.querySelectorAll('.dot');
+
+  function updateDot(idx){
+    dotEls.forEach((d,i)=>d.classList.toggle('active',i===idx));
+  }
+
+  /* ── Count-up animation ── */
+  function countUp(el){
+    const target=parseInt(el.dataset.count,10);
+    let current=0; const step=Math.ceil(target/30);
+    const t=setInterval(()=>{
+      current=Math.min(current+step,target);
+      el.textContent=current;
+      if(current>=target) clearInterval(t);
+    },40);
+  }
+
+  /* ── IntersectionObserver ── */
+  const obs=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        const idx=scenes.indexOf(entry.target.id);
+        if(idx>=0) updateDot(idx);
+        // trigger count-up for stats
+        entry.target.querySelectorAll('[data-count]').forEach(el=>{
+          if(!el.dataset.counted){ el.dataset.counted='1'; countUp(el); }
+        });
+      }
+    });
+  },{threshold:0.3});
+
+  scenes.forEach(id=>{ const el=document.getElementById(id); if(el) obs.observe(el); });
+
+  /* ── Parallax planet on scroll ── */
+  const planetWrap=document.getElementById('planetWrap');
+  window.addEventListener('scroll',()=>{
+    const scrollY=window.scrollY;
+    if(planetWrap) planetWrap.style.transform=`translateY(${scrollY*0.2}px)`;
+  },{passive:true});
+
+  /* ── Periodic shooting stars ── */
+  function shootingStar(){
+    const s=document.createElement('div'); s.className='shoot';
+    const y=Math.random()*window.innerHeight;
+    const w=80+Math.random()*120;
+    s.style.cssText=`top:${y}px;left:${Math.random()*80}%;width:${w}px;`;
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),700);
+  }
+  setInterval(shootingStar,2800);
+  setTimeout(shootingStar,800);
+
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

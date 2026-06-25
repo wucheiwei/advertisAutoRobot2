@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>魯冰花・那年茶鄉的紅蠟筆｜互動電影</title>
+<meta name="description" content="你是郭雲天，從城裡來的代課美術老師。在茶香瀰漫的水城鄉，你遇見一個會把太陽畫成紅色的孩子——古阿明。你的每一個選擇，都將改寫一段已經寫好的命運。改編自1989經典電影《魯冰花》。" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --gold:#e8bf55; --rose:#d98a6a; --ink:#0a0c12; --paper:#f3ead8; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:"Noto Sans TC",sans-serif;background:#000;color:var(--paper);
+    -webkit-font-smoothing:antialiased;user-select:none;}
+
+  /* ===== 舞台 ===== */
+  #stage{position:fixed;inset:0;overflow:hidden;background:#000;}
+  .bg{position:absolute;inset:0;background-size:cover;background-position:center;
+    opacity:0;transition:opacity 1.4s ease;}
+  .bg.on{opacity:1;}
+  .bg.ken{animation:ken 26s ease-in-out infinite alternate;}
+  @keyframes ken{0%{transform:scale(1.05) translate(0,0);}100%{transform:scale(1.22) translate(-3%,-3%);}}
+  #bgvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+    transition:opacity 1.4s ease;background:#000;}
+  #bgvid.on{opacity:1;}
+  /* 內嵌真實電影畫面（官方數位修復預告）當場景背景 */
+  #ytbg{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease;pointer-events:none;
+    z-index:0;overflow:hidden;background:#000;}
+  #ytbg.on{opacity:1;}
+  #ytbg iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:100vw;height:56.25vw;min-height:100vh;min-width:177.78vh;border:0;pointer-events:none;}
+  .filmtag{position:absolute;top:calc(7vh + 46px);left:50%;transform:translateX(-50%);z-index:11;
+    font-size:10.5px;letter-spacing:.22em;color:#f4e4bdcc;background:rgba(0,0,0,.4);
+    padding:5px 12px;border-radius:20px;pointer-events:none;opacity:0;transition:.6s;white-space:nowrap;
+    border:1px solid #ffffff22;}
+  .filmtag.show{opacity:.9;}
+  /* 電影感漸層遮罩 + 暗角 */
+  .shade{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(6,8,14,.55) 0%,rgba(6,8,14,.05) 32%,rgba(6,8,14,.12) 55%,rgba(6,8,14,.82) 100%);}
+  .vig{position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 200px 60px rgba(0,0,0,.6);}
+  #grain{position:absolute;inset:0;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+  #petals{position:absolute;inset:0;pointer-events:none;z-index:4;}
+  /* 雨 */
+  #rain{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 1s;z-index:5;
+    background-image:repeating-linear-gradient(101deg,transparent 0 7px,rgba(180,200,220,.16) 7px 8px);
+    background-size:auto 120px;animation:rainfall .5s linear infinite;}
+  #rain.on{opacity:.5;}
+  @keyframes rainfall{0%{background-position:0 0;}100%{background-position:-20px 120px;}}
+  /* 電影黑邊 */
+  .bar{position:absolute;left:0;right:0;height:7vh;background:#000;z-index:8;pointer-events:none;}
+  .bar.top{top:0;} .bar.bot{bottom:0;}
+
+  /* ===== 章節標題卡 ===== */
+  #chap{position:absolute;top:0;left:0;right:0;bottom:0;z-index:20;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;background:#05060c;
+    opacity:0;visibility:hidden;transition:opacity 1s;text-align:center;padding:8vw;}
+  #chap.on{opacity:1;visibility:visible;}
+  #chap .no{font-size:13px;letter-spacing:.5em;color:var(--gold);opacity:.8;margin-bottom:18px;}
+  #chap .ti{font-family:"Noto Serif TC",serif;font-weight:600;font-size:clamp(26px,7vw,42px);
+    letter-spacing:.1em;line-height:1.5;}
+  #chap .line{width:0;height:1px;background:var(--gold);margin-top:24px;transition:width 1.4s ease .3s;}
+  #chap.on .line{width:min(60vw,260px);}
+
+  /* ===== 對白區 ===== */
+  #hud{position:absolute;left:0;right:0;bottom:0;z-index:12;padding:0 5vw calc(7vh + 22px);
+    pointer-events:none;}
+  #speaker{display:inline-block;font-family:"Noto Serif TC",serif;font-weight:700;
+    font-size:clamp(16px,4.4vw,20px);color:var(--gold);letter-spacing:.12em;
+    margin-bottom:10px;padding:3px 0;text-shadow:0 2px 10px #000;opacity:0;transition:.3s;}
+  #speaker.show{opacity:1;}
+  #dbox{font-size:clamp(17px,4.8vw,22px);line-height:1.85;max-width:680px;
+    text-shadow:0 2px 14px rgba(0,0,0,.95);min-height:3.2em;letter-spacing:.03em;}
+  #dbox.narr{font-family:"Noto Serif TC",serif;font-style:normal;color:#efe6d4;opacity:.96;}
+  #cursor{display:inline-block;width:.55em;color:var(--gold);animation:bl .7s steps(1) infinite;}
+  @keyframes bl{50%{opacity:0;}}
+  #tapcue{margin-top:14px;font-size:12px;letter-spacing:.3em;color:#cdbfae;opacity:0;
+    transition:.4s;}
+  #tapcue.show{opacity:.75;animation:cuef 1.8s ease-in-out infinite;}
+  @keyframes cuef{50%{opacity:.3;}}
+
+  /* ===== 選項 ===== */
+  #choices{position:absolute;left:0;right:0;top:0;bottom:0;z-index:14;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    padding:10vh 7vw;opacity:0;visibility:hidden;transition:opacity .5s;}
+  #choices.on{opacity:1;visibility:visible;}
+  #choices .cq{font-family:"Noto Serif TC",serif;font-size:clamp(15px,4.4vw,19px);
+    color:var(--gold);letter-spacing:.16em;margin-bottom:10px;text-shadow:0 2px 12px #000;
+    text-align:center;opacity:0;transition:.4s;}
+  #choices.on .cq{opacity:.95;}
+  .choice{pointer-events:auto;width:100%;max-width:480px;cursor:pointer;
+    font-family:"Noto Sans TC";font-size:clamp(15px,4.2vw,18px);font-weight:500;
+    color:#f6efdf;text-align:center;padding:16px 22px;border-radius:14px;
+    background:rgba(14,16,26,.62);border:1px solid rgba(232,191,85,.4);
+    backdrop-filter:blur(6px);transition:.25s;text-shadow:0 1px 6px #000;
+    transform:translateY(12px);opacity:0;}
+  #choices.on .choice{transform:none;opacity:1;}
+  #choices.on .choice:nth-child(2){transition-delay:.12s;}
+  #choices.on .choice:nth-child(3){transition-delay:.24s;}
+  .choice:hover{border-color:var(--gold);background:rgba(40,32,16,.8);
+    box-shadow:0 8px 30px rgba(232,191,85,.25);transform:translateY(-2px);}
+  .choice:active{transform:scale(.98);}
+  #hud.dim{opacity:0;transition:opacity .4s;}
+
+  /* ===== 封面 ===== */
+  #cover{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:8vw;
+    transition:opacity 1.1s, visibility 1.1s;}
+  #cover.gone{opacity:0;visibility:hidden;}
+  #cover .tag{font-size:12px;letter-spacing:.42em;color:var(--gold);opacity:.85;margin-bottom:22px;}
+  #cover .ttl{font-family:"Noto Serif TC",serif;font-weight:900;
+    font-size:clamp(50px,16vw,108px);line-height:1;letter-spacing:.05em;
+    background:linear-gradient(180deg,#fff 5%,#f4d98a 55%,#d39b32);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 6px 30px rgba(227,178,60,.3));}
+  #cover .sub{font-family:"Noto Serif TC",serif;font-size:clamp(15px,4.4vw,20px);
+    color:#efe2c6;margin-top:20px;line-height:1.9;max-width:430px;}
+  #cover .meta{font-size:12px;letter-spacing:.18em;opacity:.6;margin-top:16px;}
+  .btn{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:none;
+    font-family:"Noto Sans TC";font-weight:700;font-size:16px;letter-spacing:.14em;
+    color:#241a07;background:linear-gradient(135deg,#f4d98a,#e3b23c);
+    padding:15px 40px;border-radius:40px;margin-top:40px;
+    box-shadow:0 12px 34px rgba(227,178,60,.42);transition:transform .25s,box-shadow .25s;}
+  .btn:active{transform:scale(.95);}
+  .btn.ghost{background:transparent;color:#f4e4bd;border:1.5px solid #f4e4bd77;box-shadow:none;margin-top:0;}
+
+  /* ===== 結局 ===== */
+  #ending{position:absolute;inset:0;z-index:30;display:none;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:9vw 7vw;
+    overflow-y:auto;background:linear-gradient(180deg,rgba(5,6,12,.72),rgba(5,6,12,.86));}
+  #ending.on{display:flex;animation:fadein 1.4s ease;}
+  @keyframes fadein{from{opacity:0;}to{opacity:1;}}
+  #ending .etag{font-size:12px;letter-spacing:.4em;color:var(--gold);margin-bottom:18px;}
+  #ending .epic{font-family:"Noto Serif TC",serif;font-weight:900;
+    font-size:clamp(24px,7vw,40px);line-height:1.55;
+    background:linear-gradient(180deg,#fff,#f4d98a);-webkit-background-clip:text;
+    background-clip:text;color:transparent;max-width:600px;}
+  #ending .ep{font-family:"Noto Serif TC",serif;font-size:clamp(15px,4.2vw,18px);
+    line-height:1.95;color:#efe2c6;max-width:520px;margin:26px 0;}
+  #ending .row{display:flex;gap:13px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+  #ending .credit{margin-top:42px;font-size:10.5px;line-height:1.85;opacity:.42;max-width:560px;letter-spacing:.04em;}
+  #ending a{color:#caa14a;}
+
+  /* 控制鈕 */
+  #mute{position:absolute;top:calc(7vh + 10px);right:14px;z-index:16;width:40px;height:40px;
+    border-radius:50%;border:1px solid #fff4;background:#0007;color:#fff;font-size:15px;
+    cursor:pointer;backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;}
+  #skip{position:absolute;top:calc(7vh + 10px);left:14px;z-index:16;
+    font-size:11px;letter-spacing:.16em;color:#cdbfae;background:#0006;border:1px solid #fff3;
+    padding:8px 14px;border-radius:30px;cursor:pointer;backdrop-filter:blur(6px);}
+  .chaplabel{position:absolute;top:calc(7vh + 12px);left:50%;transform:translateX(-50%);z-index:10;
+    font-size:11px;letter-spacing:.28em;color:#e8bf55cc;text-shadow:0 1px 6px #000;pointer-events:none;
+    opacity:0;transition:.6s;text-align:center;white-space:nowrap;}
+  .chaplabel.show{opacity:1;}
+  .hideUI{opacity:0!important;visibility:hidden!important;}
+
+  /* YouTube 燈箱（原片預告 / 主題曲） */
+  #lb{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+    background:rgba(3,4,9,.92);padding:5vw;backdrop-filter:blur(4px);}
+  #lb.on{display:flex;animation:fadein .4s ease;}
+  #lb .box{width:100%;max-width:860px;}
+  #lb .ttl{font-family:"Noto Serif TC",serif;color:var(--gold);font-size:clamp(15px,4vw,19px);
+    letter-spacing:.1em;margin-bottom:12px;text-align:center;}
+  #lb .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;
+    background:#000;box-shadow:0 20px 70px rgba(0,0,0,.7),0 0 0 1px rgba(232,191,85,.3);}
+  #lb iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  #lb .x{margin:18px auto 0;display:block;cursor:pointer;background:transparent;border:1.5px solid #fff5;
+    color:#f4e4bd;border-radius:30px;padding:10px 28px;font-size:14px;letter-spacing:.14em;font-family:"Noto Sans TC";}
+  #lb .note{text-align:center;font-size:11px;opacity:.5;margin-top:14px;letter-spacing:.05em;}
+  .filmbtn{pointer-events:auto;cursor:pointer;background:rgba(14,16,26,.55);border:1px solid rgba(232,191,85,.5);
+    color:#f4e4bd;border-radius:30px;padding:11px 22px;font-size:13px;letter-spacing:.12em;
+    font-family:"Noto Sans TC";font-weight:500;transition:.25s;}
+  .filmbtn:hover{border-color:var(--gold);background:rgba(40,32,16,.7);}
+  #coverFilm{margin-top:22px;}
+
+  .toast{position:fixed;left:50%;bottom:13vh;transform:translateX(-50%);z-index:99;
+    background:#1d1606;color:#f4d98a;padding:13px 24px;border-radius:30px;font-size:14px;
+    letter-spacing:.06em;box-shadow:0 10px 30px #0008;border:1px solid #e3b23c55;opacity:0;
+    transition:.4s;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg" id="bgA"></div>
+  <div class="bg" id="bgB"></div>
+  <video id="bgvid" muted loop playsinline preload="none"></video>
+  <div id="ytbg"></div>
+  <div class="shade"></div>
+  <div class="vig"></div>
+  <div id="grain"></div>
+  <div id="rain"></div>
+  <canvas id="petals"></canvas>
+  <div class="bar top"></div>
+  <div class="bar bot"></div>
+
+  <div class="chaplabel" id="chaplabel"></div>
+  <div class="filmtag" id="filmtag">◉ 1989 原片畫面・數位修復</div>
+  <button id="mute" aria-label="音樂">♪</button>
+  <div id="skip">略過 ⏭</div>
+
+  <!-- 章節卡 -->
+  <div id="chap"><div class="no" id="chapNo"></div><div class="ti" id="chapTi"></div><div class="line"></div></div>
+
+  <!-- 對白 -->
+  <div id="hud">
+    <div id="speaker"></div>
+    <div id="dbox" class="narr"></div>
+    <div id="tapcue">輕觸繼續 ›</div>
+  </div>
+
+  <!-- 選項 -->
+  <div id="choices"></div>
+
+  <!-- 封面 -->
+  <div id="cover">
+    <div class="tag">互 動 電 影 · 改 編 自 1 9 8 9 經 典</div>
+    <div class="ttl">魯冰花</div>
+    <div class="sub">那年茶鄉，<br/>有個會把太陽畫成紅色的孩子。<br/>而你，握著那支紅蠟筆。</div>
+    <div class="meta">你 將 扮 演 美 術 老 師 · 郭 雲 天</div>
+    <button class="btn" id="startBtn">▶ 走進水城鄉</button>
+    <button class="filmbtn" id="coverFilm" data-yt="trailer" data-ttl="1989 原片・2026 數位修復預告">▶ 先看 1989 原片預告（數位修復）</button>
+    <div class="meta" style="margin-top:22px;opacity:.45;">戴上耳機，效果更好</div>
+  </div>
+
+  <!-- 結局 -->
+  <div id="ending">
+    <div class="etag" id="etag"></div>
+    <div class="epic" id="epic"></div>
+    <div class="ep" id="ep"></div>
+    <div class="row" style="margin-bottom:6px;">
+      <button class="filmbtn" id="endTrailer" data-yt="trailer" data-ttl="《魯冰花》2026 數位修復・官方預告（原片畫面）">▶ 看真正的電影畫面・數位修復預告</button>
+      <button class="filmbtn" id="endSong" data-yt="song" data-ttl="主題曲〈魯冰花〉曾淑勤・官方 MV">♫ 聽主題曲〈魯冰花〉</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="ctaBook" style="margin-top:0;">7/8 重映・我要提醒</button>
+      <button class="btn ghost" id="ctaReplay">換個選擇，再走一次</button>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn ghost" id="ctaShare" style="font-size:13px;padding:11px 26px;">分享給記得它的人</button>
+    </div>
+    <div class="credit" id="credit"></div>
+  </div>
+
+  <!-- YouTube 燈箱 -->
+  <div id="lb">
+    <div class="box">
+      <div class="ttl" id="lbTtl"></div>
+      <div class="frame" id="lbFrame"></div>
+      <div class="note">影片由 YouTube 官方頻道提供，本頁僅作經典致敬導引之用。</div>
+      <button class="x" id="lbX">關閉 ✕</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* 防手機 double-tap 縮放 */
+(function(){let t=0;document.addEventListener('touchend',function(e){const n=Date.now();
+if(n-t<=300)e.preventDefault();t=n;},{passive:false});
+document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});})();
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ============ 已驗證可用素材（Wikimedia Commons / Pexels，皆可商用） ============ */
+var IMG={
+ misty:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/MISTY_VALLEY_BY_VIBE_CLICKER-0.jpg/1920px-MISTY_VALLEY_BY_VIBE_CLICKER-0.jpg",
+ tea:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/%E8%81%96%E5%B3%B0%E8%8C%B6%E5%9C%92_Shengfeng_Tea_Plantation_-_panoramio.jpg/1920px-%E8%81%96%E5%B3%B0%E8%8C%B6%E5%9C%92_Shengfeng_Tea_Plantation_-_panoramio.jpg",
+ board:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Green_board_-_Flickr_-_deeps.adhi.jpg/1920px-Green_board_-_Flickr_-_deeps.adhi.jpg",
+ lupine:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Lupines_and_Fireflies_No._4_%2814505155544%29.jpg/1920px-Lupines_and_Fireflies_No._4_%2814505155544%29.jpg",
+ leaf:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Close-up_look_on_tea_shrubs_at_BOH_Sungei_Palas_Tea_Plantation%2C_Cameron_Highlands.jpg/1920px-Close-up_look_on_tea_shrubs_at_BOH_Sungei_Palas_Tea_Plantation%2C_Cameron_Highlands.jpg",
+ worm:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Macro_shot_of_a_caterpillar_on_a_green_leaf.jpg/1920px-Macro_shot_of_a_caterpillar_on_a_green_leaf.jpg",
+ child:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Lao_child_drawing_of_a_village.jpg/1920px-Lao_child_drawing_of_a_village.jpg",
+ crayons:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Crayons_beside_child_coloring_%28Unsplash%29.jpg/1920px-Crayons_beside_child_coloring_%28Unsplash%29.jpg",
+ rain:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Rain_drops_on_window_02_ies.jpg/1920px-Rain_drops_on_window_02_ies.jpg",
+ candle:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Like_a_candle_flame_%28233107630%29.jpg/1920px-Like_a_candle_flame_%28233107630%29.jpg",
+ stream:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Eighteen_Arhats_Mountain_Nature_Reserve%EF%BC%88WEI%2C_WAN-CHEN%EF%BC%89%EF%BC%8D_%E5%8D%81%E5%85%AB%E7%BE%85%E6%BC%A2%E5%B1%B1%E8%88%87%E8%8D%96%E6%BF%83%E6%BA%AA%E7%9A%84%E5%B0%8D%E8%A9%B1.jpg/1920px-Eighteen_Arhats_Mountain_Nature_Reserve%EF%BC%88WEI%2C_WAN-CHEN%EF%BC%89%EF%BC%8D_%E5%8D%81%E5%85%AB%E7%BE%85%E6%BC%A2%E5%B1%B1%E8%88%87%E8%8D%96%E6%BF%83%E6%BA%AA%E7%9A%84%E5%B0%8D%E8%A9%B1.jpg",
+ stars:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Milky_Way_Starry_sky_at_Nan%27ao.jpg/1920px-Milky_Way_Starry_sky_at_Nan%27ao.jpg"
+};
+var VID={
+ tea:"https://videos.pexels.com/video-files/29979273/12864538_1920_1080_60fps.mp4",
+ rain:"https://videos.pexels.com/video-files/28435504/12381755_1920_1080_60fps.mp4",
+ dawn:"https://videos.pexels.com/video-files/37669026/15969552_2560_1440_60fps.mp4",
+ kid:"https://videos.pexels.com/video-files/7106523/7106523-hd_1920_1080_30fps.mp4",
+ flowers:"https://videos.pexels.com/video-files/6514284/6514284-hd_1920_1080_30fps.mp4",
+ rainwin:"https://videos.pexels.com/video-files/5366344/5366344-hd_1920_1080_30fps.mp4",
+ creek:"https://videos.pexels.com/video-files/6250405/6250405-hd_1920_1080_25fps.mp4",
+ night:"https://videos.pexels.com/video-files/5004222/5004222-uhd_2560_1440_24fps.mp4",
+ mistytea:"https://videos.pexels.com/video-files/29066669/12563306_1080_1920_30fps.mp4",
+ candle:"https://videos.pexels.com/video-files/12550702/12550702-hd_1920_1080_24fps.mp4"
+};
+/* 官方原片影像（YouTube 嵌入，點擊後才載入） */
+var YT={
+ trailer:"T99maopq0p4",  // 國家影視聽中心・2026 數位修復預告（原片畫面）
+ song:"i6ZLtqoDE4k",     // 曾淑勤〈魯冰花〉官方歌詞 MV
+ cannes:"qCeM4dC8I5M"    // 中央社・坎城首映新聞
+};
+
+/* ============ 劇本（資料驅動的分支引擎） ============ */
+/* who:''=旁白；line=對白；choices=分支；fx 修改 state；rain:true 下雨 */
+var SCENES={
+ s1:{chapter:["序章","茶香的山城"], video:"tea", lines:[
+   {w:"",t:"一九六〇年代。你叫郭雲天，從城裡被調到這座叫「水城鄉」的山村，當代課的美術老師。"},
+   {w:"",t:"四面都是茶山。空氣裡有茶葉的味道，還有一種你叫不出名字的、開著黃花的小草。"},
+ ], next:"s2"},
+
+ s2:{chapter:["第一章","課堂上的紅太陽"], video:"kid", lines:[
+   {w:"",t:"美術課。你在黑板上寫下題目：「我的家」。"},
+   {w:"",t:"後排有個男孩沒在看黑板，低著頭猛畫。粉筆灰裡，他把太陽塗成了——紅色的。"},
+   {w:"代課老師",t:"那是古阿明，茶農的孩子。全班最後一名，最會搗蛋。郭老師，別理他。"},
+ ], choice:{q:"你會怎麼做？", opts:[
+   {t:"走過去，看看他到底在畫什麼", goto:"s3a", fx:function(s){s.faith++;}},
+   {t:"敲敲他的桌子，要他專心聽課", goto:"s3b"}
+ ]}},
+
+ s3b:{img:"child", lines:[
+   {w:"",t:"你敲了敲桌子。男孩抬起頭，眼神裡沒有害怕，只有一句沒說出口的「你不懂」。"},
+   {w:"",t:"但你瞥見了那張畫——紅色的太陽、紫色的山，還有比人還大的蟲。你愣住了。"},
+ ], next:"s4"},
+
+ s3a:{img:"child", lines:[
+   {w:"",t:"你蹲下來。畫紙上，太陽是紅的，山是紫的，茶園裡爬著比房子還大的蟲。"},
+   {w:"古阿明",t:"……老師說我畫錯了。可是，我看到的就是這樣啊。"},
+   {w:"",t:"你的心跳漏了一拍。這不是亂畫——這是天分，一種沒被任何人教過的天分。"},
+ ], next:"s4"},
+
+ s4:{chapter:["第二章","魯冰花與茶蟲"], video:"flowers", lines:[
+   {w:"",t:"放學路上，你問校工：那滿山的黃花，是什麼？"},
+   {w:"校工",t:"魯冰花啦。種在茶樹中間，開完花就犁進土裡做肥料。客家人講，這是『母親花』——把自己化作春泥，養活整片茶園。"},
+   {w:"",t:"你望著阿明瘦小的背影，走進茶園深處。"},
+ ], next:"s5"},
+
+ s5:{img:"worm", lines:[
+   {w:"",t:"你去家訪。茶園裡，阿明興奮地指著葉子上一條肥肥的蟲。"},
+   {w:"古阿明",t:"老師你看！茶蟲在吃茶葉，牠們好大好大，會把整片茶園都吃光光——我要把牠畫下來！"},
+   {w:"",t:"在大人眼裡，那是害蟲。在阿明眼裡，那是一整個會動的世界。你掏出口袋裡的蠟筆。"},
+ ], choice:{q:"你決定送他什麼？", opts:[
+   {t:"把整盒蠟筆都送給他", goto:"s6", fx:function(s){s.gift="box";}},
+   {t:"抽出那支「紅色」的，放進他手心", goto:"s6", fx:function(s){s.gift="red";s.faith++;}}
+ ]}},
+
+ s6:{img:"crayons", lines:[
+   {w:"",t:function(s){return s.gift==="red"
+     ? "阿明把那支紅蠟筆捧在手心，像捧著一顆會發光的星。"
+     : "阿明把那盒蠟筆抱在胸口，眼睛亮得像整片星空。";}},
+   {w:"古阿明",t:"老師，我長大要當畫家！畫好多好多畫，賺大錢，買一座茶山給阿爸！"},
+   {w:"",t:"你笑了，也下定決心：要讓全世界，都看見這個孩子。"},
+ ], next:"s7"},
+
+ s7:{chapter:["第三章","只有一個名額"], yt:"trailer", start:24, lines:[
+   {w:"",t:"全國學生美術比賽，學校只能推派一個孩子。辦公室裡，你說出那個名字。"},
+   {w:"郭雲天（你）",t:"我推薦——古阿明。"},
+   {w:"校長",t:"古阿明？功課最後一名、家裡最窮的那個？郭老師，這要傳出去……"},
+   {w:"林主任",t:"鄉長的公子林志鴻，畫得乾乾淨淨、又得體。送他去，對學校、對大家都好。"},
+   {w:"",t:"所有人的目光，都落在你身上，等你把話收回去。"},
+ ], choice:{q:"這一刻，你——", opts:[
+   {t:"拍桌力爭：比賽比的是才華，不是爸爸是誰！", goto:"s8a", fx:function(s){s.faith+=2;}},
+   {t:"算了，別得罪人。你低下頭，點了頭", goto:"s8b", fx:function(s){s.silent=true;}}
+ ]}},
+
+ s8a:{video:"mistytea", lines:[
+   {w:"郭雲天（你）",t:"比賽比的是才華，不是爸爸是誰！"},
+   {w:"",t:"會議室一片死寂。然後——他們還是舉手表決，選了林志鴻。"},
+   {w:"林主任",t:"郭老師，你太理想了。這裡是水城鄉，不是你的城市。"},
+ ], next:"s9"},
+
+ s8b:{video:"rainwin", rain:true, lines:[
+   {w:"",t:"你把到了嘴邊的話，又吞了回去。名額，給了林志鴻。"},
+   {w:"",t:"那天晚上你睡不著。你一閉上眼，就看見阿明那顆紅色的太陽，正在你心裡，慢慢地暗下去。"},
+ ], next:"s9"},
+
+ s9:{video:"rain", rain:true, lines:[
+   {w:"",t:"藝術，輸給了人情；天才，輸給了權勢。你寫下辭呈，決定離開水城鄉。"},
+   {w:"",t:"離開前，你偷偷把阿明那幅《茶蟲》捲進行李，寄去了國際兒童畫展。"},
+   {w:"",t:"你想：等好消息回來，我要第一個，跑去告訴他。"},
+ ], next:"s10"},
+
+ s10:{chapter:["第四章","下雨的那天"], video:"candle", lines:[
+   {w:"",t:"你不知道——你走以後，阿明病了。沒有人再帶他去比賽，他唯一的伯樂，也走了。"},
+   {w:"",t:"是肝病。油燈下，阿爸賣了剛養大的小豬籌錢，還是來不及。"},
+   {w:"",t:"一個飄著小雨的午後，阿明一個人走到山下的溪邊。他說，他想把最愛的山和水，都畫下來。"},
+ ], next:"s11"},
+
+ s11:{video:"creek", rain:true, lines:[
+   {w:"",t:"那，成了他最後一張畫。"},
+   {w:"",t:"他靜靜地靠著，像睡著了一樣。小小的手裡，還緊緊握著——"},
+   {w:"",t:function(s){return s.gift==="red"
+     ? "那支你送他的紅蠟筆。" : "那盒你送他的蠟筆，其中那支紅色的，被他攥得最緊。";}},
+ ], next:"s12"},
+
+ s12:{chapter:["終章","遲來的金牌"], yt:"trailer", start:62, lines:[
+   {w:"",t:"阿明下葬後沒幾天，海的另一邊，寄來了一封信。"},
+   {w:"",t:"《茶蟲》——世界兒童畫展，金牌首獎。全村都轟動了。大家都說：古阿明，是天才。"},
+   {w:"古茶妹",t:"古阿明生前，只有郭老師說他是天才……現在得了獎，大家才說他是天才。可是，又有什麼用呢？"},
+ ], next:"s13"},
+
+ s13:{video:"dawn", lines:[
+   {w:"",t:"春天又來了。茶山上，魯冰花開成一整片金黃，然後謝去，化進泥土裡，默默養著來年的新芽。"},
+   {w:"",t:"有些孩子，就像魯冰花。開得太短，卻把最亮的光，留給了後來的人。"},
+ ], end:true}
+};
+
+/* ============ 引擎 ============ */
+var state={faith:0, gift:"", silent:false};
+var cur=null, li=0, lines=[], typing=false, typed="", fullText="", typer=null;
+var started=false;
+
+var bgA=document.getElementById('bgA'), bgB=document.getElementById('bgB'), bgvid=document.getElementById('bgvid');
+var useA=true;
+var dbox=document.getElementById('dbox'), spk=document.getElementById('speaker'),
+    tapcue=document.getElementById('tapcue'), choicesEl=document.getElementById('choices'),
+    rainEl=document.getElementById('rain'), chapLabel=document.getElementById('chaplabel');
+
+function resolve(v){ return (typeof v==="function")? v(state): v; }
+
+var ytbg=document.getElementById('ytbg'), filmtag=document.getElementById('filmtag');
+function clearYTBG(){ if(ytbg.classList.contains('on')||ytbg.innerHTML){ ytbg.classList.remove('on');
+  ytbg.innerHTML=""; ytbg.removeAttribute('data-src'); } filmtag.classList.remove('show'); }
+
+function setMedia(sc){
+  if(sc.yt){
+    bgA.classList.remove('on'); bgB.classList.remove('on');
+    bgvid.classList.remove('on'); try{bgvid.pause();}catch(e){}
+    var id=YT[sc.yt]||sc.yt, st=sc.start||0;
+    var src="https://www.youtube-nocookie.com/embed/"+id+"?autoplay=1&mute=1&controls=0&loop=1&playlist="+id+
+            "&modestbranding=1&rel=0&playsinline=1&iv_load_policy=3&start="+st+(sc.end?("&end="+sc.end):"");
+    if(ytbg.getAttribute('data-src')!==src){
+      ytbg.setAttribute('data-src',src);
+      ytbg.innerHTML='<iframe src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+    }
+    ytbg.classList.add('on'); filmtag.classList.add('show');
+    rainEl.classList.toggle('on', !!sc.rain);
+    return;
+  }
+  clearYTBG();
+  if(sc.video){
+    bgA.classList.remove('on'); bgB.classList.remove('on');
+    var url=VID[sc.video];
+    if(bgvid.getAttribute('data-src')!==url){
+      bgvid.classList.remove('on');           // 先淡出，換片源
+      bgvid.setAttribute('data-src',url); bgvid.src=url;
+      try{bgvid.load();}catch(e){}
+      var shown=false, show=function(){ if(shown)return; shown=true;
+        bgvid.classList.add('on'); var p=bgvid.play(); if(p&&p.catch)p.catch(function(){}); };
+      bgvid.addEventListener('loadeddata',show,{once:true});
+      setTimeout(show,1400);                   // 後援：避免 loadeddata 太慢
+    } else {
+      bgvid.classList.add('on'); var p2=bgvid.play(); if(p2&&p2.catch)p2.catch(function(){});
+    }
+  } else if(sc.img){
+    bgvid.classList.remove('on'); try{bgvid.pause();}catch(e){}
+    var next=useA?bgA:bgB, prev=useA?bgB:bgA;
+    next.style.backgroundImage="url('"+IMG[sc.img]+"')";
+    next.classList.add('ken'); next.classList.add('on'); prev.classList.remove('on');
+    useA=!useA;
+  }
+  rainEl.classList.toggle('on', !!sc.rain);
+}
+
+function showChapter(sc, after){
+  if(!sc.chapter){ after(); return; }
+  document.getElementById('chapNo').textContent=sc.chapter[0];
+  document.getElementById('chapTi').textContent=sc.chapter[1];
+  var chap=document.getElementById('chap');
+  chapLabel.textContent=sc.chapter[0]+" · "+sc.chapter[1];
+  chap.classList.add('on');
+  setTimeout(function(){ chap.classList.remove('on'); chapLabel.classList.add('show');
+    setTimeout(after,700); }, 1900);
+}
+
+function goto(id){
+  cur=SCENES[id];
+  setMedia(cur);
+  showChapter(cur, function(){
+    lines=cur.lines||[]; li=0; choicesEl.classList.remove('on');
+    setTimeout(function(){ renderLine(); }, cur.chapter?100:400);
+  });
+}
+
+function renderLine(){
+  document.getElementById('hud').classList.remove('dim');
+  if(li>=lines.length){ afterLines(); return; }
+  var ln=lines[li];
+  var who=resolve(ln.w);
+  fullText=resolve(ln.t); typed=""; typing=true;
+  if(who){ spk.textContent=who; spk.classList.add('show'); dbox.classList.remove('narr'); }
+  else { spk.classList.remove('show'); dbox.classList.add('narr'); }
+  tapcue.classList.remove('show');
+  if(typer)clearInterval(typer);
+  var i=0;
+  typer=setInterval(function(){
+    i++; typed=fullText.slice(0,i);
+    dbox.innerHTML=typed+'<span id="cursor">▍</span>';
+    if(i>=fullText.length){ clearInterval(typer); typing=false; dbox.textContent=fullText; tapcue.classList.add('show'); }
+  }, 42);
+}
+
+function afterLines(){
+  if(cur.choice){ showChoices(cur.choice); return; }
+  if(cur.end){ toEnding(); return; }
+  if(cur.next){ goto(cur.next); }
+}
+
+function showChoices(ch){
+  tapcue.classList.remove('show');
+  document.getElementById('hud').classList.add('dim');
+  choicesEl.innerHTML="";
+  var q=document.createElement('div'); q.className="cq"; q.textContent=ch.q||"你的選擇";
+  choicesEl.appendChild(q);
+  ch.opts.forEach(function(o){
+    var b=document.createElement('div'); b.className="choice"; b.textContent=o.t;
+    b.onclick=function(ev){ ev.stopPropagation();
+      if(o.fx)o.fx(state);
+      choicesEl.classList.remove('on');
+      document.getElementById('hud').classList.remove('dim');
+      setTimeout(function(){ goto(o.goto); }, 350);
+    };
+    choicesEl.appendChild(b);
+  });
+  choicesEl.classList.add('on');
+}
+
+/* 點擊推進（封面/選項/結局時不推進） */
+function advance(){
+  if(!started) return;
+  if(choicesEl.classList.contains('on')) return;
+  if(document.getElementById('ending').classList.contains('on')) return;
+  if(document.getElementById('chap').classList.contains('on')) return;
+  if(typing){ // 加速：直接補完
+    clearInterval(typer); typed=fullText; dbox.textContent=fullText; typing=false;
+    tapcue.classList.add('show'); return;
+  }
+  li++; renderLine();
+}
+document.getElementById('stage').addEventListener('click', function(e){
+  if(e.target.closest('.choice')||e.target.closest('button')||e.target.closest('#cover')||e.target.closest('#ending')) return;
+  advance();
+});
+
+/* ============ 結局（依選擇分歧的尾聲） ============ */
+function toEnding(){
+  var end=document.getElementById('ending');
+  var etag=document.getElementById('etag'), epic=document.getElementById('epic'), ep=document.getElementById('ep');
+  var redLine = state.gift==="red"
+    ? "那支紅蠟筆，是你留在這世界上、最溫柔的一筆。"
+    : "那盒蠟筆，陪他畫到了最後一刻。";
+  if(state.faith>=3){
+    etag.textContent="你 的 結 局 · 遲 來 的 伯 樂";
+    epic.innerHTML="你曾為他發聲，<br/>儘管，太遲了。";
+    ep.innerHTML="你沒能改變那場表決，也沒能趕在他闔眼前回來。<br/>但你讓世界，記住了古阿明。<br/>"+redLine+"<br/><br/>於是你決定，把這個孩子的故事，說給每一個人聽。";
+  } else if(state.silent){
+    etag.textContent="你 的 結 局 · 沉 默 的 重 量";
+    epic.innerHTML="你的沉默，<br/>讓你愧疚了一生。";
+    ep.innerHTML="那天你低下了頭，名額給了別人。<br/>如今金牌寄到，孩子卻已不在。<br/>"+redLine+"<br/><br/>也許正因為這份遺憾，你更要替他，把故事說下去。";
+  } else {
+    etag.textContent="你 的 結 局 · 化 作 春 泥";
+    epic.innerHTML="夜夜想起媽媽的話，<br/>閃閃的淚光，魯冰花。";
+    ep.innerHTML="天才早逝，像魯冰花化進泥土。<br/>"+redLine+"<br/><br/>他來不及長大，卻把對美的相信，留給了後來的我們。";
+  }
+  document.getElementById('credit').innerHTML=
+    "《魯冰花》改編自鍾肇政小說，吳念真編劇、楊立國執導（1989）。<br/>"+
+    "2026 年由國家影視聽中心 4K 數位修復，入選第 79 屆坎城影展「經典單元」，<b>7 月 8 日</b>數位修復版重返全台大銀幕。<br/>"+
+    "主題曲《魯冰花》姚謙 詞・陳揚 曲・曾淑勤 唱（第 26 屆金馬獎最佳電影插曲）。<br/>"+
+    "原片預告與主題曲 MV 由 YouTube 官方頻道嵌入；氛圍影像：<a href='https://www.pexels.com/'>Pexels</a>（免費可商用）、<a href='https://commons.wikimedia.org/'>Wikimedia Commons</a>（CC 授權）。本頁為向經典致敬之非官方互動體驗。";
+  try{bgvid.pause();}catch(e){}
+  end.classList.add('on');
+}
+
+document.getElementById('ctaReplay').onclick=function(){ location.reload(); };
+document.getElementById('ctaBook').onclick=function(){ toast("🎬 已記下提醒・7 月 8 日數位修復版全台重映"); };
+
+/* ===== YouTube 燈箱（點擊後才注入 iframe，確保初始載入乾淨） ===== */
+var lb=document.getElementById('lb'), lbFrame=document.getElementById('lbFrame'), lbTtl=document.getElementById('lbTtl');
+function openYT(key, title){
+  var id=YT[key]; if(!id) return;
+  lbTtl.textContent=title||"";
+  lbFrame.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0&modestbranding=1&playsinline=1" '+
+    'allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+  lb.classList.add('on');
+  try{bgvid.pause();}catch(e){}
+}
+function closeYT(){ lb.classList.remove('on'); lbFrame.innerHTML=""; }
+document.getElementById('lbX').onclick=function(ev){ ev.stopPropagation(); closeYT(); };
+lb.addEventListener('click',function(e){ if(e.target===lb) closeYT(); });
+Array.prototype.forEach.call(document.querySelectorAll('[data-yt]'),function(b){
+  b.addEventListener('click',function(ev){ ev.stopPropagation();
+    openYT(b.getAttribute('data-yt'), b.getAttribute('data-ttl')); });
+});
+document.getElementById('ctaShare').onclick=async function(){
+  var d={title:"魯冰花・互動電影",text:"夜夜想起媽媽的話，閃閃的淚光魯冰花。一起重溫經典《魯冰花》。",url:location.href};
+  try{ if(navigator.share){await navigator.share(d);} else {throw 0;} }catch(_){ toast("💛 連結已備好，分享給記得它的人"); }
+};
+function toast(m){ var t=document.createElement('div'); t.className="toast"; t.textContent=m;
+  document.body.appendChild(t); requestAnimationFrame(function(){t.style.opacity=1;});
+  setTimeout(function(){t.style.opacity=0;setTimeout(function(){t.remove();},400);},2600); }
+
+/* ============ 開場 ============ */
+document.getElementById('startBtn').onclick=function(){
+  document.getElementById('cover').classList.add('gone');
+  started=true;
+  try{ if(AC&&AC.state==='suspended')AC.resume(); }catch(e){}
+  startMusic();
+  setTimeout(function(){ goto("s1"); }, 700);
+};
+document.getElementById('skip').onclick=function(ev){ ev.stopPropagation();
+  if(!started) return;
+  if(typing){ clearInterval(typer); dbox.textContent=fullText; typing=false; tapcue.classList.add('show'); return; }
+  // 略過本場剩餘對白
+  if(cur && cur.choice && li>=lines.length){ return; }
+  li=lines.length; afterLines();
+};
+
+/* ============ 魯冰花花瓣粒子 ============ */
+var cv=document.getElementById('petals'), cx=cv.getContext('2d'), W,H,DPR;
+function size(){ DPR=Math.min(devicePixelRatio||1,2); W=cv.width=innerWidth*DPR; H=cv.height=innerHeight*DPR;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+size(); addEventListener('resize',size);
+var ps=[]; for(var i=0;i<18;i++) ps.push(np(true));
+function np(init){ return {x:Math.random(), y:init?Math.random():-0.05,
+  s:Math.random()*0.6+0.5, sp:Math.random()*0.0005+0.0003, sw:Math.random()*6.28,
+  sws:Math.random()*0.018+0.008, rot:Math.random()*6.28}; }
+function loop(){ cx.clearRect(0,0,W,H);
+  for(var k=0;k<ps.length;k++){ var p=ps[k]; p.y+=p.sp; p.sw+=p.sws; p.rot+=0.009;
+    if(p.y>1.08){ ps[k]=np(false); continue; }
+    var x=(p.x+Math.sin(p.sw)*0.03)*W, y=p.y*H, sz=7*p.s*DPR;
+    cx.save(); cx.translate(x,y); cx.rotate(p.rot);
+    var g=cx.createLinearGradient(0,-sz,0,sz); g.addColorStop(0,'#f6df8e'); g.addColorStop(1,'#e3b23c');
+    cx.fillStyle=g; cx.globalAlpha=0.55; cx.beginPath(); cx.ellipse(0,0,sz*0.55,sz,0,0,6.28); cx.fill(); cx.restore();
+  }
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ============ 環境配樂（使用者啟動後） ============ */
+var AC=null, master=null, musTimer=null, musOn=false;
+var scale=[392.00,440.00,523.25,587.33,659.25,783.99];
+var musBtn=document.getElementById('mute');
+function startMusic(){
+  try{
+    if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)();
+      master=AC.createGain(); master.gain.value=0.0001; master.connect(AC.destination); }
+    if(AC.state==='suspended')AC.resume();
+    master.gain.setTargetAtTime(0.13,AC.currentTime,1.4);
+    function tick(){ var f=scale[Math.floor(Math.random()*scale.length)];
+      var o=AC.createOscillator(), g=AC.createGain(); o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,AC.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.5,AC.currentTime+0.5);
+      g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+3.0);
+      o.connect(g); g.connect(master); o.start(); o.stop(AC.currentTime+3.1); }
+    tick(); if(musTimer)clearInterval(musTimer); musTimer=setInterval(tick,1700);
+    musOn=true; musBtn.textContent='♫';
+  }catch(e){}
+}
+function stopMusic(){ if(musTimer)clearInterval(musTimer);
+  if(master&&AC)master.gain.setTargetAtTime(0.0001,AC.currentTime,0.4); musOn=false; musBtn.textContent='♪'; }
+musBtn.onclick=function(ev){ ev.stopPropagation(); musOn?stopMusic():startMusic(); };
+
+})();
+</script>
+</body>
+</html>

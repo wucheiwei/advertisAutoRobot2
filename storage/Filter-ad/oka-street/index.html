@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <!-- 開發期間不快取，每次進畫面都抓最新 -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>橡樹街末日 · THE END OF OAK STREET</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main id="app">
+
+    <!-- ============ Screen 1: GPS 授權 ============ -->
+    <section class="screen screen--gps is-active" id="screen-gps" data-screen="gps">
+      <div class="screen__bg screen__bg--jungle"></div>
+      <div class="screen__content screen__content--center">
+        <p class="warning-tag">WARNING</p>
+        <h1 class="title-stone">橡樹街末日</h1>
+        <p class="lede">
+          請允許偵測 GPS 位置<br />
+          才能解鎖此處的遠古宿敵
+        </p>
+        <button class="btn btn--lime" id="btn-allow-gps">允許偵測定位</button>
+        <p class="note" id="gps-note">*免登入直接體驗</p>
+      </div>
+    </section>
+
+    <!-- ============ Screen 2: 定位完成 / 解鎖濾鏡 ============ -->
+    <!-- 背景(叢林框+科博館+標題+綠框卡+按鈕)畫在 assets/bg-unlock.jpg。
+         中間恐龍 icon 為可替換圖：覆蓋 assets/unlock-icon.png 即可換成自己的。 -->
+    <section class="screen screen--unlock" id="screen-unlock" data-screen="unlock">
+      <div class="unlock-stage">
+        <img class="unlock-stage__icon" id="unlock-thumb" src="assets/unlock-icon.png" alt="解鎖濾鏡" />
+        <button class="unlock-stage__go" id="btn-open-camera" aria-label="開啟相機"></button>
+        <!-- 文字已畫在背景圖；保留節點供 app.js 動態設定（隱藏不顯示） -->
+        <span class="sr-only" id="unlock-place"></span>
+        <span class="sr-only" id="unlock-title"></span>
+      </div>
+    </section>
+
+    <!-- ============ Screen 3: 相機 + 相框濾鏡 ============ -->
+    <section class="screen screen--camera" id="screen-camera" data-screen="camera">
+      <video class="camera__video" id="camera-video" playsinline autoplay muted></video>
+      <img class="camera__frame" id="camera-frame" alt="" decoding="async" />
+      <canvas class="camera__canvas" id="camera-canvas" hidden></canvas>
+
+      <div class="camera__permission" id="camera-permission">
+        <div class="camera__permission-inner">
+          <div class="cam-icon">📷</div>
+          <h3>需要使用相機</h3>
+          <p>請在<strong>瀏覽器跳出的提示</strong>中點「允許」，才能套用「<span id="perm-dino">暴龍</span>」末日相框拍照。</p>
+          <button class="btn btn--lime" id="btn-allow-camera">重試開啟相機</button>
+        </div>
+      </div>
+
+      <div class="camera__hud" id="camera-hud" hidden>
+        <button class="icon-btn camera__flip" id="btn-flip" title="切換鏡頭">⟳</button>
+        <div class="camera__controls">
+          <button class="btn btn--lime btn--upload" id="btn-upload-photo">上傳照片</button>
+          <button class="shutter" id="btn-shutter" aria-label="拍照"></button>
+          <span class="camera__spacer"></span>
+        </div>
+      </div>
+      <input type="file" id="file-upload" accept="image/*" hidden />
+    </section>
+
+    <!-- ============ Screen 4: 成果 / 分享 ============ -->
+    <section class="screen screen--share" id="screen-share" data-screen="share">
+      <div class="screen__bg screen__bg--dino-pattern"></div>
+      <div class="share__sheet">
+        <div class="share__photo-wrap">
+          <img class="share__photo" id="share-photo" alt="你的末日獵影" />
+        </div>
+        <button class="btn btn--orange" id="btn-share">分享到社群</button>
+        <p class="share__hint">選擇 Instagram、Facebook、X 或 Threads 分享照片</p>
+        <button class="btn btn--ghost" id="btn-save">儲存到相簿</button>
+        <p class="share__hint share__hint--sub">手機請在面板選「儲存到照片」</p>
+        <button class="link-btn" id="btn-retake">重新拍攝</button>
+      </div>
+    </section>
+
+    <!-- ============ Screen 5 (Ending): 全台連線恐龍出沒點 ============ -->
+    <section class="screen screen--map" id="screen-map" data-screen="map">
+      <div class="screen__bg screen__bg--jungle"></div>
+      <div class="screen__content screen__content--center">
+        <h2 class="title-stone title-stone--sm">全台連線：<br />恐龍出沒點</h2>
+        <p class="lede lede--sm">發現全台恐龍蹤跡</p>
+        <div class="map-board" id="map-board"></div>
+
+        <!-- 點選地圖 pin 後，顯示該濾鏡的恐龍 icon + 科博館資訊 -->
+        <div class="map-select" id="map-select" hidden>
+          <img class="map-select__icon" id="map-select-icon" alt="" />
+          <div class="map-select__text">
+            <span class="map-select__region" id="map-select-region"></span>
+            <span class="map-select__museum" id="map-select-museum"></span>
+          </div>
+        </div>
+
+        <a class="btn btn--stone btn--map" id="btn-next-spot" href="#" target="_blank" rel="noopener" hidden>
+          📍 開啟 google 地圖前往下個據點
+        </a>
+        <p class="lede lede--sm map-hint" id="map-hint">點選地圖上的據點，查看恐龍與科博館位置</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast / 提示 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

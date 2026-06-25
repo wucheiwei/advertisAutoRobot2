@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>像素解謎大挑戰 × PixelCo 限定活動</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      background:#1a1a2e;
+      display:flex;flex-direction:column;align-items:center;
+      min-height:100vh;
+      font-family:'Noto Sans TC',system-ui,sans-serif;
+      color:#fff;user-select:none;-webkit-tap-highlight-color:transparent;
+      overflow:hidden;
+    }
+    #header{
+      width:100%;max-width:480px;padding:10px 16px;
+      display:flex;justify-content:space-between;align-items:center;
+      background:linear-gradient(90deg,#0f3460,#16213e);
+      border-bottom:2px solid #e94560;
+    }
+    #logo{font-size:20px;font-weight:900;color:#e94560;letter-spacing:2px;}
+    #progress-info{font-size:13px;color:#a0cfff;font-weight:700;}
+    #main{
+      flex:1;width:100%;max-width:480px;
+      display:flex;flex-direction:column;align-items:center;
+      padding:12px 8px;gap:10px;overflow:hidden;
+    }
+    #instruction{
+      font-size:13px;color:#a0cfff;text-align:center;line-height:1.5;
+    }
+    #palette{
+      display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
+      padding:6px 8px;background:#0f3460;border-radius:10px;
+    }
+    .color-chip{
+      width:32px;height:32px;border-radius:6px;cursor:pointer;
+      border:2px solid transparent;display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px #000;
+      transition:transform .1s;
+    }
+    .color-chip.selected{border-color:#fff;transform:scale(1.2);}
+    #canvas-wrap{
+      width:100%;max-width:360px;
+      background:#0a0a1a;border-radius:10px;overflow:hidden;
+      border:2px solid #0f3460;
+    }
+    canvas{display:block;width:100%;cursor:pointer;}
+    #hint{font-size:12px;color:#666;text-align:center;}
+    #reveal-overlay{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,.9);z-index:20;
+      flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    }
+    #reveal-overlay canvas{border-radius:10px;max-width:280px;max-height:280px;width:100%;}
+    .rv-title{font-size:24px;font-weight:900;color:#e94560;text-align:center;}
+    .rv-sub{font-size:13px;color:#a0cfff;text-align:center;padding:0 24px;}
+    .rv-coupon{
+      background:#0f3460;border:2px dashed #e94560;
+      border-radius:12px;padding:12px 24px;text-align:center;
+    }
+    .rv-code{font-size:22px;font-weight:900;color:#ffd700;letter-spacing:4px;}
+    .rv-desc{font-size:11px;color:#999;margin-top:3px;}
+    .cta-btn{
+      background:linear-gradient(135deg,#e94560,#a40034);
+      border:none;color:#fff;font-size:16px;font-weight:700;
+      padding:12px 36px;border-radius:50px;cursor:pointer;
+      font-family:system-ui,sans-serif;
+    }
+    #cta-bar{
+      width:100%;max-width:480px;padding:10px 16px;
+      background:linear-gradient(90deg,#0f3460,#e94560);
+      text-align:center;font-size:12px;font-weight:700;cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="header">
+  <div id="logo">PixelCo</div>
+  <div id="progress-info">完成度 <span id="pct">0</span>%</div>
+</div>
+<div id="main">
+  <div id="instruction">選好顏色，點擊對應數字的格子來上色<br>全部塗完即可解鎖限定優惠！</div>
+  <div id="palette"></div>
+  <div id="canvas-wrap"><canvas id="grid-canvas"></canvas></div>
+  <div id="hint">小提示：數字代表使用哪個顏色</div>
+</div>
+<div id="cta-bar">✨ 探索 PixelCo 創意商品，點我前往！</div>
+
+<div id="reveal-overlay">
+  <div class="rv-title">🎨 解謎完成！</div>
+  <canvas id="reveal-canvas"></canvas>
+  <div class="rv-sub">恭喜揭開 PixelCo 限定圖案！</div>
+  <div class="rv-coupon">
+    <div class="rv-code">PIXEL2026</div>
+    <div class="rv-desc">輸入折扣碼結帳享 8 折，限時 48 小時！</div>
+  </div>
+  <button class="cta-btn" id="go-shop">立即前往兌換</button>
+</div>
+
+<script>
+(function(){
+  // Color palette: index 1..6
+  var COLORS=[
+    null,          // 0 = empty
+    '#e94560',     // 1 red
+    '#ffd700',     // 2 gold
+    '#00cfff',     // 3 cyan
+    '#a040ff',     // 4 purple
+    '#00e676',     // 5 green
+    '#ff8c00',     // 6 orange
+  ];
+  var COLOR_LABELS=['','1','2','3','4','5','6'];
+
+  // 16x16 pixel art — a star / diamond shape (representing "PixelCo" brand gem)
+  // 0=bg, 1-6=colors
+  var MAP=[
+    [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0],
+    [0,0,0,0,0,1,2,3,3,2,1,0,0,0,0,0],
+    [0,0,0,0,1,2,3,4,4,3,2,1,0,0,0,0],
+    [0,0,0,1,2,3,4,5,5,4,3,2,1,0,0,0],
+    [0,0,1,2,3,4,5,6,6,5,4,3,2,1,0,0],
+    [0,1,2,3,4,5,6,1,1,6,5,4,3,2,1,0],
+    [1,2,3,4,5,6,1,2,2,1,6,5,4,3,2,1],
+    [1,2,3,4,5,6,1,2,2,1,6,5,4,3,2,1],
+    [0,1,2,3,4,5,6,1,1,6,5,4,3,2,1,0],
+    [0,0,1,2,3,4,5,6,6,5,4,3,2,1,0,0],
+    [0,0,0,1,2,3,4,5,5,4,3,2,1,0,0,0],
+    [0,0,0,0,1,2,3,4,4,3,2,1,0,0,0,0],
+    [0,0,0,0,0,1,2,3,3,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+  ];
+
+  var ROWS=16,COLS=16;
+  var canvas=document.getElementById('grid-canvas');
+  var ctx=canvas.getContext('2d');
+  var CELL=0;
+  var filledMap=[];  // true/false per cell
+  var selectedColor=1;
+  var totalFillable=0;
+  var filled=0;
+
+  function setupCanvas(){
+    var wrap=document.getElementById('canvas-wrap');
+    var sz=Math.floor(wrap.clientWidth/COLS)*COLS;
+    canvas.width=sz; canvas.height=sz;
+    CELL=sz/COLS;
+  }
+
+  function buildFilledMap(){
+    filledMap=[];
+    totalFillable=0;
+    for(var r=0;r<ROWS;r++){
+      filledMap.push([]);
+      for(var c=0;c<COLS;c++){
+        filledMap[r].push(false);
+        if(MAP[r][c]>0) totalFillable++;
+      }
+    }
+    filled=0;
+  }
+
+  function buildPalette(){
+    var pal=document.getElementById('palette');
+    pal.innerHTML='';
+    for(var i=1;i<=6;i++){
+      (function(idx){
+        var chip=document.createElement('div');
+        chip.className='color-chip'+(idx===selectedColor?' selected':'');
+        chip.style.background=COLORS[idx];
+        chip.textContent=idx;
+        chip.addEventListener('click',function(){
+          selectedColor=idx;
+          document.querySelectorAll('.color-chip').forEach(function(c,j){
+            c.className='color-chip'+(j+1===idx?' selected':'');
+          });
+        });
+        pal.appendChild(chip);
+      })(i);
+    }
+  }
+
+  function drawGrid(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(var r=0;r<ROWS;r++){
+      for(var c=0;c<COLS;c++){
+        var x=c*CELL, y=r*CELL;
+        var code=MAP[r][c];
+        if(code===0){
+          ctx.fillStyle='#0a0a1a';
+          ctx.fillRect(x,y,CELL,CELL);
+          continue;
+        }
+        if(filledMap[r][c]){
+          ctx.fillStyle=COLORS[code];
+          ctx.fillRect(x,y,CELL,CELL);
+        } else {
+          ctx.fillStyle='#1e2044';
+          ctx.fillRect(x,y,CELL,CELL);
+          ctx.strokeStyle='#2a2a5a';
+          ctx.lineWidth=0.5;
+          ctx.strokeRect(x+0.25,y+0.25,CELL-0.5,CELL-0.5);
+          // Draw number hint
+          ctx.fillStyle='#5566aa';
+          ctx.font=Math.max(8,CELL*0.45)+'px system-ui';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(String(code),x+CELL/2,y+CELL/2);
+        }
+      }
+    }
+  }
+
+  function getCell(e){
+    var rect=canvas.getBoundingClientRect();
+    var scaleX=canvas.width/rect.width;
+    var scaleY=canvas.height/rect.height;
+    var cx, cy;
+    if(e.touches){
+      cx=(e.touches[0].clientX-rect.left)*scaleX;
+      cy=(e.touches[0].clientY-rect.top)*scaleY;
+    } else {
+      cx=(e.clientX-rect.left)*scaleX;
+      cy=(e.clientY-rect.top)*scaleY;
+    }
+    return{r:Math.floor(cy/CELL),c:Math.floor(cx/CELL)};
+  }
+
+  function tryFill(r,c){
+    if(r<0||r>=ROWS||c<0||c>=COLS)return;
+    var code=MAP[r][c];
+    if(code===0)return;
+    if(filledMap[r][c])return;
+    if(code!==selectedColor)return; // wrong color
+    filledMap[r][c]=true;
+    filled++;
+    drawGrid();
+    updateProgress();
+    if(filled>=totalFillable) setTimeout(showReveal,400);
+  }
+
+  var dragging=false;
+  canvas.addEventListener('mousedown',function(e){dragging=true;var p=getCell(e);tryFill(p.r,p.c);});
+  canvas.addEventListener('mousemove',function(e){if(!dragging)return;var p=getCell(e);tryFill(p.r,p.c);});
+  canvas.addEventListener('mouseup',function(){dragging=false;});
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();dragging=true;var p=getCell(e);tryFill(p.r,p.c);});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!dragging)return;var p=getCell(e);tryFill(p.r,p.c);});
+  canvas.addEventListener('touchend',function(e){e.preventDefault();dragging=false;});
+
+  function updateProgress(){
+    var pct=Math.round(filled/totalFillable*100);
+    document.getElementById('pct').textContent=pct;
+  }
+
+  function showReveal(){
+    var ov=document.getElementById('reveal-overlay');
+    ov.style.display='flex';
+    // Draw full colored version on reveal canvas
+    var rc=document.getElementById('reveal-canvas');
+    var sz=Math.min(280,window.innerWidth-80);
+    rc.width=sz;rc.height=sz;
+    var rctx=rc.getContext('2d');
+    var cell=sz/COLS;
+    for(var r=0;r<ROWS;r++){
+      for(var c=0;c<COLS;c++){
+        var code=MAP[r][c];
+        rctx.fillStyle=code>0?COLORS[code]:'#0a0a1a';
+        rctx.fillRect(c*cell,r*cell,cell,cell);
+      }
+    }
+    // Confetti via canvas
+    launchConfetti();
+  }
+
+  function launchConfetti(){
+    var cc=document.createElement('canvas');
+    cc.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:21;width:100%;height:100%;';
+    cc.width=window.innerWidth; cc.height=window.innerHeight;
+    document.body.appendChild(cc);
+    var cctx=cc.getContext('2d');
+    var particles=[];
+    var cols=['#e94560','#ffd700','#00cfff','#a040ff','#00e676','#ff8c00'];
+    for(var i=0;i<80;i++){
+      particles.push({
+        x:Math.random()*cc.width,y:-10,
+        vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,
+        w:Math.random()*8+4,h:Math.random()*4+2,
+        col:cols[Math.floor(Math.random()*cols.length)],
+        rot:Math.random()*Math.PI,vr:(Math.random()-.5)*.2
+      });
+    }
+    var frames=0;
+    function step(){
+      cctx.clearRect(0,0,cc.width,cc.height);
+      particles.forEach(function(p){
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr;
+        cctx.save();
+        cctx.translate(p.x,p.y);
+        cctx.rotate(p.rot);
+        cctx.fillStyle=p.col;
+        cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        cctx.restore();
+      });
+      frames++;
+      if(frames<120) requestAnimationFrame(step);
+      else cc.remove();
+    }
+    requestAnimationFrame(step);
+  }
+
+  document.getElementById('go-shop').addEventListener('click',function(){
+    window.open('https://pixelco.example.com','_blank');
+  });
+  document.getElementById('cta-bar').addEventListener('click',function(){
+    window.open('https://pixelco.example.com','_blank');
+  });
+
+  // Init
+  setupCanvas();
+  buildFilledMap();
+  buildPalette();
+  drawGrid();
+  window.addEventListener('resize',function(){
+    setupCanvas();drawGrid();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>星霧夜市彈珠台｜投珍珠抽好禮</title>
+<meta name="description" content="星霧氣泡茶・霓虹夜市彈珠台。投下發光珍珠，看它在霓虹釘陣中彈跳，掉進哪格就抽中哪個優惠！" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg0:#0a0420; --bg1:#160a3a; --ink:#f4f0ff;
+    --pink:#ff3d9a; --cyan:#22e6ff; --gold:#ffd24a; --violet:#a36bff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #2a1166 0%, transparent 55%),
+      radial-gradient(100% 60% at 90% 110%, #06243a 0%, transparent 50%),
+      linear-gradient(180deg,var(--bg0),var(--bg1));
+    min-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    overflow-x:hidden;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .wrap{width:100%;max-width:440px;padding:16px 16px 26px;display:flex;flex-direction:column;align-items:center;}
+
+  header{text-align:center;margin:6px 0 10px;}
+  .brand{
+    display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;letter-spacing:.18em;
+    color:var(--cyan);padding:5px 13px;border:1px solid rgba(34,230,255,.4);border-radius:999px;
+    background:rgba(34,230,255,.07);text-shadow:0 0 10px rgba(34,230,255,.5);
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+  h1{
+    font-size:clamp(26px,8vw,36px);font-weight:900;margin:12px 0 4px;line-height:1.1;
+    background:linear-gradient(92deg,var(--pink),var(--gold),var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 18px rgba(255,61,154,.35));
+  }
+  .sub{font-size:13.5px;color:#c8bdf0;font-weight:500;}
+
+  .hud{display:flex;gap:10px;align-items:center;justify-content:center;margin:12px 0 6px;flex-wrap:wrap;}
+  .chip{
+    font-size:13px;font-weight:700;padding:7px 14px;border-radius:12px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);display:flex;gap:6px;align-items:center;
+  }
+  .chip b{color:var(--gold);font-size:15px;text-shadow:0 0 8px rgba(255,210,74,.5);}
+  .pearls{letter-spacing:2px;font-size:15px;}
+
+  .stage{position:relative;width:100%;border-radius:22px;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(163,107,255,.35),0 18px 50px rgba(0,0,0,.55),inset 0 0 60px rgba(46,16,110,.5);
+    background:linear-gradient(180deg,#120833,#0a0524);}
+  canvas{display:block;width:100%;height:auto;touch-action:none;}
+
+  /* Overlays */
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:26px;gap:14px;background:rgba(8,3,26,.82);backdrop-filter:blur(6px);
+    transition:opacity .35s;z-index:5;}
+  .overlay.hide{opacity:0;pointer-events:none;}
+  .overlay h2{font-size:clamp(22px,6.5vw,30px);font-weight:900;
+    background:linear-gradient(90deg,var(--cyan),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .overlay p{font-size:14px;color:#d4ccf2;line-height:1.7;max-width:300px;}
+  .prizebox{font-size:30px;font-weight:900;color:var(--gold);text-shadow:0 0 22px rgba(255,210,74,.6);margin:2px 0;}
+
+  .btn{
+    cursor:pointer;border:none;font-family:inherit;font-weight:900;font-size:17px;color:#1a0633;
+    padding:15px 30px;border-radius:16px;
+    background:linear-gradient(92deg,var(--gold),var(--pink));
+    box-shadow:0 8px 26px rgba(255,61,154,.45),inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .12s,filter .2s;letter-spacing:.04em;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn.ghost{background:transparent;color:var(--cyan);border:1px solid rgba(34,230,255,.5);box-shadow:none;font-size:14px;padding:11px 20px;}
+
+  .hint{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;font-size:13px;color:#a99fd0;min-height:20px;}
+  .hint .pulse{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+
+  .toast{position:absolute;left:50%;top:14px;transform:translateX(-50%) translateY(-16px);
+    background:rgba(10,4,30,.9);border:1px solid var(--gold);color:var(--gold);font-weight:900;font-size:15px;
+    padding:9px 18px;border-radius:13px;opacity:0;transition:.35s;z-index:6;white-space:nowrap;
+    box-shadow:0 0 22px rgba(255,210,74,.4);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer{margin-top:18px;text-align:center;font-size:11.5px;color:#6b5fa0;line-height:1.6;}
+  .legal{margin-top:5px;font-size:10.5px;color:#534a7d;}
+  .winlist{display:flex;flex-direction:column;gap:6px;margin:2px 0;}
+  .winlist span{font-size:14px;color:var(--ink);font-weight:700;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="dot"></span>STARMIST・星霧氣泡茶</div>
+      <h1>霓虹夜市彈珠台</h1>
+      <div class="sub">投下發光珍珠，掉進哪格・就抽中哪個優惠 🧋</div>
+    </header>
+
+    <div class="hud">
+      <div class="chip">剩餘珍珠 <span class="pearls" id="pearls">●●●</span></div>
+      <div class="chip">已抽優惠 <b id="wonCount">0</b></div>
+    </div>
+
+    <div class="stage">
+      <canvas id="game"></canvas>
+      <div class="toast" id="toast"></div>
+
+      <div class="overlay" id="startOverlay">
+        <h2>歡迎來到星霧夜市</h2>
+        <p>你有 <b style="color:var(--gold)">3 顆珍珠</b>。<br>點擊上方任一處投下珍珠，<br>看它在霓虹釘陣中彈跳，<br>落入的格子就是你抽中的優惠！</p>
+        <button class="btn" id="startBtn">開始投珍珠</button>
+      </div>
+
+      <div class="overlay hide" id="endOverlay">
+        <h2>抽獎完成！</h2>
+        <div class="winlist" id="winList"></div>
+        <p style="font-size:13px">把你的優惠帶回家，<br>到星霧氣泡茶門市出示即可折抵。</p>
+        <button class="btn" id="ctaBtn">立即領取我的優惠 →</button>
+        <button class="btn ghost" id="replayBtn">再玩一次</button>
+      </div>
+    </div>
+
+    <div class="hint" id="hint"><span class="pulse"></span><span id="hintText">點「開始投珍珠」啟動彈珠台</span></div>
+
+    <footer>
+      ★ STARMIST 星霧氣泡茶・夏季限定互動活動 ★
+      <div class="legal">本頁為虛構品牌示範用互動廣告，獎項與優惠僅為展示。</div>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+  (function(){
+    "use strict";
+    const { Engine, World, Bodies, Composite, Events, Body } = Matter;
+
+    // ---- 邏輯座標系（matter 世界單位）----
+    const BW = 380, BH = 600;
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // ---- 獎項設定（中央較佳，符合彈珠落點分布）----
+    const PRIZES = [
+      { label:'9折券',   short:'9折',   color:'#22e6ff', rank:2 },
+      { label:'85折券',  short:'85折',  color:'#7bd1ff', rank:3 },
+      { label:'免費加料', short:'加料',  color:'#a36bff', rank:4 },
+      { label:'買一送一', short:'買1送1',color:'#ffd24a', rank:5 },
+      { label:'免費加料', short:'加料',  color:'#a36bff', rank:4 },
+      { label:'85折券',  short:'85折',  color:'#7bd1ff', rank:3 },
+      { label:'9折券',   short:'9折',   color:'#22e6ff', rank:2 },
+    ];
+    const NBINS = PRIZES.length;
+    const binW = BW / NBINS;
+
+    // ---- 物理世界 ----
+    const engine = Engine.create();
+    engine.gravity.y = 1.05;
+    const world = engine.world;
+
+    const pegs = [];
+    const PEG_R = 5;
+    const WALL = 14;
+
+    // 邊牆 + 底
+    World.add(world, [
+      Bodies.rectangle(-WALL/2, BH/2, WALL, BH*1.4, { isStatic:true, label:'wall' }),
+      Bodies.rectangle(BW+WALL/2, BH/2, WALL, BH*1.4, { isStatic:true, label:'wall' }),
+    ]);
+
+    // 釘陣（交錯菱形排列）
+    const PEG_ROWS = 8;
+    const topY = 116, rowGap = 40;
+    const margin = 34;
+    for(let r=0;r<PEG_ROWS;r++){
+      const y = topY + r*rowGap;
+      const even = r % 2 === 0;
+      const cols = even ? 6 : 7;
+      const span = BW - margin*2;
+      const step = span / (even ? cols-1 : cols-1);
+      const offset = even ? 0 : -step/2;
+      for(let c=0;c<cols;c++){
+        let x = margin + c*step + offset;
+        if(x < margin*0.4 || x > BW-margin*0.4) continue;
+        const peg = Bodies.circle(x, y, PEG_R, {
+          isStatic:true, restitution:0.45, friction:0.0, label:'peg'
+        });
+        peg._glow = 0;
+        pegs.push(peg);
+        World.add(world, peg);
+      }
+    }
+
+    // 獎格隔板 + 感應底
+    const binTop = BH - 96;
+    const sensors = [];
+    for(let i=0;i<=NBINS;i++){
+      const x = i*binW;
+      World.add(world, Bodies.rectangle(x, binTop + 48, 5, 96, {
+        isStatic:true, restitution:0.2, friction:0.05, label:'divider'
+      }));
+    }
+    for(let i=0;i<NBINS;i++){
+      const s = Bodies.rectangle((i+0.5)*binW, BH-6, binW-6, 8, {
+        isStatic:true, isSensor:true, label:'sensor'
+      });
+      s._bin = i;
+      sensors.push(s);
+      World.add(world, s);
+    }
+
+    // ---- 遊戲狀態 ----
+    let ball = null;
+    let dropping = false;
+    let dropTime = 0;
+    let pearls = 3;
+    const won = [];
+    let aimX = BW/2;
+    let started = false;
+    let highlightBin = -1, highlightT = 0;
+
+    const els = {
+      pearls: document.getElementById('pearls'),
+      wonCount: document.getElementById('wonCount'),
+      hint: document.getElementById('hintText'),
+      toast: document.getElementById('toast'),
+      start: document.getElementById('startOverlay'),
+      end: document.getElementById('endOverlay'),
+      winList: document.getElementById('winList'),
+    };
+
+    function updateHud(){
+      els.pearls.textContent = '●'.repeat(pearls) + '○'.repeat(Math.max(0,3-pearls));
+      els.wonCount.textContent = won.length;
+    }
+
+    function showToast(txt){
+      els.toast.textContent = txt;
+      els.toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>els.toast.classList.remove('show'), 1600);
+    }
+
+    function dropBall(x){
+      if(!started || dropping || pearls<=0) return;
+      x = Math.max(margin, Math.min(BW-margin, x));
+      x += (Math.random()-0.5)*6; // 微抖動，避免完全可預測
+      ball = Bodies.circle(x, 70, 8.5, {
+        restitution:0.55, friction:0.002, frictionAir:0.004, density:0.02, label:'ball'
+      });
+      Body.setVelocity(ball, { x:(Math.random()-0.5)*1.2, y:0 });
+      World.add(world, ball);
+      dropping = true;
+      dropTime = performance.now();
+      els.hint.textContent = '珍珠掉落中…';
+    }
+
+    function nearestBin(x){
+      return Math.max(0, Math.min(NBINS-1, Math.floor(x / binW)));
+    }
+
+    function award(bin){
+      if(!dropping) return;
+      dropping = false;
+      if(ball){ World.remove(world, ball); ball = null; }
+      const prize = PRIZES[bin];
+      won.push(prize);
+      pearls--;
+      updateHud();
+      highlightBin = bin; highlightT = performance.now();
+      showToast('🎉 抽中 ' + prize.label + '！');
+      burstConfetti(0.5);
+
+      if(pearls<=0){
+        setTimeout(finish, 1100);
+      } else {
+        els.hint.textContent = '還有 ' + pearls + ' 顆，點上方任一處再投！';
+      }
+    }
+
+    function finish(){
+      // 取最佳獎項排到最前
+      const sorted = [...won].sort((a,b)=>b.rank-a.rank);
+      els.winList.innerHTML = sorted.map(p=>'<span>🎟️ '+p.label+'</span>').join('');
+      els.end.classList.remove('hide');
+      burstConfetti(1);
+    }
+
+    function burstConfetti(scale){
+      if(typeof confetti !== 'function') return;
+      confetti({
+        particleCount: Math.round(70*scale),
+        spread: 70,
+        startVelocity: 38,
+        origin: { y: 0.55 },
+        colors: ['#ff3d9a','#22e6ff','#ffd24a','#a36bff'],
+        scalar: 0.9,
+      });
+    }
+
+    // 碰撞：珍珠進入感應底 → 結算
+    Events.on(engine, 'collisionStart', (e)=>{
+      for(const pair of e.pairs){
+        const a = pair.bodyA, b = pair.bodyB;
+        let sensor=null, theBall=null;
+        if(a.label==='sensor' && b.label==='ball'){ sensor=a; theBall=b; }
+        else if(b.label==='sensor' && a.label==='ball'){ sensor=b; theBall=a; }
+        if(sensor){ award(sensor._bin); return; }
+        // 釘子發光
+        if(a.label==='peg') a._glow = 1;
+        if(b.label==='peg') b._glow = 1;
+      }
+    });
+
+    // ---- 互動 ----
+    function toLogical(clientX){
+      const rect = canvas.getBoundingClientRect();
+      return (clientX - rect.left) / rect.width * BW;
+    }
+    function onMove(clientX){ aimX = Math.max(margin, Math.min(BW-margin, toLogical(clientX))); }
+
+    canvas.addEventListener('pointermove', (ev)=>{ onMove(ev.clientX); }, {passive:true});
+    canvas.addEventListener('pointerdown', (ev)=>{
+      onMove(ev.clientX);
+      dropBall(aimX);
+    });
+
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      started = true;
+      els.start.classList.add('hide');
+      els.hint.textContent = '點彈珠台上方任一處投下珍珠';
+    });
+    document.getElementById('replayBtn').addEventListener('click', ()=>{
+      won.length = 0; pearls = 3; dropping=false;
+      if(ball){ World.remove(world, ball); ball=null; }
+      updateHud();
+      els.end.classList.add('hide');
+      els.hint.textContent = '點彈珠台上方任一處投下珍珠';
+    });
+    document.getElementById('ctaBtn').addEventListener('click', ()=>{
+      showToast('✅ 已將優惠加入你的星霧錢包');
+      burstConfetti(1.2);
+    });
+
+    // ---- 尺寸/解析度 ----
+    let scale = 1, dpr = 1;
+    function resize(){
+      const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+      dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      scale = cssW / BW;
+      canvas.width = Math.round(BW * scale * dpr);
+      canvas.height = Math.round(BH * scale * dpr);
+      canvas.style.height = (BH * scale) + 'px';
+    }
+    // 先設定 CSS 寬度（由 .stage 寬度撐開）
+    canvas.style.width = '100%';
+    // 給一個初始高度避免第一次 clientWidth 為 0
+    requestAnimationFrame(()=>{ resize(); });
+    window.addEventListener('resize', resize);
+
+    // ---- 繪圖 ----
+    function drawPeg(p){
+      const g = p._glow;
+      ctx.beginPath();
+      ctx.arc(p.position.x, p.position.y, PEG_R + g*2, 0, Math.PI*2);
+      ctx.fillStyle = g>0.05 ? '#ffffff' : '#cfc4ff';
+      ctx.shadowColor = '#a36bff';
+      ctx.shadowBlur = 8 + g*16;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      p._glow *= 0.9;
+    }
+
+    function drawBins(){
+      const now = performance.now();
+      for(let i=0;i<NBINS;i++){
+        const x0 = i*binW, cx=(i+0.5)*binW;
+        const hot = (i===highlightBin) && (now-highlightT < 1400);
+        const a = hot ? 0.9 : 0.32;
+        ctx.fillStyle = PRIZES[i].color;
+        ctx.globalAlpha = a;
+        ctx.fillRect(x0+3, binTop+4, binW-6, BH-binTop-8);
+        ctx.globalAlpha = 1;
+        // 標籤
+        ctx.fillStyle = hot ? '#0a0420' : '#0d0726';
+        ctx.font = '700 ' + (binW>52?13:11) + 'px "Noto Sans TC",sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.save();
+        ctx.translate(cx, (binTop+BH)/2);
+        ctx.fillText(PRIZES[i].short, 0, 0);
+        ctx.restore();
+      }
+      // 隔板
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      for(let i=1;i<NBINS;i++){
+        ctx.fillRect(i*binW-1.5, binTop, 3, BH-binTop);
+      }
+    }
+
+    function drawAim(){
+      if(!started || dropping || pearls<=0) return;
+      ctx.strokeStyle = 'rgba(34,230,255,.55)';
+      ctx.setLineDash([4,7]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(aimX, 40); ctx.lineTo(aimX, 96); ctx.stroke();
+      ctx.setLineDash([]);
+      // 待投珍珠
+      const grd = ctx.createRadialGradient(aimX-3, 34, 1, aimX, 38, 9);
+      grd.addColorStop(0,'#fff'); grd.addColorStop(.5,'#ffd24a'); grd.addColorStop(1,'#ff9d3d');
+      ctx.beginPath(); ctx.arc(aimX, 40, 8.5, 0, Math.PI*2);
+      ctx.fillStyle = grd; ctx.shadowColor='#ffd24a'; ctx.shadowBlur=14; ctx.fill(); ctx.shadowBlur=0;
+    }
+
+    function drawBall(){
+      if(!ball) return;
+      const {x,y} = ball.position;
+      const grd = ctx.createRadialGradient(x-3, y-3, 1, x, y, 10);
+      grd.addColorStop(0,'#ffffff'); grd.addColorStop(.45,'#ffe79a'); grd.addColorStop(1,'#ff8a3d');
+      ctx.beginPath(); ctx.arc(x, y, 8.5, 0, Math.PI*2);
+      ctx.fillStyle = grd; ctx.shadowColor='#ffd24a'; ctx.shadowBlur=16; ctx.fill(); ctx.shadowBlur=0;
+    }
+
+    function drawBg(){
+      // 頂部投放區提示帶
+      ctx.fillStyle = 'rgba(34,230,255,.05)';
+      ctx.fillRect(0,0,BW,100);
+      ctx.fillStyle = 'rgba(34,230,255,.55)';
+      ctx.font='700 12px "Noto Sans TC",sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('▼ 投 珍 珠 區 ▼', BW/2, 16);
+    }
+
+    let last = performance.now(), acc = 0;
+    const STEP = 1000/120;
+    function loop(now){
+      const dt = Math.min(now - last, 60); last = now; acc += dt;
+      // 固定步長更新物理
+      let n=0;
+      while(acc >= STEP && n<6){ Engine.update(engine, STEP); acc -= STEP; n++; }
+
+      // 看門狗：球停滯或超時 → 依位置結算
+      if(dropping && ball){
+        const out = ball.position.y > BH+30 || ball.position.x < -30 || ball.position.x > BW+30;
+        const timeout = now - dropTime > 9000;
+        const settledLow = ball.position.y > binTop && Math.hypot(ball.velocity.x, ball.velocity.y) < 0.25;
+        if(out || timeout || settledLow){
+          award(nearestBin(ball ? ball.position.x : aimX));
+        }
+      }
+
+      // 繪製
+      ctx.setTransform(scale*dpr,0,0,scale*dpr,0,0);
+      ctx.clearRect(0,0,BW,BH);
+      drawBg();
+      drawBins();
+      for(const p of pegs) drawPeg(p);
+      drawAim();
+      drawBall();
+
+      requestAnimationFrame(loop);
+    }
+
+    updateHud();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

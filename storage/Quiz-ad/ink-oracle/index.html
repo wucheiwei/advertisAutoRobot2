@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>心墨神諭 — 潛意識人格測驗</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #F5F0EA;
+      color: #1A1018;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .15; }
+    .page {
+      position: relative; z-index: 1;
+      max-width: 480px; margin: 0 auto;
+      padding: 0 20px 60px;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+    .screen.active { display: flex; animation: fadeUp .5s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    /* ── BRAND ── */
+    .brand-wrap { margin-top: 48px; margin-bottom: 8px; text-align: center; }
+    .brand-name {
+      font-size: 2rem; font-weight: 900; letter-spacing: .3em;
+      color: #1A1018;
+    }
+    .brand-ruby {
+      display: inline-block; font-size: .68rem;
+      letter-spacing: .08em; color: #7B3F6E;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .brand-sub {
+      font-size: .75rem; letter-spacing: .2em;
+      color: rgba(26,16,24,.4); margin-bottom: 36px;
+    }
+    /* ── Intro ── */
+    .inkdrop-anim {
+      width: 100px; height: 100px; margin-bottom: 24px;
+      position: relative;
+    }
+    .inkdrop-anim canvas { width: 100%; height: 100%; }
+    .intro-heading {
+      font-size: 1.6rem; font-weight: 700; text-align: center;
+      line-height: 1.55; margin-bottom: 16px;
+    }
+    .intro-body {
+      font-size: .92rem; color: rgba(26,16,24,.65);
+      text-align: center; line-height: 1.9; margin-bottom: 32px;
+    }
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 36px; }
+    .tag {
+      padding: 6px 14px; border-radius: 20px; font-size: .75rem;
+      background: rgba(123,63,110,.1); color: #7B3F6E;
+      border: 1px solid rgba(123,63,110,.2); letter-spacing: .06em;
+    }
+    /* ── Buttons ── */
+    .btn {
+      padding: 17px 40px; border: none; border-radius: 50px;
+      background: #1A1018; color: #F5F0EA;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1.05rem; font-weight: 700; cursor: pointer;
+      letter-spacing: .1em;
+      box-shadow: 0 4px 20px rgba(26,16,24,.25);
+      transition: transform .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(26,16,24,.4); }
+    .btn:active { transform: translateY(0); }
+    .btn-outline {
+      background: transparent; border: 1.5px solid rgba(26,16,24,.2);
+      color: rgba(26,16,24,.6); padding: 14px 32px; border-radius: 50px;
+      font-family: 'Noto Sans TC', sans-serif; font-size: .9rem;
+      cursor: pointer; width: 100%; margin-top: 12px;
+      transition: all .2s;
+    }
+    .btn-outline:hover { background: rgba(26,16,24,.05); color: #1A1018; }
+    /* ── Progress ── */
+    .prog-wrap { width: 100%; margin-bottom: 32px; }
+    .prog-row { display: flex; justify-content: space-between; font-size: .78rem; color: rgba(26,16,24,.4); margin-bottom: 8px; }
+    .prog-track { height: 3px; background: rgba(26,16,24,.1); border-radius: 2px; overflow: hidden; }
+    .prog-bar { height: 100%; background: #7B3F6E; border-radius: 2px; transition: width .5s ease; }
+    /* ── Inkblot Canvas ── */
+    .blot-stage {
+      width: 100%; display: flex; justify-content: center;
+      margin-bottom: 28px; padding: 20px 0;
+    }
+    #blotCanvas {
+      border-radius: 16px;
+      background: #EDE8E1;
+      box-shadow: 0 4px 24px rgba(26,16,24,.12);
+      max-width: 300px; width: 100%;
+      aspect-ratio: 1;
+      display: block;
+    }
+    /* ── Choices ── */
+    .q-text {
+      font-size: 1.15rem; font-weight: 700; text-align: center;
+      margin-bottom: 24px; line-height: 1.6; color: #1A1018;
+    }
+    .choices { width: 100%; display: flex; flex-direction: column; gap: 11px; }
+    .c-btn {
+      width: 100%; padding: 15px 18px;
+      background: #fff; border: 1.5px solid rgba(26,16,24,.1);
+      border-radius: 14px; color: #1A1018;
+      font-family: 'Noto Sans TC', sans-serif; font-size: .92rem;
+      text-align: left; cursor: pointer;
+      display: flex; align-items: center; gap: 14px;
+      transition: all .22s;
+    }
+    .c-btn:hover { border-color: #7B3F6E; background: rgba(123,63,110,.05); transform: translateX(4px); }
+    .c-btn.picked { background: rgba(123,63,110,.1); border-color: #7B3F6E; }
+    .c-key {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(26,16,24,.07); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 700;
+    }
+    /* ── Result ── */
+    .r-blot-mini {
+      width: 90px; height: 90px; border-radius: 50%; overflow: hidden;
+      margin-bottom: 20px;
+      background: #EDE8E1; box-shadow: 0 4px 20px rgba(26,16,24,.15);
+    }
+    .r-blot-mini canvas { width: 100%; height: 100%; }
+    .r-archetype-label {
+      font-size: .72rem; letter-spacing: .25em; color: #7B3F6E; margin-bottom: 8px;
+    }
+    .r-archetype-name { font-size: 2rem; font-weight: 900; margin-bottom: 20px; text-align: center; }
+    .r-traits {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin-bottom: 20px;
+    }
+    .r-trait {
+      padding: 6px 14px; border-radius: 20px; font-size: .78rem;
+      background: rgba(123,63,110,.12); color: #7B3F6E;
+      border: 1px solid rgba(123,63,110,.2);
+    }
+    .r-desc {
+      font-size: .92rem; color: rgba(26,16,24,.7);
+      text-align: center; line-height: 1.95; margin-bottom: 28px;
+    }
+    .r-report {
+      width: 100%; padding: 22px 20px;
+      background: #fff; border: 1px solid rgba(26,16,24,.1);
+      border-radius: 18px; margin-bottom: 28px;
+    }
+    .r-report-title {
+      font-size: .72rem; letter-spacing: .18em;
+      color: rgba(26,16,24,.4); margin-bottom: 14px; text-align: center;
+    }
+    .r-score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .r-score-name { font-size: .78rem; width: 48px; color: rgba(26,16,24,.65); flex-shrink: 0; }
+    .r-score-track { flex: 1; height: 6px; background: rgba(26,16,24,.08); border-radius: 3px; overflow: hidden; }
+    .r-score-bar { height: 100%; background: #7B3F6E; border-radius: 3px; transition: width 1s ease; }
+    .r-score-pct { font-size: .72rem; width: 30px; text-align: right; color: rgba(26,16,24,.45); flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="page">
+
+  <!-- INTRO -->
+  <div class="screen active" id="s-intro">
+    <div class="brand-wrap">
+      <div class="brand-name">心墨<span class="brand-ruby">InkLab</span></div>
+    </div>
+    <div class="brand-sub">潛意識人格研究所 · 2026</div>
+    <div class="inkdrop-anim"><canvas id="dropAnim" width="100" height="100"></canvas></div>
+    <div class="intro-heading">你在墨跡中<br>看見了什麼？</div>
+    <div class="intro-body">
+      每一幅墨跡都是潛意識的鏡子<br>
+      你的第一直覺，揭露你最真實的人格核心<br>
+      五張圖，五個瞬間，一個你
+    </div>
+    <div class="tag-row">
+      <span class="tag">5 道題</span>
+      <span class="tag">4 種人格原型</span>
+      <span class="tag">潛意識解析</span>
+    </div>
+    <button class="btn" onclick="startTest()">凝視墨跡，開始測驗</button>
+  </div>
+
+  <!-- TEST -->
+  <div class="screen" id="s-test">
+    <div class="brand-wrap">
+      <div class="brand-name" style="font-size:1.5rem">心墨<span class="brand-ruby">InkLab</span></div>
+    </div>
+    <div class="brand-sub">潛意識人格研究所</div>
+    <div class="prog-wrap">
+      <div class="prog-row"><span id="pLabel">第 1 / 5 張</span><span id="pPct">20%</span></div>
+      <div class="prog-track"><div class="prog-bar" id="pBar" style="width:20%"></div></div>
+    </div>
+    <div class="blot-stage"><canvas id="blotCanvas" width="300" height="300"></canvas></div>
+    <div class="q-text" id="qText">你第一眼看到的是什麼？</div>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="s-result">
+    <div class="brand-wrap">
+      <div class="brand-name" style="font-size:1.5rem">心墨<span class="brand-ruby">InkLab</span></div>
+    </div>
+    <div class="brand-sub">潛意識人格研究所</div>
+    <div class="r-blot-mini"><canvas id="miniBlot" width="90" height="90"></canvas></div>
+    <div class="r-archetype-label" id="rALabel">ARCHETYPE</div>
+    <div class="r-archetype-name" id="rAName"></div>
+    <div class="r-traits" id="rTraits"></div>
+    <div class="r-desc" id="rDesc"></div>
+    <div class="r-report">
+      <div class="r-report-title">✦ 你的人格能量分布 ✦</div>
+      <div id="rScores"></div>
+    </div>
+    <button class="btn" onclick="goCTA()">取得完整潛意識報告 →</button>
+    <button class="btn-outline" onclick="resetTest()">再測一次</button>
+  </div>
+
+</div>
+<script>
+/* ── Background gentle waves ── */
+(function () {
+  var cv = document.getElementById('bgCanvas');
+  var ct = cv.getContext('2d');
+  var t = 0;
+  function init() { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+  function draw() {
+    ct.clearRect(0, 0, cv.width, cv.height);
+    for (var y = 0; y < cv.height; y += 60) {
+      ct.beginPath();
+      ct.moveTo(0, y);
+      for (var x = 0; x <= cv.width; x += 20) {
+        ct.lineTo(x, y + Math.sin((x / cv.width) * Math.PI * 4 + t) * 12);
+      }
+      ct.strokeStyle = 'rgba(123,63,110,0.4)';
+      ct.lineWidth = 1;
+      ct.stroke();
+    }
+    t += 0.008;
+    requestAnimationFrame(draw);
+  }
+  init(); draw();
+  window.addEventListener('resize', init);
+})();
+
+/* ── Inkblot drawing engine ── */
+function drawBlot(canvas, seed, size) {
+  size = size || canvas.width;
+  var ct = canvas.getContext('2d');
+  ct.clearRect(0, 0, size, size);
+  /* seeded pseudo-random */
+  function rng(s) { var x = Math.sin(s + seed * 9301 + 49297) * 233280; return x - Math.floor(x); }
+  var cx = size / 2, cy = size / 2;
+  ct.fillStyle = '#EDE8E1';
+  ct.fillRect(0, 0, size, size);
+  /* draw 6-10 organic blobs on left half, mirror to right */
+  var numBlobs = Math.floor(rng(1) * 5) + 6;
+  for (var b = 0; b < numBlobs; b++) {
+    var bx = rng(b * 3 + 10) * cx * 0.9 + cx * 0.05;
+    var by = rng(b * 3 + 11) * size * 0.8 + size * 0.1;
+    var bscale = rng(b * 3 + 12) * 0.12 + 0.06;
+    var r = size * bscale;
+    var alpha = rng(b * 3 + 13) * 0.4 + 0.5;
+    var pts = [];
+    var n = Math.floor(rng(b * 3 + 14) * 4) + 5;
+    for (var j = 0; j < n; j++) {
+      var angle = (j / n) * Math.PI * 2;
+      var rad = r * (0.7 + rng(b * 100 + j) * 0.6);
+      pts.push({ x: bx + Math.cos(angle) * rad, y: by + Math.sin(angle) * rad });
+    }
+    /* draw on left, then mirror */
+    ct.save();
+    ct.beginPath();
+    ct.moveTo(pts[0].x, pts[0].y);
+    for (var k = 1; k < pts.length; k++) {
+      var p0 = pts[(k - 1 + pts.length) % pts.length];
+      var p1 = pts[k % pts.length];
+      var p2 = pts[(k + 1) % pts.length];
+      var cpx = p1.x + (p2.x - p0.x) * 0.2;
+      var cpy = p1.y + (p2.y - p0.y) * 0.2;
+      ct.bezierCurveTo((p0.x + p1.x) / 2, (p0.y + p1.y) / 2, cpx, cpy, p1.x, p1.y);
+    }
+    ct.closePath();
+    ct.fillStyle = 'rgba(18,6,26,' + alpha + ')';
+    ct.fill();
+    ct.restore();
+    /* mirror */
+    ct.save();
+    ct.scale(-1, 1);
+    ct.translate(-size, 0);
+    ct.beginPath();
+    ct.moveTo(size - pts[0].x, pts[0].y);
+    for (var k2 = 1; k2 < pts.length; k2++) {
+      var mp0 = pts[(k2 - 1 + pts.length) % pts.length];
+      var mp1 = pts[k2 % pts.length];
+      var mp2 = pts[(k2 + 1) % pts.length];
+      var mcpx = mp1.x + (mp2.x - mp0.x) * 0.2;
+      var mcpy = mp1.y + (mp2.y - mp0.y) * 0.2;
+      ct.bezierCurveTo((mp0.x + mp1.x) / 2, (mp0.y + mp1.y) / 2, mcpx, mcpy, mp1.x, mp1.y);
+    }
+    ct.closePath();
+    ct.fillStyle = 'rgba(18,6,26,' + alpha + ')';
+    ct.fill();
+    ct.restore();
+  }
+  /* center line embellishment */
+  ct.save();
+  ct.globalAlpha = 0.08;
+  ct.beginPath(); ct.moveTo(cx, 0); ct.lineTo(cx, size);
+  ct.strokeStyle = '#7B3F6E'; ct.lineWidth = 1; ct.stroke();
+  ct.restore();
+}
+
+/* ── Drop animation on intro ── */
+(function () {
+  var cv = document.getElementById('dropAnim');
+  var ct = cv.getContext('2d');
+  var frame = 0;
+  function animate() {
+    ct.clearRect(0, 0, 100, 100);
+    var prog = (frame % 120) / 120;
+    var r = 12 + Math.sin(prog * Math.PI * 2) * 8;
+    var alpha = 0.7 + Math.sin(prog * Math.PI * 2) * 0.3;
+    ct.beginPath(); ct.arc(50, 50, r, 0, Math.PI * 2);
+    ct.fillStyle = 'rgba(18,6,26,' + alpha + ')'; ct.fill();
+    /* ripple */
+    for (var i = 0; i < 3; i++) {
+      var rr = r + i * 14 + prog * 20;
+      if (rr < 50) {
+        ct.beginPath(); ct.arc(50, 50, rr, 0, Math.PI * 2);
+        ct.strokeStyle = 'rgba(123,63,110,' + (0.4 - i * 0.12 - prog * 0.3) + ')';
+        ct.lineWidth = 1.5; ct.stroke();
+      }
+    }
+    frame++;
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ── Quiz data ── */
+/* archetypes: explorer / guardian / creator / sage */
+var ROUNDS = [
+  {
+    seed: 42,
+    question: '第一眼，你看見了什麼？',
+    choices: [
+      { text: '🦋 展翅的蝴蝶或飛鳥', arch: 'explorer' },
+      { text: '👤 兩個面對面的人', arch: 'guardian' },
+      { text: '🎭 神秘的面具或臉孔', arch: 'creator' },
+      { text: '🌑 深邃的宇宙或黑洞', arch: 'sage' }
+    ]
+  },
+  {
+    seed: 137,
+    question: '這個形狀讓你感覺到什麼？',
+    choices: [
+      { text: '🌊 自由、流動、無拘束', arch: 'explorer' },
+      { text: '🤝 連結、溫暖、守護', arch: 'guardian' },
+      { text: '✨ 神奇、夢幻、充滿故事', arch: 'creator' },
+      { text: '🔍 深沉、謎題、等待解讀', arch: 'sage' }
+    ]
+  },
+  {
+    seed: 256,
+    question: '如果這是一個地方，你會在？',
+    choices: [
+      { text: '🏔️ 山頂、懸崖邊的遠望', arch: 'explorer' },
+      { text: '🏠 家中、熟悉的角落', arch: 'guardian' },
+      { text: '🎪 舞台後台、創作工坊', arch: 'creator' },
+      { text: '📚 圖書館深處、古老遺址', arch: 'sage' }
+    ]
+  },
+  {
+    seed: 389,
+    question: '這幅墨跡想說什麼故事？',
+    choices: [
+      { text: '⚡ 一段充滿冒險的旅程', arch: 'explorer' },
+      { text: '💞 兩個靈魂相遇的瞬間', arch: 'guardian' },
+      { text: '🌀 一個尚未完成的夢', arch: 'creator' },
+      { text: '⏳ 跨越時間的古老秘密', arch: 'sage' }
+    ]
+  },
+  {
+    seed: 512,
+    question: '你最後注意到什麼細節？',
+    choices: [
+      { text: '🦊 邊緣的動物輪廓', arch: 'explorer' },
+      { text: '👁️ 中心像眼睛的形狀', arch: 'guardian' },
+      { text: '🌺 像花朵的紋路', arch: 'creator' },
+      { text: '📐 對稱的幾何圖形', arch: 'sage' }
+    ]
+  }
+];
+
+var ARCHETYPES = {
+  explorer: {
+    label: 'EXPLORER', name: '自由探索者',
+    traits: ['好奇心旺盛', '行動導向', '熱愛冒險'],
+    desc: '你的潛意識渴望自由與探索。你天生對未知充滿好奇，行動是你思考的方式，每一個新體驗都讓你更完整。你的靈魂是流動的，邊界對你而言只是起點。',
+    color: '#E67E22'
+  },
+  guardian: {
+    label: 'GUARDIAN', name: '深情守護者',
+    traits: ['同理心強', '情感細膩', '重視連結'],
+    desc: '你的潛意識以關係為核心。你能感知他人最深層的需求，守護那些你愛的人是你最大的動力。你的存在讓周遭的人感到安全與被接納。',
+    color: '#27AE60'
+  },
+  creator: {
+    label: 'CREATOR', name: '靈感創造者',
+    traits: ['想像力豐富', '打破規則', '創意無邊'],
+    desc: '你的潛意識是一座無邊的創意宇宙。你從日常細節中看見別人看不見的故事，創作是你呼吸的方式，你的夢是別人的現實。',
+    color: '#8E44AD'
+  },
+  sage: {
+    label: 'SAGE', name: '智慧探尋者',
+    traits: ['深度思考', '洞察敏銳', '追求本質'],
+    desc: '你的潛意識追求最深層的真相。表面之下的意義才是你關注的核心，你能看穿紛亂找到本質，是每個圈子裡最珍貴的思想者。',
+    color: '#2980B9'
+  }
+};
+
+var ARCH_ORDER = ['explorer', 'guardian', 'creator', 'sage'];
+
+var scores = {};
+var currentRound = 0;
+var lastSeed = 0;
+
+function resetScores() {
+  scores = { explorer: 0, guardian: 0, creator: 0, sage: 0 };
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function startTest() {
+  resetScores();
+  currentRound = 0;
+  showScreen('s-test');
+  renderRound();
+}
+
+function renderRound() {
+  var r = ROUNDS[currentRound];
+  lastSeed = r.seed;
+  var pct = Math.round(((currentRound + 1) / ROUNDS.length) * 100);
+  document.getElementById('pLabel').textContent = '第 ' + (currentRound + 1) + ' / ' + ROUNDS.length + ' 張';
+  document.getElementById('pPct').textContent = pct + '%';
+  document.getElementById('pBar').style.width = pct + '%';
+  /* draw blot */
+  var cv = document.getElementById('blotCanvas');
+  drawBlot(cv, r.seed, 300);
+  document.getElementById('qText').textContent = r.question;
+  var box = document.getElementById('choices');
+  box.innerHTML = '';
+  r.choices.forEach(function (c, i) {
+    var btn = document.createElement('button');
+    btn.className = 'c-btn';
+    var keys = ['A', 'B', 'C', 'D'];
+    btn.innerHTML = '<span class="c-key">' + keys[i] + '</span><span>' + c.text + '</span>';
+    btn.addEventListener('click', function () { choose(c.arch, btn); });
+    box.appendChild(btn);
+  });
+}
+
+function choose(arch, btn) {
+  document.querySelectorAll('.c-btn').forEach(function (b) { b.disabled = true; b.classList.remove('picked'); });
+  btn.classList.add('picked');
+  scores[arch]++;
+  currentRound++;
+  if (currentRound < ROUNDS.length) {
+    setTimeout(function () {
+      var s = document.getElementById('s-test');
+      s.classList.remove('active');
+      setTimeout(function () { s.classList.add('active'); renderRound(); }, 280);
+    }, 480);
+  } else {
+    setTimeout(showResult, 600);
+  }
+}
+
+function showResult() {
+  /* find winner */
+  var winner = ARCH_ORDER.reduce(function (a, b) { return scores[a] >= scores[b] ? a : b; });
+  var arch = ARCHETYPES[winner];
+  /* mini blot from last seed */
+  drawBlot(document.getElementById('miniBlot'), lastSeed, 90);
+  document.getElementById('rALabel').textContent = arch.label + ' ARCHETYPE';
+  document.getElementById('rAName').textContent = arch.name;
+  /* traits */
+  var traitsBox = document.getElementById('rTraits');
+  traitsBox.innerHTML = '';
+  arch.traits.forEach(function (t) {
+    var span = document.createElement('span');
+    span.className = 'r-trait';
+    span.textContent = t;
+    traitsBox.appendChild(span);
+  });
+  document.getElementById('rDesc').textContent = arch.desc;
+  /* score bars */
+  var total = Object.values(scores).reduce(function (a, b) { return a + b; }, 0) || 1;
+  var scoresBox = document.getElementById('rScores');
+  scoresBox.innerHTML = '';
+  var LABELS = { explorer: '探索者', guardian: '守護者', creator: '創造者', sage: '智者' };
+  ARCH_ORDER.forEach(function (a) {
+    var pct = Math.round((scores[a] / total) * 100);
+    var row = document.createElement('div');
+    row.className = 'r-score-row';
+    row.innerHTML =
+      '<span class="r-score-name">' + LABELS[a] + '</span>' +
+      '<span class="r-score-track"><span class="r-score-bar" id="sb-' + a + '" style="width:0%;background:' + ARCHETYPES[a].color + '"></span></span>' +
+      '<span class="r-score-pct">' + pct + '%</span>';
+    scoresBox.appendChild(row);
+  });
+  showScreen('s-result');
+  /* animate bars after render */
+  setTimeout(function () {
+    ARCH_ORDER.forEach(function (a) {
+      var pct = Math.round((scores[a] / total) * 100);
+      var bar = document.getElementById('sb-' + a);
+      if (bar) bar.style.width = pct + '%';
+    });
+  }, 200);
+}
+
+function goCTA() {
+  alert('心墨 InkLab 潛意識人格研究所\n\n完整 28 題專業報告 + 個人化行動建議\n限時體驗價 NT$299\n\n點擊確定立即取得你的完整報告！');
+}
+function resetTest() { showScreen('s-intro'); }
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>你是哪隻吉伊卡哇？· 性格測驗</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --pink:#FFB8CC;--pinkd:#E8607A;
+      --lav:#C8AAEC;--lavd:#8A5EC8;
+      --cream:#FFF8F2;--text:#3A2820;--dim:#927068;--white:#FFFFFF;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Noto Sans TC',system-ui,sans-serif;color:var(--text);
+      min-height:100vh;background:var(--cream);
+      background-image:
+        radial-gradient(circle at 10% 35%,rgba(255,184,204,.26) 0,transparent 48%),
+        radial-gradient(circle at 88% 12%,rgba(200,170,236,.26) 0,transparent 48%),
+        radial-gradient(circle at 50% 92%,rgba(255,232,160,.22) 0,transparent 45%);
+      display:flex;justify-content:center;align-items:flex-start;
+      padding:20px 14px 60px;
+    }
+    .wrap{width:100%;max-width:480px;margin-top:12px}
+    .sc{display:none}
+    .sc.on{display:block;animation:up .4s cubic-bezier(.2,.8,.25,1)}
+    @keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .card{
+      background:var(--white);border-radius:28px;padding:32px 24px 28px;
+      box-shadow:0 10px 40px rgba(200,120,140,.16),0 2px 8px rgba(200,120,140,.08);
+      border:2px solid rgba(255,184,204,.3)
+    }
+    /* ── intro ── */
+    .i-banner{
+      width:100%;border-radius:20px;margin-bottom:18px;
+      background:linear-gradient(150deg,#FFDCE8 0%,#EED8FF 50%,#D6EEFF 100%);
+      display:flex;align-items:flex-end;justify-content:center;
+      padding:16px 12px 0;gap:0;overflow:hidden;position:relative;
+    }
+    .i-chara{
+      display:flex;flex-direction:column;align-items:center;
+      flex:1;max-width:100px;
+    }
+    /* CSS 頭像圓球 */
+    .orb{
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      position:relative;box-shadow:0 4px 14px rgba(0,0,0,.1);
+    }
+    .orb .face{font-size:inherit;line-height:1;pointer-events:none;user-select:none}
+    /* 三主角尺寸 */
+    .orb-lg{width:80px;height:80px;font-size:52px}
+    /* 主角特徵裝飾 */
+    .orb-chiikawa{background:radial-gradient(circle at 38% 35%,#fff 0%,#FFE8EC 60%,#FFCCD8 100%)}
+    .orb-hachiware{background:radial-gradient(circle at 38% 35%,#fff 0%,#DFF0FF 60%,#AACCEE 100%)}
+    .orb-usagi{background:radial-gradient(circle at 38% 35%,#FFFDF0 0%,#FFF6C0 60%,#FFE870 100%)}
+    .i-name{font-size:11px;font-weight:700;color:var(--dim);margin:6px 0 0;letter-spacing:.03em}
+    .i-sub{text-align:center;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--lavd);font-weight:700;margin-bottom:10px}
+    .i-title{font-size:26px;font-weight:900;text-align:center;line-height:1.35;margin-bottom:12px}
+    .i-title span{color:var(--pinkd)}
+    .i-desc{font-size:13.5px;color:var(--dim);text-align:center;line-height:1.85;margin-bottom:24px}
+    /* ── buttons ── */
+    .btn{padding:13px 18px;border-radius:999px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:inline-block;text-align:center}
+    .btn-p{background:linear-gradient(120deg,var(--pink),var(--lav));color:var(--white);border:none;box-shadow:0 6px 20px rgba(255,184,204,.4)}
+    .btn-p:hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 10px 26px rgba(255,184,204,.5)}
+    .btn-g{background:transparent;color:var(--dim);border:2px solid rgba(200,155,175,.38)}
+    .btn-g:hover{background:rgba(255,184,204,.1)}
+    .btn-blk{width:100%}
+    /* ── progress ── */
+    .prog{margin-bottom:20px}
+    .prog-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:7px}
+    .pbar{height:7px;background:rgba(255,184,204,.22);border-radius:99px;overflow:hidden}
+    .pfill{height:100%;background:linear-gradient(90deg,var(--pink),var(--lav));border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+    /* ── question ── */
+    .q-txt{font-size:17.5px;font-weight:700;line-height:1.7;text-align:center;margin-bottom:20px}
+    .opts{display:flex;flex-direction:column;gap:10px}
+    .opt{width:100%;padding:12px 15px;border-radius:15px;border:2px solid rgba(255,184,204,.32);background:rgba(255,250,246,.7);font-size:13.5px;font-family:inherit;color:var(--text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:all .18s}
+    .opt:hover:not(:disabled){border-color:var(--pink);background:rgba(255,184,204,.13);transform:translateY(-2px);box-shadow:0 4px 14px rgba(255,184,204,.26)}
+    .opt.sel{border-color:var(--pinkd);background:rgba(255,184,204,.2)}
+    .opt:disabled{cursor:default}
+    .opt-ic{font-size:21px;flex-shrink:0}
+    /* ── result ── */
+    .r-top{text-align:center;margin-bottom:18px}
+    .r-orb{
+      width:140px;height:140px;margin:0 auto 4px;border-radius:50%;font-size:86px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 8px 28px rgba(200,120,140,.25);overflow:hidden;
+      animation:pop .7s cubic-bezier(.2,.7,.3,1) both
+    }
+    .r-orb img,.c-orb img,.orb img{width:92%;height:92%;object-fit:contain;display:block}
+    @keyframes pop{0%{opacity:0;transform:scale(.18)}65%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+    .r-you{font-size:11.5px;letter-spacing:.2em;color:var(--lavd);font-weight:700;margin-top:12px}
+    .r-name{font-size:28px;font-weight:900;margin:5px 0}
+    .r-jp{font-size:13px;color:var(--dim);margin-bottom:8px}
+    .tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px}
+    .tag{background:rgba(255,184,204,.18);border:1.5px solid rgba(255,184,204,.48);border-radius:20px;padding:4px 10px;font-size:11.5px;color:var(--dim)}
+    .r-desc{font-size:13.5px;line-height:1.9;color:var(--dim);margin:16px 0}
+    /* compat */
+    .compat{background:linear-gradient(135deg,rgba(200,170,236,.16),rgba(255,184,204,.16));border:1.5px solid rgba(200,170,236,.5);border-radius:20px;padding:18px 16px;text-align:center;margin-bottom:18px}
+    .compat-lbl{font-size:11px;letter-spacing:.2em;color:var(--lavd);font-weight:700;margin-bottom:5px}
+    .c-orb{width:72px;height:72px;margin:8px auto 4px;border-radius:50%;font-size:42px;display:flex;align-items:center;justify-content:center}
+    .compat-name{font-size:18px;font-weight:900;margin-bottom:2px}
+    .compat-jp{font-size:12px;color:var(--dim);margin-bottom:6px}
+    .compat-why{font-size:12.5px;color:var(--dim);line-height:1.75}
+    .act-row{display:flex;gap:9px}
+    .act-row .btn{flex:1}
+    /* scores */
+    .score-sec{margin-top:20px;padding-top:16px;border-top:1px dashed rgba(200,155,175,.28)}
+    .score-ttl{font-size:11.5px;color:var(--dim);margin-bottom:9px;letter-spacing:.05em}
+    .sr{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:11.5px}
+    .sr-name{width:72px;flex-shrink:0;color:var(--dim);display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap}
+    .sr-em{font-size:15px;flex-shrink:0}
+    .sr-bar{flex:1;height:5px;background:rgba(200,155,175,.18);border-radius:99px;overflow:hidden}
+    .sr-fill{height:100%;background:linear-gradient(90deg,var(--pink),var(--lav));border-radius:99px}
+    .sr-n{width:14px;text-align:right;color:var(--dim);flex-shrink:0}
+    .disc{font-size:11px;color:var(--dim);opacity:.5;text-align:center;margin-top:18px;line-height:1.7}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══ 封面 ══ -->
+  <div class="sc on" id="s0">
+    <div class="card">
+      <div class="i-banner" id="introBanner"></div>
+      <div class="i-sub">Chiikawa Personality Quiz</div>
+      <h1 class="i-title">你是哪隻<br><span>吉伊卡哇</span>？</h1>
+      <p class="i-desc">8 道題目，找出你的吉伊卡哇性格分身，<br>還有與你最速配的搭檔！</p>
+      <button class="btn btn-p btn-blk" onclick="startQuiz()">開始測驗 ✨</button>
+    </div>
+  </div>
+
+  <!-- ══ 題目 ══ -->
+  <div class="sc" id="s1">
+    <div class="card">
+      <div class="prog">
+        <div class="prog-meta"><span id="qlabel">第 1 題</span><span id="qof">共 8 題</span></div>
+        <div class="pbar"><div class="pfill" id="pf" style="width:12.5%"></div></div>
+      </div>
+      <p class="q-txt" id="qtxt"></p>
+      <div class="opts" id="qopts"></div>
+    </div>
+  </div>
+
+  <!-- ══ 結果 ══ -->
+  <div class="sc" id="s2">
+    <div class="card">
+      <div class="r-top">
+        <div class="r-orb" id="rOrb"></div>
+        <div class="r-you">✦ 你是 ✦</div>
+        <div class="r-name" id="rName"></div>
+        <div class="r-jp" id="rJp"></div>
+        <div class="tags" id="rTags"></div>
+      </div>
+      <p class="r-desc" id="rDesc"></p>
+      <div class="compat">
+        <div class="compat-lbl">✦ 最速配搭檔 ✦</div>
+        <div class="c-orb" id="cOrb"></div>
+        <div class="compat-name" id="cName"></div>
+        <div class="compat-jp" id="cJp"></div>
+        <p class="compat-why" id="cWhy"></p>
+      </div>
+      <div class="act-row">
+        <button class="btn btn-g" onclick="startQuiz()">再測一次</button>
+        <button class="btn btn-p" onclick="shareResult()">分享結果</button>
+      </div>
+      <div class="score-sec">
+        <div class="score-ttl">📊 各角色得分</div>
+        <div id="scoreBars"></div>
+      </div>
+      <p class="disc">本測驗僅供參考，結果以娛樂為目的，不代表任何性格診斷依據。<br>ちいかわ © nagano / 小学館</p>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── 角色資料（依據原著官方設定） ──
+const CHARS = {
+  chiikawa:{
+    zh:'吉伊卡哇', jp:'ちいかわ', emoji:'🐭',
+    img:'https://chiikawawallpaper.com/static/images/character/chiikawa.png',
+    bg:'linear-gradient(135deg,#FFE8EC,#FFCCD8)',
+    tags:['INFP','膽小愛哭','善良溫柔','強運體質','危機時爆發'],
+    compat:'hachiware',
+    compatWhy:'哈齊瓦雷永遠知道怎麼讓你安心。他不會笑你膽小，只會陪在你身邊一起喊「沒問題的！」——你們的羈絆就是整部作品的核心。',
+    desc:'你就像吉伊卡哇：外表脆弱，卻有著意想不到的韌性。平時害羞愛哭，卻能在最關鍵時刻為了重要的人鼓起勇氣。你對周遭事物感受深刻，身邊的人都能感覺到你的溫柔是發自內心的。另外，你也擁有不可思議的強運——吉伊卡哇曾靠著優格瓶蓋抽獎抽到一整棟房子，這就是你的風格。',
+  },
+  hachiware:{
+    zh:'哈齊瓦雷', jp:'ハチワレ', emoji:'🐱',
+    img:'https://chiikawawallpaper.com/static/images/character/hachiware.jpg',
+    bg:'linear-gradient(135deg,#DFF0FF,#C2DFFF)',
+    tags:['ESFJ','話多','樂觀','體貼','萬能好友'],
+    compat:'chiikawa',
+    compatWhy:'吉伊卡哇需要你來幫他表達說不出口的話——你自然地成為兩人之間的橋樑，這份默契讓你們成為作中最強的搭檔。',
+    desc:'你就像哈齊瓦雷：話多、好奇、充滿正能量，對朋友無比體貼。你是朋友圈裡的太陽，擅長察覺別人的情緒，也擅長把氣氛炒起來。你愛下廚、愛拍照，住在自己挖的洞穴裡，但把洞穴布置得溫馨極了。不論再平凡的生活，你都有辦法發掘樂趣。',
+  },
+  usagi:{
+    zh:'烏薩奇', jp:'うさぎ', emoji:'🐰',
+    img:'https://chiikawawallpaper.com/static/images/character/usagi.jpg',
+    bg:'linear-gradient(135deg,#FFFAE0,#FFE870)',
+    tags:['ESTP','美食家','行動力十足','不按牌理','討伐強者'],
+    compat:'hachiware',
+    compatWhy:'哈齊瓦雷的耐心和包容是你唯一的剋星——他不但不會被你嚇跑，還能追上你的節奏。你們在一起又亂又開心，沒有一刻無聊。',
+    desc:'你就像烏薩奇：行動先於思考，說「Ura！」就衝出去，管他後果如何。你自由奔放，活在當下，對美食充滿執著，戰鬥力也強得嚇人（武器是兩端裝了炸藥的棍子）。你的存在本身就是一個事件，讓人摸不著頭緒，卻又離不開你——因為有你在，生活永遠不會無聊。',
+  },
+  kurimanjuu:{
+    zh:'栗饅頭', jp:'くりまんじゅう', emoji:'🥮',
+    img:'https://chiikawawallpaper.com/static/images/character/kurimanju.webp',
+    bg:'linear-gradient(135deg,#F5E8D0,#D4A870)',
+    tags:['ISTP','前輩氣場','嗜酒美食','沉穩低調','話少有深度'],
+    compat:'chiikawa',
+    compatWhy:'吉伊卡哇對你始終充滿敬意，視你為可靠的前輩——你雖然話不多，卻會在他最脆弱的時候默默遞上一杯東西陪他坐著，這就夠了。',
+    desc:'你就像栗饅頭：外型圓滾滾像日式點心，原型是蜜獾，內在卻是歷經世事的沉穩前輩。你正式取得了飲酒證照，平時研究各種美酒配什麼零食最搭，話雖不多，但關鍵時刻的一句話勝過千言萬語。大家在你身邊都會莫名放鬆。',
+  },
+  momonga:{
+    zh:'小桃', jp:'モモンガ', emoji:'🐿️',
+    img:'https://chiikawawallpaper.com/static/images/character/momonga.png',
+    bg:'linear-gradient(135deg,#EAF0E0,#C8DFA0)',
+    tags:['ENTP','撒嬌精','黏人','任性','要求讚美'],
+    compat:'hachiware',
+    compatWhy:'哈齊瓦雷有著無止境的耐心——他是少數不但不會被你的撒嬌轟炸煩死，還覺得你其實還不錯的人。這種人全世界不多。',
+    desc:'你就像小桃：以飛鼠為原型的蓬鬆小生物，充滿自我、任性撒嬌，隨時在要求別人稱讚你、陪你玩，「喜歡裝可愛，也真的很可愛」。你知道自己可愛，然後充分利用這件事。雖然偶爾惹人嫌，但大家還是拿你沒辦法——因為你看起來真的太軟了。',
+  },
+  rakko:{
+    zh:'海獺', jp:'ラッコさん', emoji:'🦦',
+    img:'https://chiikawawallpaper.com/static/images/character/rakko.png',
+    bg:'linear-gradient(135deg,#E8F4F0,#AADDC8)',
+    tags:['討伐排名第一','強悍','甜食控','反差萌','可靠守護者'],
+    compat:'shisa',
+    compatWhy:'獅薩和你一樣認真、不怕吃苦——他會在你偷吃甜點的時候假裝沒看見，你也會在他努力工作時默默幫他撐場面。',
+    desc:'你就像海獺：穿著白色披風、背上帶劍，臉上有十字形傷疤，討伐排名高居榜首——外表酷到不行，但私底下是個瞞著大家偷吃蛋糕的甜食愛好者，還有自己的車。你強大而可靠，卻有一面柔軟的內心，這種反差讓所有人都對你死心塌地。',
+  },
+  shisa:{
+    zh:'獅薩', jp:'シーサーくん', emoji:'🦁',
+    img:'https://chiikawawallpaper.com/static/images/character/shisa.png',
+    bg:'linear-gradient(135deg,#FFF0E0,#FFD4A0)',
+    tags:['ENFJ','努力型','職人魂','拜師學藝','活力充沛'],
+    compat:'rakko',
+    compatWhy:'海獺是你景仰的強者，看著他的背影讓你更有動力向前衝——而海獺也懂得欣賞你這份不服輸的態度。',
+    desc:'你就像獅薩：以琉球守護神獅子為原型，在拉麵店「郎」裡拜師學藝，每天喊著「努力中！」衝勁十足。你認真對待每一件事、對師父充滿敬意，這份職人魂讓周遭的人都被你感染。就算輸了也只是暫時的，你相信只要繼續努力就會有回報。',
+  },
+};
+
+// ── 8 道題目（基於原著角色行為設計） ──
+const QS=[
+  {t:'😰 遇到讓你害怕的事情，你的第一反應是？',o:[
+    {i:'💧',t:'很想哭，但深吸一口氣，還是想試試看',c:'chiikawa'},
+    {i:'😄',t:'對大家喊「沒問題的！」先讓氣氛振奮起來',c:'hachiware'},
+    {i:'⚡',t:'還沒想清楚就已經衝進去了，邊做邊想',c:'usagi'},
+    {i:'🍶',t:'先倒一杯壓壓驚，冷靜下來再說',c:'kurimanjuu'},
+  ]},
+  {t:'🤝 朋友需要幫忙的時候，你通常是⋯⋯',o:[
+    {i:'🥺',t:'很想幫，但先擔心自己夠不夠力',c:'chiikawa'},
+    {i:'✨',t:'「快稱讚我一下，我就出手幫你」',c:'momonga'},
+    {i:'🗡️',t:'二話不說站到最前面，用實力解決問題',c:'rakko'},
+    {i:'💪',t:'「交給我！我一定全力以赴！」',c:'shisa'},
+  ]},
+  {t:'🍽️ 面對一桌好吃的，你的反應是？',o:[
+    {i:'😋',t:'直接大口吃！吃完再說！',c:'usagi'},
+    {i:'🥺',t:'「分我！現在就要！快！」',c:'momonga'},
+    {i:'🧐',t:'細細品嚐，研究這個配什麼最好喝',c:'kurimanjuu'},
+    {i:'⏰',t:'先把今天的任務做完才敢吃',c:'shisa'},
+  ]},
+  {t:'🗣️ 有人稱讚你，你會怎麼反應？',o:[
+    {i:'😳',t:'臉紅低頭，心裡暖暖的說不出話',c:'chiikawa'},
+    {i:'💬',t:'「對對對！你說到我心坎裡了！」馬上聊開',c:'hachiware'},
+    {i:'🙋',t:'「你稱讚得太少了！繼續！」',c:'momonga'},
+    {i:'😑',t:'微微點頭，不動聲色，心裡偷偷記住了',c:'rakko'},
+  ]},
+  {t:'🌙 你最在意的事情是什麼？',o:[
+    {i:'💕',t:'身邊的人有沒有在難過',c:'chiikawa'},
+    {i:'🤝',t:'朋友們有沒有和睦相處、氣氛好不好',c:'hachiware'},
+    {i:'👁️',t:'有沒有人注意到我、欣賞我',c:'momonga'},
+    {i:'📋',t:'有沒有做到今天該完成的事',c:'shisa'},
+  ]},
+  {t:'🏡 你最理想的休假是？',o:[
+    {i:'📷',t:'下廚做料理，拍照記錄，享受生活感',c:'hachiware'},
+    {i:'🗺️',t:'到處覓食，把每一間好吃的都嘗一遍',c:'usagi'},
+    {i:'🍺',t:'配著下酒菜，小酌一杯，什麼都不想',c:'kurimanjuu'},
+    {i:'🏋️',t:'練習技能，感覺自己在不斷變強',c:'rakko'},
+  ]},
+  {t:'👥 你在團隊裡通常是什麼角色？',o:[
+    {i:'🥺',t:'需要大家一起加油才能撐下去的那個',c:'chiikawa'},
+    {i:'📢',t:'幫大家溝通調解、讓氣氛活絡的那個',c:'hachiware'},
+    {i:'🛡️',t:'默默守護大家、關鍵時刻頂上去的那個',c:'rakko'},
+    {i:'🪑',t:'沉穩的資深老手，不慌不忙穩住全場',c:'kurimanjuu'},
+  ]},
+  {t:'💬 哪一句話最像你的心聲？',o:[
+    {i:'💭',t:'「好害怕⋯⋯但如果是為了朋友，我可以的！」',c:'chiikawa'},
+    {i:'🔥',t:'「行動了！至於結果？走著瞧！Ura！」',c:'usagi'},
+    {i:'⭐',t:'「只要全力以赴，師父一定會看見的！」',c:'shisa'},
+    {i:'🍰',t:'「外表再強，私底下偷吃蛋糕很正常嘛」',c:'rakko'},
+  ]},
+];
+
+let scores={},cur=0,winner='';
+
+function show(id){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+function orbHTML(c, emSize){
+  // 優先顯示圖片，失敗退回 emoji
+  const fb=`<span style="font-size:${emSize}">${c.emoji}</span>`;
+  if(!c.img) return fb;
+  return `<img src="${c.img}" alt="${c.zh}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${c.emoji}',style:'font-size:${emSize}'}))">`;
+}
+
+function setOrb(elId, c, size){
+  const el=document.getElementById(elId);
+  el.style.background=c.bg;
+  el.style.fontSize='';
+  el.innerHTML=orbHTML(c, size==='lg'?'86px':'42px');
+}
+
+function startQuiz(){
+  scores={};Object.keys(CHARS).forEach(k=>scores[k]=0);
+  cur=0;show('s1');renderQ();
+}
+
+function renderQ(){
+  const q=QS[cur];
+  document.getElementById('qlabel').textContent='第 '+(cur+1)+' 題';
+  document.getElementById('qof').textContent='共 '+QS.length+' 題';
+  document.getElementById('pf').style.width=((cur+1)/QS.length*100)+'%';
+  document.getElementById('qtxt').textContent=q.t;
+  const el=document.getElementById('qopts');
+  el.innerHTML='';
+  q.o.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='opt';
+    btn.innerHTML=`<span class="opt-ic">${opt.i}</span><span>${opt.t}</span>`;
+    btn.onclick=()=>pick(opt.c,btn);
+    el.appendChild(btn);
+  });
+}
+
+function pick(key,btn){
+  document.querySelectorAll('.opt').forEach(b=>{b.disabled=true});
+  btn.classList.add('sel');
+  scores[key]++;
+  setTimeout(()=>{cur++;if(cur>=QS.length)showResult();else renderQ();},360);
+}
+
+function showResult(){
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  winner=sorted[0][0];
+  const ch=CHARS[winner],cp=CHARS[ch.compat];
+
+  setOrb('rOrb',ch,'lg');
+  document.getElementById('rName').textContent=ch.zh;
+  document.getElementById('rJp').textContent=ch.jp;
+  document.getElementById('rTags').innerHTML=ch.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('rDesc').textContent=ch.desc;
+
+  setOrb('cOrb',cp,'sm');
+  document.getElementById('cName').textContent=cp.zh;
+  document.getElementById('cJp').textContent=cp.jp;
+  document.getElementById('cWhy').textContent=ch.compatWhy;
+
+  const max=Math.max(...Object.values(scores));
+  document.getElementById('scoreBars').innerHTML=sorted.map(([k,v])=>{
+    const c=CHARS[k];
+    const pct=max>0?Math.round(v/max*100):0;
+    return `<div class="sr"><span class="sr-name"><span class="sr-em">${c.emoji}</span>${c.zh}</span>`+
+      `<div class="sr-bar"><div class="sr-fill" style="width:${pct}%"></div></div>`+
+      `<span class="sr-n">${v}</span></div>`;
+  }).join('');
+
+  show('s2');
+}
+
+function buildIntro(){
+  const BG={chiikawa:'#FFE8EC,#FFCCD8',hachiware:'#DFF0FF,#C2DFFF',usagi:'#FFFAE0,#FFE870'};
+  document.getElementById('introBanner').innerHTML=
+    ['hachiware','chiikawa','usagi'].map((k,i)=>{
+      const c=CHARS[k];
+      const lift=i===1?'transform:translateY(-14px)':'';
+      const inner=c.img
+        ?`<img src="${c.img}" alt="${c.zh}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${c.emoji}',style:'font-size:52px'}))">`
+        :`<span style="font-size:52px">${c.emoji}</span>`;
+      return `<div class="i-chara" style="${lift}">
+        <div class="orb orb-lg" style="background:linear-gradient(135deg,${BG[k]})">${inner}</div>
+        <div class="i-name">${c.zh}</div>
+      </div>`;
+    }).join('');
+}
+
+function shareResult(){
+  const ch=CHARS[winner];
+  const txt=`我在吉伊卡哇性格測驗中測出是「${ch.zh}」（${ch.jp}）！你又是哪一隻？`;
+  if(navigator.share){
+    navigator.share({title:'你是哪隻吉伊卡哇？',text:txt,url:location.href});
+  } else {
+    navigator.clipboard.writeText(txt+'\n'+location.href)
+      .then(()=>alert('已複製！去分享給朋友吧 '+ch.emoji))
+      .catch(()=>alert(txt));
+  }
+}
+
+buildIntro();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

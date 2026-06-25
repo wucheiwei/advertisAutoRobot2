@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>脈動電音祭・霓虹節拍挑戰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Sora:wght@600;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070314;
+    --ink:#f4ecff;
+    --c1:#ff2e97;   /* magenta */
+    --c2:#22e1ff;   /* cyan */
+    --c3:#b14bff;   /* purple */
+    --c4:#5dff8f;   /* green */
+    --gold:#ffd54a;
+    --glass:rgba(255,255,255,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #1c0936 0%, transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, #0a2540 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    user-select:none;
+  }
+  #app{
+    position:relative;width:100%;height:100dvh;max-width:560px;margin:0 auto;
+    display:flex;flex-direction:column;
+  }
+
+  /* ---- shared chrome ---- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px 8px;z-index:5;
+  }
+  .brand{font-family:"Sora",sans-serif;font-weight:800;letter-spacing:.16em;font-size:13px;
+    color:var(--c2);text-shadow:0 0 14px rgba(34,225,255,.6);}
+  .brand b{color:var(--c1);text-shadow:0 0 14px rgba(255,46,151,.6);}
+  .hud{display:flex;gap:16px;font-family:"Sora",sans-serif;font-weight:700;}
+  .hud .lab{font-size:10px;opacity:.6;letter-spacing:.1em;}
+  .hud .val{font-size:18px;line-height:1;}
+  #scoreV{color:var(--gold);}
+  #comboV{color:var(--c4);}
+
+  /* ---- screens ---- */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:28px;z-index:8;
+    transition:opacity .4s ease;}
+  .hidden{opacity:0;pointer-events:none;}
+
+  .kicker{font-family:"Sora";font-weight:800;letter-spacing:.4em;font-size:12px;color:var(--c2);
+    text-transform:uppercase;margin-bottom:10px;}
+  .title{font-family:"Sora","Noto Sans TC";font-weight:800;font-size:clamp(34px,11vw,56px);
+    line-height:1.02;margin:0;
+    background:linear-gradient(95deg,var(--c1),var(--c3) 45%,var(--c2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 22px rgba(177,75,255,.45));}
+  .sub{margin:14px 0 4px;font-size:15px;opacity:.85;line-height:1.7;max-width:330px;}
+  .pill{display:inline-flex;gap:8px;align-items:center;margin-top:18px;font-size:12px;
+    background:var(--glass);border:1px solid rgba(255,255,255,.12);border-radius:99px;
+    padding:8px 14px;opacity:.9;}
+  .keys{display:flex;gap:6px;margin:18px 0 4px;}
+  .keys span{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+    font-family:"Sora";font-weight:800;font-size:13px;border:1px solid rgba(255,255,255,.18);
+    background:var(--glass);}
+
+  .btn{margin-top:26px;font-family:"Sora","Noto Sans TC";font-weight:800;font-size:18px;
+    letter-spacing:.05em;color:#0a0518;border:0;cursor:pointer;
+    padding:16px 40px;border-radius:99px;
+    background:linear-gradient(95deg,var(--c1),var(--c3));
+    box-shadow:0 0 0 0 rgba(255,46,151,.5),0 14px 40px -10px rgba(255,46,151,.7);
+    animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{50%{transform:scale(1.04);box-shadow:0 0 38px 6px rgba(177,75,255,.5),0 14px 40px -10px rgba(34,225,255,.7);}}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.25);
+    box-shadow:none;animation:none;font-size:15px;padding:12px 26px;margin-top:14px;}
+
+  /* ---- play field ---- */
+  #stage{position:relative;flex:1;min-height:0;}
+  #game{display:block;width:100%;height:100%;}
+  .lanes{position:absolute;inset:0;display:flex;z-index:3;}
+  .lane{flex:1;position:relative;}
+  .lane:active .flash,.lane.lit .flash{opacity:1;}
+  .flash{position:absolute;inset:0;opacity:0;transition:opacity .08s;
+    background:linear-gradient(to top,var(--lc),transparent 60%);}
+  .hitline{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.5);
+    box-shadow:0 0 16px rgba(255,255,255,.5);z-index:2;}
+  .keyhint{position:absolute;left:0;right:0;text-align:center;font-family:"Sora";font-weight:800;
+    font-size:14px;opacity:.5;z-index:4;color:#fff;}
+
+  #judge{position:absolute;left:0;right:0;top:42%;text-align:center;z-index:6;
+    font-family:"Sora","Noto Sans TC";font-weight:900;font-size:34px;pointer-events:none;
+    opacity:0;}
+  #judge.show{animation:judge .5s ease-out;}
+  @keyframes judge{0%{opacity:1;transform:translateY(8px) scale(.8);}100%{opacity:0;transform:translateY(-14px) scale(1.15);}}
+
+  /* ---- result ---- */
+  #result .grade{font-family:"Sora";font-weight:800;font-size:84px;line-height:1;
+    background:linear-gradient(95deg,var(--gold),var(--c1));-webkit-background-clip:text;
+    background-clip:text;color:transparent;filter:drop-shadow(0 0 24px rgba(255,213,74,.5));}
+  .stats{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap;justify-content:center;}
+  .stat{background:var(--glass);border:1px solid rgba(255,255,255,.12);border-radius:14px;
+    padding:12px 16px;min-width:88px;}
+  .stat .n{font-family:"Sora";font-weight:800;font-size:24px;}
+  .stat .l{font-size:11px;opacity:.6;margin-top:2px;letter-spacing:.08em;}
+  .perfectc{color:var(--c2);}.goodc{color:var(--c4);}.missc{color:var(--c1);}
+  .offer{margin-top:8px;font-size:13px;opacity:.8;}
+
+  .glow-dot{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;}
+  .footer-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;
+    font-size:10px;opacity:.35;z-index:5;letter-spacing:.08em;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">PULSE <b>脈動</b> 電音祭</div>
+    <div class="hud">
+      <div><div class="lab">分數 SCORE</div><div class="val" id="scoreV">0</div></div>
+      <div><div class="lab">連擊 COMBO</div><div class="val" id="comboV">0</div></div>
+    </div>
+  </div>
+
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div class="lanes" id="lanes"></div>
+    <div id="judge"></div>
+  </div>
+
+  <!-- START -->
+  <section class="screen" id="start">
+    <div class="kicker">2026 仲夏・午夜場</div>
+    <h1 class="title">霓虹節拍<br/>挑戰</h1>
+    <p class="sub">節拍從天而降，踩準落在判定線上的那一刻。<br/>連擊越長，霓虹燒得越旺。</p>
+    <div class="keys" id="startKeys"><span>D</span><span>F</span><span>J</span><span>K</span></div>
+    <div class="pill">📱 手機點四條軌道 ・ 💻 電腦按 D F J K</div>
+    <button class="btn" id="startBtn">開始挑戰</button>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen hidden" id="result">
+    <div class="kicker">挑戰結果</div>
+    <div class="grade" id="grade">S</div>
+    <div class="stats">
+      <div class="stat"><div class="n perfectc" id="rPerfect">0</div><div class="l">PERFECT</div></div>
+      <div class="stat"><div class="n goodc" id="rGood">0</div><div class="l">GOOD</div></div>
+      <div class="stat"><div class="n missc" id="rMiss">0</div><div class="l">MISS</div></div>
+      <div class="stat"><div class="n" style="color:var(--gold)" id="rScore">0</div><div class="l">SCORE</div></div>
+    </div>
+    <div class="stat" style="margin-top:4px"><div class="n" style="color:var(--c4)" id="rMax">0</div><div class="l">最高連擊 MAX COMBO</div></div>
+    <p class="offer" id="offerLine">🎟️ 完成挑戰即解鎖早鳥優惠</p>
+    <button class="btn" id="ctaBtn">搶購早鳥票 · 84 折</button>
+    <button class="btn ghost" id="retryBtn">再挑戰一次</button>
+  </section>
+
+  <div class="footer-note">PULSE 脈動電音祭為虛構品牌・本頁為互動廣告示範</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const LANES = 4;
+  const LANE_KEYS = ["d","f","j","k"];
+  const LANE_COLORS = ["#ff2e97","#22e1ff","#b14bff","#5dff8f"];
+  const NOTE_NAMES = ["C4","E4","G4","B4"];
+  const BPM = 124;
+  const BEAT = 60 / BPM;          // seconds per beat
+  const APPROACH = 1.9;           // seconds a note is visible before hit line
+  const PERFECT_W = 0.07, GOOD_W = 0.16; // judging windows (s)
+
+  const cvs = document.getElementById("game");
+  const ctx = cvs.getContext("2d");
+  const lanesEl = document.getElementById("lanes");
+  const judgeEl = document.getElementById("judge");
+  const scoreV = document.getElementById("scoreV");
+  const comboV = document.getElementById("comboV");
+
+  let W=0,H=0,DPR=1,hitY=0,laneW=0;
+  function resize(){
+    const r = document.getElementById("stage").getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = r.width; H = r.height;
+    cvs.width = W*DPR; cvs.height = H*DPR;
+    cvs.style.width=W+"px"; cvs.style.height=H+"px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    hitY = H*0.82;
+    laneW = W/LANES;
+  }
+  window.addEventListener("resize", resize);
+
+  // ---- build lane DOM (flash + hit line + key hints) ----
+  const laneFlashes=[];
+  for(let i=0;i<LANES;i++){
+    const lane=document.createElement("div");
+    lane.className="lane"; lane.dataset.lane=i;
+    lane.style.borderRight = i<LANES-1 ? "1px solid rgba(255,255,255,.06)" : "none";
+    const flash=document.createElement("div");
+    flash.className="flash"; flash.style.setProperty("--lc", LANE_COLORS[i]);
+    lane.appendChild(flash);
+    laneFlashes.push(flash);
+    lanesEl.appendChild(lane);
+  }
+  const hitlineEl=document.createElement("div");
+  hitlineEl.className="hitline"; lanesEl.parentElement.appendChild(hitlineEl);
+  const keyhintEl=document.createElement("div");
+  keyhintEl.className="keyhint"; lanesEl.parentElement.appendChild(keyhintEl);
+
+  // ---- generate beatmap (lanes pattern over the grid) ----
+  function buildBeatmap(){
+    // pattern of lane indices; -1 = rest. each entry = one eighth note.
+    const P=[
+      0,-1,2,-1, 1,-1,3,-1,
+      0,-1,1, 2, 3,-1,2,-1,
+      0, 1,-1,2, -1,3,2,-1,
+      1,-1,0,-1, 3,-1,2, 0,
+      0,-1,2,-1, 1, 3,-1,2,
+      3,-1,1,-1, 0,-1,2, 1,
+      0, 2,1, 3, 0, 2,1, 3,
+      0,-1,-1,0, 3,-1,-1,3   // finale double-tap-ish
+    ];
+    const eighth = BEAT/2;
+    const lead = 2.2;        // seconds of silence before first note
+    const notes=[];
+    for(let i=0;i<P.length;i++){
+      if(P[i]<0) continue;
+      notes.push({lane:P[i], t: lead + i*eighth, hit:false, y:0});
+    }
+    return notes;
+  }
+
+  // ---- audio (Tone.js) ----
+  let pluck, kick, bass, audioReady=false, transportEvents=[];
+  function buildAudio(){
+    if(audioReady) return;
+    pluck = new Tone.PolySynth(Tone.Synth, {
+      oscillator:{type:"triangle"},
+      envelope:{attack:0.005,decay:0.18,sustain:0.0,release:0.18}
+    }).toDestination();
+    pluck.volume.value=-8;
+    kick = new Tone.MembraneSynth({octaves:5,pitchDecay:0.04}).toDestination();
+    kick.volume.value=-6;
+    bass = new Tone.Synth({oscillator:{type:"sawtooth"},
+      envelope:{attack:0.01,decay:0.2,sustain:0.2,release:0.2}}).toDestination();
+    bass.volume.value=-16;
+    const filt=new Tone.Filter(700,"lowpass").toDestination();
+    bass.connect(filt);
+    audioReady=true;
+  }
+  function scheduleBackingTrack(){
+    // kick on every beat, bass arpeggio every eighth — keeps the groove
+    const kickId = Tone.Transport.scheduleRepeat((time)=>{
+      kick.triggerAttackRelease("C1","8n",time);
+    }, "4n", "0:0:0");
+    const bassSeq = ["C2","C2","G1","A1","F1","F1","G1","C2"];
+    let bi=0;
+    const bassId = Tone.Transport.scheduleRepeat((time)=>{
+      bass.triggerAttackRelease(bassSeq[bi%bassSeq.length],"8n",time);
+      bi++;
+    }, "8n", "0:0:0");
+    transportEvents.push(kickId,bassId);
+  }
+
+  // ---- game state ----
+  let notes=[], state="idle", startBeat=0, raf=0;
+  let score=0, combo=0, maxCombo=0, cPerfect=0, cGood=0, cMiss=0, total=0;
+  let endTime=0;
+
+  function now(){ return Tone.Transport.seconds; }
+
+  function showJudge(text,color){
+    judgeEl.textContent=text; judgeEl.style.color=color;
+    judgeEl.classList.remove("show"); void judgeEl.offsetWidth; judgeEl.classList.add("show");
+  }
+  function setHud(){ scoreV.textContent=score; comboV.textContent=combo; }
+
+  function ripple(lane){
+    const f=laneFlashes[lane];
+    f.style.opacity="1"; setTimeout(()=>{f.style.opacity="0";},90);
+  }
+
+  function judgeHit(lane){
+    ripple(lane);
+    if(state!=="playing") return;
+    const t=now();
+    // find nearest un-hit note in this lane within GOOD window
+    let best=null,bestDt=Infinity;
+    for(const n of notes){
+      if(n.lane!==lane||n.hit) continue;
+      const dt=Math.abs(n.t-t);
+      if(dt<bestDt){bestDt=dt;best=n;}
+    }
+    if(best && bestDt<=GOOD_W){
+      best.hit=true;
+      if(bestDt<=PERFECT_W){
+        cPerfect++; combo++; score+=100+Math.min(combo,50)*4;
+        showJudge("PERFECT","#22e1ff");
+        spark(lane,"#22e1ff");
+      }else{
+        cGood++; combo++; score+=60+Math.min(combo,50)*2;
+        showJudge("GOOD","#5dff8f");
+        spark(lane,"#5dff8f");
+      }
+      maxCombo=Math.max(maxCombo,combo);
+      if(audioReady) pluck.triggerAttackRelease(NOTE_NAMES[lane],"16n");
+      setHud();
+    }
+  }
+
+  // ---- particles for hit feedback ----
+  let particles=[];
+  function spark(lane,color){
+    const cx=laneW*(lane+0.5);
+    for(let i=0;i<10;i++){
+      const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*3;
+      particles.push({x:cx,y:hitY,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.5,
+        life:1,color});
+    }
+  }
+
+  function missNote(n){
+    n.hit=true; cMiss++; combo=0; showJudge("MISS","#ff2e97"); setHud();
+  }
+
+  // ---- main loop ----
+  function loop(){
+    raf=requestAnimationFrame(loop);
+    ctx.clearRect(0,0,W,H);
+
+    // lane glow background
+    for(let i=0;i<LANES;i++){
+      const g=ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,"rgba(255,255,255,0)");
+      g.addColorStop(1,hexA(LANE_COLORS[i],0.05));
+      ctx.fillStyle=g; ctx.fillRect(laneW*i,0,laneW,H);
+    }
+
+    const t = state==="playing" ? now() : 0;
+
+    if(state==="playing"){
+      // draw notes
+      for(const n of notes){
+        if(n.hit) continue;
+        const prog = 1 - (n.t - t)/APPROACH;   // 0 at spawn, 1 at hit line
+        if(prog<-0.05) continue;                 // not yet visible
+        const y = prog*hitY;
+        n.y=y;
+        if(t - n.t > GOOD_W && !n.hit){ missNote(n); continue; }
+        drawNote(n.lane,y);
+      }
+      // end detection
+      if(t>endTime){ finish(); }
+    }
+
+    // hit-line markers
+    for(let i=0;i<LANES;i++){
+      const cx=laneW*(i+0.5);
+      ctx.beginPath(); ctx.arc(cx,hitY,16,0,Math.PI*2);
+      ctx.strokeStyle=hexA(LANE_COLORS[i],0.6); ctx.lineWidth=2; ctx.stroke();
+    }
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=0.035;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=Math.max(p.life,0);
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  function drawNote(lane,y){
+    const cx=laneW*(lane+0.5);
+    const w=Math.min(laneW*0.7,84), h=20;
+    const col=LANE_COLORS[lane];
+    ctx.save();
+    ctx.shadowColor=col; ctx.shadowBlur=18;
+    ctx.fillStyle=col;
+    roundRect(cx-w/2,y-h/2,w,h,10); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle="rgba(255,255,255,.85)";
+    roundRect(cx-w/2+4,y-h/2+4,w-8,4,3); ctx.fill();
+    ctx.restore();
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function hexA(hex,a){
+    const n=parseInt(hex.slice(1),16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+
+  // ---- flow control ----
+  async function startGame(){
+    document.getElementById("start").classList.add("hidden");
+    document.getElementById("result").classList.add("hidden");
+    resize();
+    buildAudio();
+    try{ await Tone.start(); }catch(e){}
+    notes=buildBeatmap();
+    score=0;combo=0;maxCombo=0;cPerfect=0;cGood=0;cMiss=0;
+    total=notes.length; particles=[]; setHud();
+    endTime = notes[notes.length-1].t + 1.6;
+    // reset transport
+    Tone.Transport.stop(); Tone.Transport.cancel(); transportEvents=[];
+    Tone.Transport.bpm.value=BPM;
+    Tone.Transport.position=0;
+    scheduleBackingTrack();
+    state="playing";
+    Tone.Transport.start();
+  }
+
+  function finish(){
+    state="done";
+    Tone.Transport.stop(); Tone.Transport.cancel(); transportEvents=[];
+    // grade
+    const acc = total ? (cPerfect + cGood*0.55)/total : 0;
+    let grade="C";
+    if(cMiss===0 && cPerfect>=total*0.8) grade="SS";
+    else if(acc>=0.92) grade="S";
+    else if(acc>=0.8) grade="A";
+    else if(acc>=0.6) grade="B";
+    document.getElementById("grade").textContent=grade;
+    document.getElementById("rPerfect").textContent=cPerfect;
+    document.getElementById("rGood").textContent=cGood;
+    document.getElementById("rMiss").textContent=cMiss;
+    document.getElementById("rScore").textContent=score;
+    document.getElementById("rMax").textContent=maxCombo;
+    const offer=document.getElementById("offerLine");
+    const cta=document.getElementById("ctaBtn");
+    if(grade==="SS"||grade==="S"){
+      offer.textContent="🔥 神之節奏！解鎖 VIP 搖滾區專屬席";
+      cta.textContent="領取 VIP 升級碼 PULSE-S";
+    }else if(grade==="A"||grade==="B"){
+      offer.textContent="🎟️ 表現亮眼！早鳥 84 折已為你保留";
+      cta.textContent="搶購早鳥票 · 84 折";
+    }else{
+      offer.textContent="🎶 再戰一場就上手，先把優惠收進口袋";
+      cta.textContent="搶購早鳥票 · 84 折";
+    }
+    document.getElementById("result").classList.remove("hidden");
+    // celebrate
+    if(typeof confetti==="function"){
+      confetti({particleCount:120,spread:80,origin:{y:.4},
+        colors:LANE_COLORS});
+      if(grade==="SS"||grade==="S"){
+        setTimeout(()=>confetti({particleCount:90,spread:110,origin:{y:.5},
+          colors:["#ffd54a","#ff2e97"]}),300);
+      }
+    }
+  }
+
+  // ---- input ----
+  lanesEl.addEventListener("pointerdown",(e)=>{
+    const laneDiv=e.target.closest(".lane");
+    if(!laneDiv) return;
+    e.preventDefault();
+    judgeHit(parseInt(laneDiv.dataset.lane,10));
+  });
+  const held={};
+  window.addEventListener("keydown",(e)=>{
+    const k=e.key.toLowerCase();
+    const idx=LANE_KEYS.indexOf(k);
+    if(idx>=0 && !held[k]){ held[k]=true; judgeHit(idx); }
+  });
+  window.addEventListener("keyup",(e)=>{ held[e.key.toLowerCase()]=false; });
+
+  document.getElementById("startBtn").addEventListener("click",startGame);
+  document.getElementById("retryBtn").addEventListener("click",startGame);
+  document.getElementById("ctaBtn").addEventListener("click",()=>{
+    const cta=document.getElementById("ctaBtn");
+    cta.textContent="🎉 早鳥票已加入購物車（示範）";
+    cta.disabled=true; cta.style.opacity=.8;
+    if(typeof confetti==="function") confetti({particleCount:60,spread:70,origin:{y:.6},colors:LANE_COLORS});
+  });
+
+  // ---- boot ----
+  function placeHud(){
+    hitlineEl.style.top=(hitY)+"px";
+    keyhintEl.style.top=(hitY+24)+"px";
+    keyhintEl.innerHTML = LANE_KEYS.map((k,i)=>
+      `<span style="display:inline-block;width:${100/LANES}%;color:${LANE_COLORS[i]}">${k.toUpperCase()}</span>`
+    ).join("");
+  }
+  resize(); placeHud();
+  window.addEventListener("resize", ()=>{resize();placeHud();});
+  loop();
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

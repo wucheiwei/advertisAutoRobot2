@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>霓虹氣泡｜倒倒看調色挑戰</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Sora:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg1:#0b0f2a;--bg2:#1a1145;--neon:#36f1cd;--pink:#ff4d9d;--gold:#ffd84d;
+  }
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans TC",sans-serif;color:#fff;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 0%,#241a5e 0%,var(--bg2) 45%,var(--bg1) 100%);
+    user-select:none;
+  }
+  #app{position:relative;height:100dvh;display:flex;flex-direction:column;align-items:center;
+    max-width:520px;margin:0 auto;padding:14px 16px env(safe-area-inset-bottom) 16px;}
+  /* fizzy floating bubbles bg */
+  .bubbles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .bubbles i{position:absolute;bottom:-40px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.7),rgba(54,241,205,.12));
+    animation:rise linear infinite}
+  @keyframes rise{to{transform:translateY(-115dvh) translateX(20px);opacity:0}}
+  header{position:relative;z-index:2;text-align:center;margin-top:4px}
+  .brand{font-family:"Sora",sans-serif;letter-spacing:3px;font-size:13px;color:var(--neon);font-weight:800}
+  h1{font-weight:900;font-size:25px;margin:2px 0 2px;
+    background:linear-gradient(90deg,var(--neon),var(--pink),var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:12.5px;color:#c7c9ec;line-height:1.5}
+  .hud{position:relative;z-index:2;display:flex;gap:8px;margin:10px 0 2px}
+  .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+    border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
+  .chip b{color:var(--gold)}
+  #stage{position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;
+    flex-wrap:wrap;gap:14px 18px;width:100%;padding:8px 0}
+  .tube{
+    position:relative;width:46px;height:170px;border:3px solid rgba(255,255,255,.55);
+    border-top:none;border-radius:6px 6px 22px 22px;background:rgba(255,255,255,.05);
+    display:flex;flex-direction:column-reverse;overflow:hidden;cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease;backdrop-filter:blur(2px)}
+  .tube::before{content:"";position:absolute;top:-3px;left:-6px;right:-6px;height:6px;
+    border:3px solid rgba(255,255,255,.55);border-bottom:none;border-radius:6px 6px 0 0}
+  .seg{height:25%;width:100%;transition:height .25s ease}
+  .seg::after{content:"";display:block;height:36%;background:rgba(255,255,255,.22)}
+  .tube.sel{transform:translateY(-16px);box-shadow:0 0 0 3px var(--neon),0 10px 24px rgba(54,241,205,.35)}
+  .tube.pouring{transform:translateY(-22px) rotate(-6deg)}
+  .tube.win{animation:cheer .5s ease}
+  @keyframes cheer{50%{transform:translateY(-10px) scale(1.05)}}
+  .controls{position:relative;z-index:2;display:flex;gap:10px;margin:6px 0 2px}
+  .btn{border:none;border-radius:12px;padding:11px 16px;font-family:"Noto Sans TC";font-weight:700;
+    font-size:14px;cursor:pointer;color:#fff;background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.2)}
+  .btn:active{transform:scale(.95)}
+  .cta-wrap{position:relative;z-index:2;width:100%;margin-top:8px}
+  .cta{display:block;width:100%;text-align:center;text-decoration:none;color:#13102e;font-weight:900;
+    font-size:16px;padding:15px;border-radius:16px;
+    background:linear-gradient(90deg,var(--neon),var(--gold));
+    box-shadow:0 8px 26px rgba(54,241,205,.4)}
+  /* win overlay */
+  .ov{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;
+    background:rgba(8,7,24,.78);backdrop-filter:blur(6px);padding:24px}
+  .ov.on{display:flex;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0}}
+  .card{width:100%;max-width:340px;text-align:center;background:linear-gradient(160deg,#241a5e,#140e38);
+    border:1px solid rgba(255,255,255,.18);border-radius:22px;padding:26px 22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .card .big{font-size:46px}
+  .card h2{font-size:23px;margin:6px 0;color:var(--neon)}
+  .card p{font-size:14px;color:#d6d8f5;line-height:1.6;margin-bottom:6px}
+  .coupon{margin:14px 0;border:2px dashed var(--gold);border-radius:14px;padding:12px;
+    background:rgba(255,216,77,.08)}
+  .coupon .code{font-family:"Sora";font-size:22px;font-weight:800;letter-spacing:2px;color:var(--gold)}
+  .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:8;
+    background:rgba(255,77,157,.92);color:#fff;font-size:13px;font-weight:700;
+    padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div id="app">
+  <header>
+    <div class="brand">NEON FIZZ · 霓虹氣泡實驗室</div>
+    <h1>倒倒看 · 調色挑戰</h1>
+    <div class="sub">把同色氣泡飲倒進同一管，每管只留一種顏色就成功！<br>點一管當「倒出」、再點另一管「倒入」。</div>
+  </header>
+  <div class="hud">
+    <div class="chip">關卡 <b id="lv">1</b></div>
+    <div class="chip">步數 <b id="mv">0</b></div>
+  </div>
+  <div id="stage"></div>
+  <div class="controls">
+    <button class="btn" id="undo">↩ 上一步</button>
+    <button class="btn" id="reset">⟳ 重排本關</button>
+  </div>
+  <div class="cta-wrap">
+    <a class="cta" id="cta" href="#" onclick="return false">完成挑戰解鎖買一送一 🥤</a>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="card">
+    <div class="big">🎉</div>
+    <h2 id="winTitle">調色成功！</h2>
+    <p id="winMsg">你的手感堪比首席調飲師！</p>
+    <div class="coupon">
+      <div>霓虹氣泡 · 買一送一券</div>
+      <div class="code" id="code">FIZZ-2X</div>
+    </div>
+    <a class="cta" id="claim" href="#" onclick="return false">領取優惠並挑戰下一關 →</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  // ---- fizzy bubbles background ----
+  (function(){
+    const wrap=document.getElementById('bubbles');
+    for(let i=0;i<16;i++){
+      const b=document.createElement('i');
+      const s=6+Math.random()*22;
+      b.style.width=b.style.height=s+'px';
+      b.style.left=(Math.random()*100)+'%';
+      b.style.animationDuration=(6+Math.random()*8)+'s';
+      b.style.animationDelay=(-Math.random()*10)+'s';
+      wrap.appendChild(b);
+    }
+  })();
+
+  const PALETTES=[
+    ['#36f1cd','#ff4d9d','#ffd84d','#7c5cff'],
+    ['#ff7a59','#3ad6ff','#b6ff5c','#ff4d9d','#ffd84d'],
+    ['#36f1cd','#ff4d9d','#ffd84d','#7c5cff','#3ad6ff','#ff7a59']
+  ];
+  const CAP=4;
+  const stage=document.getElementById('stage');
+  const toastEl=document.getElementById('toast');
+  let level=0, colors=[], tubes=[], moves=0, history=[], selected=-1, busy=false;
+
+  function toast(t){toastEl.textContent=t;toastEl.classList.add('on');
+    clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.classList.remove('on'),1200);}
+
+  function topRun(t){ // {color,count} of top contiguous
+    if(!t.length) return {color:null,count:0};
+    const c=t[t.length-1]; let n=0;
+    for(let i=t.length-1;i>=0 && t[i]===c;i--) n++;
+    return {color:c,count:n};
+  }
+  function canPour(a,b){
+    if(a===b) return false;
+    const from=tubes[a], to=tubes[b];
+    if(!from.length) return false;
+    if(to.length>=CAP) return false;
+    if(!to.length) return true;
+    return to[to.length-1]===from[from.length-1];
+  }
+  function doPour(a,b){ // returns moved count
+    const r=topRun(tubes[a]);
+    const space=CAP-tubes[b].length;
+    const n=Math.min(r.count,space);
+    for(let i=0;i<n;i++){ tubes[b].push(tubes[a].pop()); }
+    return n;
+  }
+  function isSolved(){
+    return tubes.every(t=> t.length===0 || (t.length===CAP && t.every(c=>c===t[0])));
+  }
+
+  // DFS solvability check on an arbitrary layout
+  function solvable(start){
+    const key=s=>s.map(t=>t.join(',')).join('|');
+    const solved=s=>s.every(t=>t.length===0||(t.length===CAP&&t.every(c=>c===t[0])));
+    const seen=new Set();
+    const stk=[start.map(t=>t.slice())];
+    let it=0;
+    while(stk.length){
+      if(++it>200000) return false;
+      const s=stk.pop(); const k=key(s);
+      if(seen.has(k)) continue; seen.add(k);
+      if(solved(s)) return true;
+      for(let a=0;a<s.length;a++){
+        if(!s[a].length) continue;
+        const c=s[a][s[a].length-1]; let run=0;
+        for(let i=s[a].length-1;i>=0&&s[a][i]===c;i--) run++;
+        for(let b=0;b<s.length;b++){
+          if(a===b) continue;
+          const to=s[b];
+          if(to.length>=CAP) continue;
+          if(to.length && to[to.length-1]!==c) continue;
+          const ns=s.map(t=>t.slice());
+          const mv=Math.min(run,CAP-to.length);
+          for(let i=0;i<mv;i++) ns[b].push(ns[a].pop());
+          stk.push(ns);
+        }
+      }
+    }
+    return false;
+  }
+  // random shuffle + solver verification -> guaranteed solvable, non-trivial
+  function generate(n){
+    while(true){
+      const flat=[];
+      for(let c=0;c<n;c++) for(let i=0;i<CAP;i++) flat.push(c);
+      for(let i=flat.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[flat[i],flat[j]]=[flat[j],flat[i]];}
+      const t=[];
+      for(let c=0;c<n;c++) t.push(flat.slice(c*CAP,c*CAP+CAP));
+      t.push([]); t.push([]); // two empties
+      const trivial=t.every(x=>x.length===0||x.every(c=>c===x[0]));
+      if(!trivial && solvable(t)) return t;
+    }
+  }
+
+  function newLevel(){
+    colors=PALETTES[level%PALETTES.length].slice();
+    tubes=generate(colors.length);
+    moves=0; history=[]; selected=-1;
+    document.getElementById('lv').textContent=level+1;
+    document.getElementById('mv').textContent=0;
+    render();
+  }
+
+  function render(){
+    stage.innerHTML='';
+    tubes.forEach((t,i)=>{
+      const el=document.createElement('div');
+      el.className='tube'+(i===selected?' sel':'');
+      el.dataset.i=i;
+      t.forEach(c=>{
+        const s=document.createElement('div');
+        s.className='seg';
+        s.style.background=colors[c];
+        el.appendChild(s);
+      });
+      el.addEventListener('click',()=>onTap(i));
+      stage.appendChild(el);
+    });
+  }
+
+  function onTap(i){
+    if(busy) return;
+    if(selected===-1){
+      if(!tubes[i].length){toast('這管是空的');return;}
+      selected=i; render(); return;
+    }
+    if(selected===i){ selected=-1; render(); return; }
+    if(canPour(selected,i)){
+      animatePour(selected,i);
+    }else{
+      toast('只能倒在同色或空管上');
+      selected=-1; render();
+    }
+  }
+
+  function animatePour(a,b){
+    busy=true;
+    history.push(tubes.map(t=>t.slice()));
+    const els=stage.children;
+    els[a].classList.add('pouring');
+    setTimeout(()=>{
+      doPour(a,b);
+      moves++; document.getElementById('mv').textContent=moves;
+      selected=-1; busy=false; render();
+      if(isSolved()) win();
+    },260);
+  }
+
+  function win(){
+    [...stage.children].forEach(el=>el.classList.add('win'));
+    burst();
+    setTimeout(()=>{
+      document.getElementById('code').textContent='FIZZ-'+(level+1)+'X';
+      document.getElementById('winMsg').textContent =
+        moves<=colors.length*2 ? '神之手感！幾乎零浪費 👑' : '調色成功，續杯免費！';
+      document.getElementById('ov').classList.add('on');
+    },650);
+  }
+  function burst(){
+    if(typeof confetti!=='function') return;
+    confetti({particleCount:120,spread:80,origin:{y:.6},
+      colors:['#36f1cd','#ff4d9d','#ffd84d','#7c5cff']});
+  }
+
+  document.getElementById('undo').addEventListener('click',()=>{
+    if(busy||!history.length){toast('沒有可復原的步驟');return;}
+    tubes=history.pop(); selected=-1;
+    moves=Math.max(0,moves-1); document.getElementById('mv').textContent=moves;
+    render();
+  });
+  document.getElementById('reset').addEventListener('click',()=>{
+    if(busy) return; newLevel(); toast('已重新洗牌');
+  });
+  document.getElementById('claim').addEventListener('click',()=>{
+    document.getElementById('ov').classList.remove('on');
+    level++; newLevel();
+  });
+  document.getElementById('cta').addEventListener('click',()=>{
+    if(isSolved()) win(); else toast('先把顏色倒整齊就能解鎖喔！');
+  });
+
+  newLevel();
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

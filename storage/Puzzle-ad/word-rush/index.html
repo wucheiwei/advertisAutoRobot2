@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LEXO 咖啡 — 單字解碼挑戰</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:linear-gradient(160deg,#1c0a00 0%,#3b1a00 50%,#1c0a00 100%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;color:#fff;
+  touch-action:manipulation;user-select:none;
+}
+
+/* ─── header ─── */
+.hdr{text-align:center;padding:14px 0 6px;}
+.brand{font-size:.7rem;letter-spacing:5px;opacity:.5;text-transform:uppercase;}
+h1{font-size:1.3rem;font-weight:900;letter-spacing:1px;margin-top:4px;}
+.sub{font-size:.7rem;opacity:.6;margin-top:3px;}
+
+/* ─── hud ─── */
+.hud{
+  display:flex;gap:0;width:92%;max-width:400px;
+  background:rgba(255,255,255,.06);border-radius:14px;
+  padding:8px 0;justify-content:space-around;align-items:center;
+  margin-bottom:12px;
+}
+.stat{text-align:center;padding:0 12px;}
+.sv{font-size:1.25rem;font-weight:700;color:#fbbf24;font-family:'Courier New',monospace;}
+.sl{font-size:.58rem;opacity:.6;margin-top:2px;}
+.divider{width:1px;height:30px;background:rgba(255,255,255,.1);}
+/* timer bar */
+.timer-wrap{width:92%;max-width:400px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;margin-bottom:14px;overflow:hidden;}
+#timer-bar{height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:3px;transition:width .5s linear,background .5s;}
+
+/* ─── game area ─── */
+.game{width:92%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+
+/* hint */
+.hint-box{
+  background:rgba(255,255,255,.07);border-radius:14px;
+  padding:10px 18px;text-align:center;width:100%;
+}
+.hint-label{font-size:.6rem;opacity:.5;letter-spacing:2px;margin-bottom:4px;text-transform:uppercase;}
+.hint-text{font-size:.95rem;opacity:.9;line-height:1.5;}
+
+/* answer slots */
+.answer-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.slot{
+  width:44px;height:52px;border-radius:10px;
+  border:2px dashed rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;font-weight:900;font-family:'Courier New',monospace;
+  background:rgba(255,255,255,.05);transition:all .15s;
+  cursor:pointer;position:relative;
+}
+.slot.filled{
+  border-color:#fbbf24;background:rgba(251,191,36,.12);
+  box-shadow:0 0 10px rgba(251,191,36,.25);
+}
+.slot.correct{border-color:#4ade80;background:rgba(74,222,128,.15);}
+.slot.wrong{border-color:#f87171;background:rgba(248,113,113,.15);}
+
+/* scrambled letters */
+.letters-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.letter-tile{
+  width:44px;height:52px;border-radius:10px;
+  background:linear-gradient(135deg,#92400e,#78350f);
+  border:2px solid rgba(251,191,36,.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;font-weight:900;font-family:'Courier New',monospace;
+  cursor:pointer;transition:transform .12s,opacity .2s,background .2s;
+  box-shadow:0 3px 10px rgba(0,0,0,.4);
+}
+.letter-tile:active{transform:scale(.9);}
+.letter-tile.used{opacity:.25;pointer-events:none;}
+.letter-tile.selected{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  border-color:#fde68a;transform:scale(1.08);
+  box-shadow:0 4px 16px rgba(251,191,36,.5);
+}
+
+/* feedback */
+.feedback{
+  font-size:1rem;font-weight:700;min-height:28px;text-align:center;
+  transition:opacity .3s;
+}
+.feedback.success{color:#4ade80;}
+.feedback.fail{color:#f87171;}
+
+/* actions */
+.actions{display:flex;gap:10px;}
+.btn-clear{
+  background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);
+  color:#fff;font-size:.85rem;padding:10px 20px;border-radius:50px;cursor:pointer;
+}
+.btn-skip{
+  background:rgba(251,191,36,.12);border:1.5px solid rgba(251,191,36,.3);
+  color:#fbbf24;font-size:.85rem;padding:10px 20px;border-radius:50px;cursor:pointer;
+}
+
+/* ─── overlay ─── */
+#overlay{
+  position:fixed;inset:0;background:rgba(20,6,0,.93);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:40;gap:14px;padding:24px;
+}
+.ov-icon{font-size:3rem;}
+.ov-title{font-size:1.7rem;font-weight:900;}
+.ov-desc{opacity:.8;font-size:.88rem;text-align:center;line-height:1.7;}
+.ov-score{font-size:2.5rem;font-weight:900;color:#fbbf24;font-family:'Courier New',monospace;}
+.btn-primary{
+  background:linear-gradient(90deg,#f59e0b,#d97706);
+  border:none;color:#fff;font-size:1rem;font-weight:700;
+  padding:13px 40px;border-radius:50px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(245,158,11,.4);
+}
+.btn-ghost{
+  background:transparent;border:2px solid rgba(251,191,36,.4);
+  color:#fbbf24;font-size:.85rem;padding:10px 28px;border-radius:50px;cursor:pointer;
+}
+.hidden{display:none!important;}
+
+/* ─── cta ─── */
+.cta-zone{
+  width:92%;max-width:400px;padding:12px 0 20px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.cta-main{
+  background:linear-gradient(90deg,#f59e0b,#d97706);
+  border:none;color:#fff;font-size:.95rem;font-weight:700;
+  padding:12px 36px;border-radius:50px;cursor:pointer;width:100%;max-width:280px;
+  box-shadow:0 4px 18px rgba(245,158,11,.4);
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="brand">LEXO Coffee</div>
+  <h1>☕ 單字解碼挑戰</h1>
+  <div class="sub">30 秒解出越多單字，好禮越豐富</div>
+</div>
+
+<div class="hud">
+  <div class="stat"><div class="sv" id="sv-score">0</div><div class="sl">分數</div></div>
+  <div class="divider"></div>
+  <div class="stat"><div class="sv" id="sv-correct">0</div><div class="sl">答對</div></div>
+  <div class="divider"></div>
+  <div class="stat"><div class="sv" id="sv-time">30</div><div class="sl">秒</div></div>
+</div>
+<div class="timer-wrap"><div id="timer-bar" style="width:100%"></div></div>
+
+<div class="game">
+  <div class="hint-box">
+    <div class="hint-label">提示</div>
+    <div class="hint-text" id="hint-text">…</div>
+  </div>
+
+  <div class="answer-row" id="answer-row"></div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="letters-row" id="letters-row"></div>
+
+  <div class="actions">
+    <button class="btn-clear" id="btn-clear">清除</button>
+    <button class="btn-skip" id="btn-skip">跳過 (−5分)</button>
+  </div>
+</div>
+
+<div class="cta-zone">
+  <button class="cta-main" onclick="window.open('#','_blank')">☕ 領取 LEXO 免費試喝券</button>
+</div>
+
+<div id="overlay">
+  <div class="ov-icon">☕</div>
+  <div class="ov-title">LEXO 咖啡</div>
+  <div class="ov-desc">解開咖啡世界的文字謎題<br>30 秒答對越多，好禮越豐厚！</div>
+  <button class="btn-primary" id="start-btn">開始挑戰！</button>
+</div>
+
+<script>
+/* ── word bank (coffee-related) ── */
+const WORDS = [
+  { word:'ESPRESSO', hint:'義式濃縮咖啡，咖啡界的靈魂' },
+  { word:'LATTE',    hint:'義大利語「牛奶」，咖啡拿鐵的基底' },
+  { word:'MOCHA',    hint:'帶有巧克力香氣的咖啡飲品' },
+  { word:'AROMA',    hint:'讓你一聞就清醒的迷人氣味' },
+  { word:'BLEND',    hint:'將不同產地豆子混合調配' },
+  { word:'GRIND',    hint:'磨碎咖啡豆的關鍵步驟' },
+  { word:'ROAST',    hint:'決定咖啡深淺風味的過程' },
+  { word:'CREAM',    hint:'漂浮在咖啡表面的美麗泡沫' },
+  { word:'DRIP',     hint:'最常見的手沖萃取方式' },
+  { word:'BEANS',    hint:'每杯咖啡的原始起點' },
+  { word:'FILTER',   hint:'手沖時過濾咖啡粉的工具' },
+  { word:'BITTER',   hint:'深焙咖啡常帶有的尾韻' },
+  { word:'CREMA',    hint:'Espresso 表面金黃色的泡沫層' },
+  { word:'STEAM',    hint:'打發奶泡時不可少的熱力' },
+  { word:'ORIGIN',   hint:'咖啡豆的產地故事' },
+];
+
+/* ── state ── */
+let queue = [], current = null, scrambled = [];
+let selectedIdxs = [];   // indices in scrambled[] chosen so far
+let score = 0, correctCount = 0;
+let timeLeft = 30, timerInterval;
+let running = false;
+
+const $ = id => document.getElementById(id);
+
+/* ── scramble ── */
+function scramble(word) {
+  const arr = word.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // make sure it's actually scrambled
+  if (arr.join('') === word) { const t=arr[0]; arr[0]=arr[arr.length-1]; arr[arr.length-1]=t; }
+  return arr;
+}
+
+/* ── render ── */
+function renderWord() {
+  if (!current) return;
+  scrambled = scramble(current.word);
+  selectedIdxs = [];
+  renderSlots();
+  renderTiles();
+  $('hint-text').textContent = current.hint;
+  setFeedback('', '');
+}
+
+function renderSlots() {
+  const row = $('answer-row');
+  row.innerHTML = '';
+  for (let i = 0; i < current.word.length; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.idx = i;
+    slot.addEventListener('click', () => removeFromSlot(i));
+    row.appendChild(slot);
+  }
+}
+
+function renderTiles() {
+  const row = $('letters-row');
+  row.innerHTML = '';
+  scrambled.forEach((letter, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'letter-tile';
+    tile.dataset.tileIdx = i;
+    tile.textContent = letter;
+    tile.addEventListener('click', () => selectTile(i));
+    row.appendChild(tile);
+  });
+}
+
+function updateDisplay() {
+  const slots = $('answer-row').querySelectorAll('.slot');
+  const tiles  = $('letters-row').querySelectorAll('.letter-tile');
+
+  slots.forEach((slot, i) => {
+    const tileIdx = selectedIdxs[i];
+    if (tileIdx !== undefined) {
+      slot.textContent  = scrambled[tileIdx];
+      slot.classList.add('filled');
+    } else {
+      slot.textContent  = '';
+      slot.classList.remove('filled','correct','wrong');
+    }
+  });
+  tiles.forEach((tile, i) => {
+    tile.classList.toggle('used', selectedIdxs.includes(i));
+    tile.classList.toggle('selected', false);
+  });
+}
+
+/* ── interactions ── */
+function selectTile(tileIdx) {
+  if (!running) return;
+  if (selectedIdxs.includes(tileIdx)) return;
+  if (selectedIdxs.length >= current.word.length) return;
+  selectedIdxs.push(tileIdx);
+  updateDisplay();
+  if (selectedIdxs.length === current.word.length) checkAnswer();
+}
+
+function removeFromSlot(slotIdx) {
+  if (!running) return;
+  if (selectedIdxs[slotIdx] === undefined) return;
+  selectedIdxs.splice(slotIdx, 1);
+  updateDisplay();
+}
+
+function checkAnswer() {
+  const attempt = selectedIdxs.map(i => scrambled[i]).join('');
+  const slots = $('answer-row').querySelectorAll('.slot');
+  if (attempt === current.word) {
+    slots.forEach(s => { s.classList.add('correct'); s.classList.remove('filled'); });
+    const pts = 10 + Math.floor(timeLeft * 0.5);
+    score += pts;
+    correctCount++;
+    $('sv-score').textContent = score;
+    $('sv-correct').textContent = correctCount;
+    setFeedback(`+${pts} 分！✓`, 'success');
+    setTimeout(nextWord, 900);
+  } else {
+    slots.forEach(s => { s.classList.add('wrong'); s.classList.remove('filled'); });
+    score = Math.max(0, score - 3);
+    $('sv-score').textContent = score;
+    setFeedback('再試一次！', 'fail');
+    setTimeout(() => {
+      selectedIdxs = [];
+      updateDisplay();
+      setFeedback('', '');
+    }, 700);
+  }
+}
+
+function setFeedback(msg, cls) {
+  const el = $('feedback');
+  el.textContent = msg;
+  el.className = 'feedback' + (cls ? ' ' + cls : '');
+}
+
+function nextWord() {
+  if (queue.length === 0) {
+    // shuffle again
+    queue = shuffle([...WORDS]);
+  }
+  current = queue.pop();
+  renderWord();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+/* ── timer ── */
+function startTimer() {
+  timeLeft = 30;
+  $('sv-time').textContent = timeLeft;
+  $('timer-bar').style.width = '100%';
+  $('timer-bar').style.background = 'linear-gradient(90deg,#f59e0b,#ef4444)';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    $('sv-time').textContent = timeLeft;
+    const pct = (timeLeft / 30) * 100;
+    $('timer-bar').style.width = pct + '%';
+    if (timeLeft <= 10) $('timer-bar').style.background = '#ef4444';
+    if (timeLeft <= 0) { clearInterval(timerInterval); endGame(); }
+  }, 1000);
+}
+
+/* ── end ── */
+function endGame() {
+  running = false;
+  const ov = $('overlay');
+  let reward = '';
+  if (score >= 150)     reward = '🎁 恭喜獲得免費大杯！';
+  else if (score >= 80) reward = '☕ 解鎖 85 折優惠券！';
+  else                  reward = '🎫 獲得首購 9 折券！';
+  ov.innerHTML = `
+    <div class="ov-icon">☕</div>
+    <div class="ov-title">時間到！</div>
+    <div class="ov-desc">答對 <strong>${correctCount}</strong> 題<br>${reward}</div>
+    <div class="ov-score">${score} 分</div>
+    <button class="btn-primary" onclick="startGame()">再挑戰一次</button>
+    <button class="btn-ghost" onclick="window.open('#','_blank')">領取好禮 →</button>
+  `;
+  ov.classList.remove('hidden');
+}
+
+/* ── start ── */
+function startGame() {
+  $('overlay').classList.add('hidden');
+  score = 0; correctCount = 0;
+  $('sv-score').textContent = '0';
+  $('sv-correct').textContent = '0';
+  queue = shuffle([...WORDS]);
+  running = true;
+  nextWord();
+  startTimer();
+}
+
+/* ── button handlers ── */
+$('btn-clear').addEventListener('click', () => {
+  if (!running) return;
+  selectedIdxs = [];
+  updateDisplay();
+  setFeedback('', '');
+});
+$('btn-skip').addEventListener('click', () => {
+  if (!running) return;
+  score = Math.max(0, score - 5);
+  $('sv-score').textContent = score;
+  setFeedback('跳過 −5 分', 'fail');
+  setTimeout(() => { setFeedback('',''); nextWord(); }, 600);
+});
+$('start-btn').addEventListener('click', startGame);
+</script>
+</body>
+</html>

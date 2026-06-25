@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>脈動電音祭・搶拍領能量</title>
+<style>
+  :root{
+    --bg0:#06030f; --bg1:#140827; --neon1:#ff2e97; --neon2:#16e0ff;
+    --neon3:#b14bff; --neon4:#fde047; --ink:#f4ecff; --dim:#9b86c4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC","Hiragino Sans GB",sans-serif;
+    background:radial-gradient(120% 90% at 50% 0%,#1b0a3a 0%,var(--bg1) 40%,var(--bg0) 100%);
+    color:var(--ink); overflow:hidden; user-select:none; -webkit-user-select:none;
+  }
+  #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #fxLayer{pointer-events:none}
+
+  /* ---------- HUD ---------- */
+  .hud{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;
+    align-items:flex-start;padding:14px 16px;font-weight:800;letter-spacing:.5px}
+  .pill{background:rgba(20,8,39,.55);border:1px solid rgba(177,75,255,.4);border-radius:999px;
+    padding:6px 14px;backdrop-filter:blur(6px);font-size:13px;color:var(--dim)}
+  .pill b{color:var(--ink);font-size:20px;display:block;line-height:1;margin-top:2px}
+  .combo{position:absolute;top:88px;left:0;right:0;text-align:center;z-index:6;
+    font-weight:900;font-size:clamp(34px,12vw,76px);
+    background:linear-gradient(90deg,var(--neon2),var(--neon1));-webkit-background-clip:text;
+    background-clip:text;color:transparent;opacity:0;transition:opacity .15s;text-shadow:none}
+  .combo span{font-size:.4em;display:block;color:var(--neon4);-webkit-text-fill-color:var(--neon4)}
+  .judge{position:absolute;top:46%;left:0;right:0;text-align:center;z-index:6;
+    font-weight:900;font-size:clamp(28px,9vw,56px);opacity:0;pointer-events:none}
+
+  /* ---------- energy bar ---------- */
+  .energyWrap{position:absolute;left:16px;right:16px;top:54px;z-index:6;height:10px;
+    border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;
+    border:1px solid rgba(22,224,255,.3)}
+  .energyFill{height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--neon2),var(--neon3),var(--neon1));
+    box-shadow:0 0 16px var(--neon1);transition:width .12s}
+
+  /* ---------- lanes ---------- */
+  #laneTouch{position:absolute;inset:0;z-index:5;display:flex}
+  .laneBtn{flex:1;height:100%;border:none;background:transparent}
+  .laneHit{position:absolute;inset:0;z-index:4;display:flex;pointer-events:none}
+  .laneCol{flex:1;display:flex;align-items:flex-end;justify-content:center}
+  .key{margin-bottom:calc(var(--hitpad));width:74%;max-width:96px;aspect-ratio:1/.5;
+    border-radius:14px;border:2px solid rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;
+    color:var(--ink);opacity:.55;transition:transform .06s,opacity .06s,box-shadow .06s}
+  .key.flash{opacity:1;transform:translateY(2px) scale(1.04)}
+
+  /* ---------- overlays ---------- */
+  .screen{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:26px;
+    background:radial-gradient(110% 80% at 50% 30%,rgba(27,10,58,.82),rgba(6,3,15,.94));
+    backdrop-filter:blur(3px)}
+  .screen.hidden{display:none}
+  .kicker{font-size:13px;letter-spacing:4px;color:var(--neon2);font-weight:800;margin-bottom:14px}
+  .logo{font-size:clamp(40px,16vw,92px);font-weight:900;line-height:.92;
+    background:linear-gradient(120deg,var(--neon1),var(--neon3) 45%,var(--neon2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 24px rgba(255,46,151,.45))}
+  .sub{font-size:clamp(15px,4.4vw,20px);color:var(--dim);margin-top:14px;max-width:440px;line-height:1.6}
+  .sub b{color:var(--neon4)}
+  .btn{margin-top:26px;border:none;cursor:pointer;font-weight:900;font-size:19px;color:#0a0316;
+    padding:16px 40px;border-radius:999px;letter-spacing:1px;
+    background:linear-gradient(90deg,var(--neon2),var(--neon1));
+    box-shadow:0 0 28px rgba(255,46,151,.55),0 8px 24px rgba(0,0,0,.4);
+    transition:transform .12s,box-shadow .12s}
+  .btn:active{transform:scale(.96)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid rgba(177,75,255,.6);
+    box-shadow:none;font-size:15px;padding:13px 28px;margin-top:14px}
+  .legend{margin-top:24px;font-size:12.5px;color:var(--dim);line-height:1.7}
+  .legend kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+    border-radius:6px;padding:1px 8px;font-weight:800;color:var(--ink)}
+  .score-big{font-size:clamp(52px,20vw,120px);font-weight:900;line-height:1;
+    background:linear-gradient(120deg,var(--neon2),var(--neon4));-webkit-background-clip:text;
+    background-clip:text;color:transparent;margin:6px 0}
+  .stats{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+  .stat{background:rgba(255,255,255,.06);border:1px solid rgba(177,75,255,.3);border-radius:14px;
+    padding:10px 16px;min-width:84px}
+  .stat small{display:block;color:var(--dim);font-size:11px;letter-spacing:1px;margin-bottom:3px}
+  .stat b{font-size:22px}
+  .rank{font-size:clamp(30px,9vw,52px);font-weight:900;color:var(--neon4);margin-top:4px}
+  .reward{margin-top:18px;font-size:14px;color:var(--dim)}
+  .code{display:inline-block;margin-top:6px;font-weight:900;letter-spacing:3px;font-size:22px;
+    color:var(--neon2);border:1.5px dashed rgba(22,224,255,.6);border-radius:12px;padding:8px 18px}
+  .tag{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:11px;color:#5b4a82;z-index:6}
+  @media (min-width:640px){:root{}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="bg"></canvas>
+  <canvas id="game"></canvas>
+  <canvas id="fxLayer"></canvas>
+
+  <!-- in-game HUD -->
+  <div class="hud" id="hud" style="opacity:0">
+    <div class="pill">分數<b id="scoreVal">0</b></div>
+    <div class="pill" style="text-align:right">脈動電音祭 ⚡<b id="bpmVal">128 BPM</b></div>
+  </div>
+  <div class="energyWrap" id="energyWrap" style="opacity:0"><div class="energyFill" id="energyFill"></div></div>
+  <div class="combo" id="combo">0<span>COMBO</span></div>
+  <div class="judge" id="judge"></div>
+
+  <!-- hit zone visuals -->
+  <div class="laneHit" id="laneHit"></div>
+  <!-- touch buttons -->
+  <div id="laneTouch" style="display:none"></div>
+
+  <!-- START screen -->
+  <div class="screen" id="startScreen">
+    <div class="kicker">P U L S E ⚡ 2 0 2 6</div>
+    <div class="logo">脈動<br>電音祭</div>
+    <div class="sub">把每一拍踩在節點上，集滿能量條解鎖<b>限量霓虹罐</b>。<br>跟著節奏，準度越高、連擊越長，獎勵越狂。</div>
+    <button class="btn" id="startBtn">▶ 開始踩拍</button>
+    <div class="legend" id="legendDesktop">
+      桌機按鍵 <kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd> 對應四條軌道
+    </div>
+    <div class="tag">脈動 PULSE 為虛構品牌，本頁為互動廣告 Demo</div>
+  </div>
+
+  <!-- RESULT screen -->
+  <div class="screen hidden" id="endScreen">
+    <div class="kicker">演 出 結 束</div>
+    <div class="rank" id="rankText">A</div>
+    <div class="score-big" id="finalScore">0</div>
+    <div class="stats">
+      <div class="stat"><small>PERFECT</small><b id="stPerfect">0</b></div>
+      <div class="stat"><small>GOOD</small><b id="stGood">0</b></div>
+      <div class="stat"><small>MISS</small><b id="stMiss">0</b></div>
+      <div class="stat"><small>最高連擊</small><b id="stCombo">0</b></div>
+    </div>
+    <div class="reward" id="rewardLine">能量未滿，再衝一次解鎖好禮 →</div>
+    <button class="btn" id="claimBtn">🥤 領取限量霓虹罐</button>
+    <button class="btn ghost" id="retryBtn">↻ 再踩一場</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  var bg=document.getElementById('bg'),bx=bg.getContext('2d');
+  var gm=document.getElementById('game'),gx=gm.getContext('2d');
+  var fx=document.getElementById('fxLayer'),fxc=fx.getContext('2d');
+  var LANES=4;
+  var COLORS=['#16e0ff','#b14bff','#ff2e97','#fde047'];
+  var KEYMAP={d:0,f:1,j:2,k:3};
+
+  function resize(){
+    W=window.innerWidth;H=window.innerHeight;
+    [bg,gm,fx].forEach(function(c){
+      c.width=W*DPR;c.height=H*DPR;
+      c.getContext('2d').setTransform(DPR,0,0,DPR,0,0);
+    });
+    document.documentElement.style.setProperty('--hitpad', Math.max(24,H*0.10)+'px');
+    buildHitKeys();
+  }
+  window.addEventListener('resize',resize);
+
+  /* ---------- background neon field ---------- */
+  var stars=[];
+  for(var i=0;i<70;i++){stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.8+0.4,s:Math.random()*0.4+0.1,c:COLORS[i%4]});}
+  var t0=performance.now();
+  function drawBG(now){
+    bx.clearRect(0,0,W,H);
+    // grid horizon
+    var horizon=H*0.62;
+    bx.save();
+    bx.globalAlpha=0.18;
+    bx.strokeStyle='#b14bff';bx.lineWidth=1;
+    for(var gx2=-10;gx2<=10;gx2++){
+      bx.beginPath();bx.moveTo(W/2,horizon);
+      bx.lineTo(W/2+gx2*(W/7),H);bx.stroke();
+    }
+    var move=((now-t0)*0.00012)%0.12;
+    for(var ln=0;ln<14;ln++){
+      var f=((ln/14)+move);var y=horizon+f*f*(H-horizon);
+      bx.beginPath();bx.moveTo(0,y);bx.lineTo(W,y);bx.stroke();
+    }
+    bx.restore();
+    // floating particles
+    for(var k=0;k<stars.length;k++){
+      var st=stars[k];
+      st.y-=st.s*0.0009;if(st.y<0)st.y=1;
+      var px=st.x*W, py=st.y*horizon;
+      bx.beginPath();bx.fillStyle=st.c;bx.globalAlpha=0.5;
+      bx.arc(px,py,st.r*(1+0.4*Math.sin(now*0.003+k)),0,7);bx.fill();
+    }
+    bx.globalAlpha=1;
+  }
+
+  /* ---------- hit-zone keys ---------- */
+  var hitEl=document.getElementById('laneHit'),keyEls=[];
+  function buildHitKeys(){
+    hitEl.innerHTML='';keyEls=[];
+    var labels=['D','F','J','K'];
+    for(var i=0;i<LANES;i++){
+      var col=document.createElement('div');col.className='laneCol';
+      var key=document.createElement('div');key.className='key';
+      key.textContent=labels[i];
+      key.style.borderColor=COLORS[i];
+      key.style.boxShadow='0 0 10px '+COLORS[i]+'66 inset';
+      col.appendChild(key);hitEl.appendChild(col);keyEls.push(key);
+    }
+  }
+  function flashKey(i){
+    if(!keyEls[i])return;
+    keyEls[i].classList.add('flash');
+    keyEls[i].style.boxShadow='0 0 26px '+COLORS[i]+', 0 0 12px '+COLORS[i]+' inset';
+    setTimeout(function(){keyEls[i].classList.remove('flash');
+      keyEls[i].style.boxShadow='0 0 10px '+COLORS[i]+'66 inset';},90);
+  }
+  // touch buttons
+  var touchWrap=document.getElementById('laneTouch');
+  for(var i=0;i<LANES;i++){(function(idx){
+    var b=document.createElement('button');b.className='laneBtn';
+    b.addEventListener('touchstart',function(e){e.preventDefault();hitLane(idx);},{passive:false});
+    b.addEventListener('mousedown',function(e){e.preventDefault();hitLane(idx);});
+    touchWrap.appendChild(b);
+  })(i);}
+
+  /* ---------- audio (Web Audio API, no external files) ---------- */
+  var AC=null,master=null;
+  function initAudio(){
+    if(AC)return;
+    try{
+      AC=new (window.AudioContext||window.webkitAudioContext)();
+      master=AC.createGain();master.gain.value=0.0;
+      master.connect(AC.destination);
+      // gentle fade-in
+      master.gain.setValueAtTime(0.0001,AC.currentTime);
+      master.gain.linearRampToValueAtTime(0.9,AC.currentTime+0.6);
+    }catch(e){AC=null;}
+  }
+  function blip(freq,when,dur,type,vol){
+    if(!AC)return;
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'sawtooth';o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,when);
+    g.gain.exponentialRampToValueAtTime(vol||0.25,when+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+    o.connect(g);g.connect(master);o.start(when);o.stop(when+dur+0.02);
+  }
+  function kick(when){
+    if(!AC)return;
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.setValueAtTime(150,when);
+    o.frequency.exponentialRampToValueAtTime(45,when+0.14);
+    g.gain.setValueAtTime(0.9,when);
+    g.gain.exponentialRampToValueAtTime(0.0001,when+0.2);
+    o.connect(g);g.connect(master);o.start(when);o.stop(when+0.22);
+  }
+  function hat(when){
+    if(!AC)return;
+    var b=AC.createBuffer(1,AC.sampleRate*0.05,AC.sampleRate),d=b.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+    var s=AC.createBufferSource();s.buffer=b;
+    var g=AC.createGain();g.gain.value=0.12;
+    var hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;
+    s.connect(hp);hp.connect(g);g.connect(master);s.start(when);
+  }
+
+  /* ---------- beatmap ---------- */
+  var BPM=128, beat=60/BPM; // seconds per beat
+  // pentatonic-ish melody frequencies for the four lanes
+  var SCALE=[261.6,329.6,392.0,523.3,659.3];
+  var beatmap=[]; // {lane, hitTime(s), freq, hit:false, dead:false, judged:false}
+  function buildBeatmap(){
+    beatmap=[];
+    var totalBeats=64; // ~30s
+    var lastLane=-1;
+    for(var b=4;b<totalBeats;b++){ // small intro before notes
+      // rhythmic density rises over time
+      var sub = (b<20)?[0]:(b<40)?[0,0.5]:[0,0.5];
+      for(var s=0;s<sub.length;s++){
+        // skip some for groove
+        if(Math.random()<0.18 && b>10) continue;
+        var lane=Math.floor(Math.random()*LANES);
+        if(lane===lastLane && Math.random()<0.5) lane=(lane+1)%LANES;
+        lastLane=lane;
+        beatmap.push({lane:lane,hitTime:(b+sub[s])*beat,freq:SCALE[(lane+s)%SCALE.length],
+          hit:false,dead:false,judged:false});
+      }
+    }
+    songEnd=(totalBeats+4)*beat;
+  }
+  var songEnd=30;
+
+  /* ---------- game state ---------- */
+  var TRAVEL=1.55;          // seconds a note takes to fall to hit line
+  var W_PERFECT=0.060, W_GOOD=0.125, W_MISS=0.180;
+  var running=false,startClock=0,audioStart=0;
+  var score=0,combo=0,maxCombo=0,energy=0;
+  var cPerfect=0,cGood=0,cMiss=0;
+  var schedIdx=0; // audio scheduler pointer
+
+  var elScore=document.getElementById('scoreVal');
+  var elCombo=document.getElementById('combo');
+  var elJudge=document.getElementById('judge');
+  var elEnergy=document.getElementById('energyFill');
+  var elHud=document.getElementById('hud');
+  var elEnergyWrap=document.getElementById('energyWrap');
+
+  function hitLineY(){return H - Math.max(24,H*0.10) - (Math.min(96,(W/LANES)*0.74)*0.5*0.5) - 18;}
+
+  function laneX(lane){
+    var w=W/LANES; return w*lane + w/2;
+  }
+
+  function startGame(){
+    initAudio();
+    if(AC && AC.state==='suspended'){ AC.resume(); }
+    buildBeatmap();
+    score=0;combo=0;maxCombo=0;energy=0;cPerfect=0;cGood=0;cMiss=0;schedIdx=0;
+    elScore.textContent='0';elEnergy.style.width='0%';
+    running=true;
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('endScreen').classList.add('hidden');
+    elHud.style.opacity='1';elEnergyWrap.style.opacity='1';
+    startClock=performance.now();
+    audioStart=AC?AC.currentTime+0.12:0;
+  }
+
+  function nowSec(){return (performance.now()-startClock)/1000;}
+
+  /* ---------- audio scheduler (lookahead) ---------- */
+  function scheduleAudio(){
+    if(!AC)return;
+    var ahead=0.25;
+    var cur=AC.currentTime;
+    // drum groove on every beat / half-beat regardless of notes
+    while(schedIdx*0.5*beat < songEnd){
+      var when=audioStart + schedIdx*0.5*beat;
+      if(when > cur+ahead) break;
+      var half=schedIdx; // index of half-beats
+      if(half%2===0) kick(when);
+      hat(when);
+      if(half%8===4) blip(196,when,0.18,'square',0.10); // backbeat synth
+      schedIdx++;
+    }
+    // melodic note tones at their hit time
+    for(var i=0;i<beatmap.length;i++){
+      var n=beatmap[i];
+      if(n._scheduled)continue;
+      var wt=audioStart+n.hitTime;
+      if(wt<=cur+ahead){ blip(n.freq,wt,0.22,'sawtooth',0.16); n._scheduled=true; }
+    }
+  }
+
+  /* ---------- input ---------- */
+  function hitLane(lane){
+    if(!running)return;
+    flashKey(lane);
+    var ct=nowSec();
+    var best=-1,bestAbs=999;
+    for(var i=0;i<beatmap.length;i++){
+      var n=beatmap[i];
+      if(n.judged)continue;
+      var d=Math.abs(n.hitTime - ct);
+      if(n.lane===lane && d<bestAbs && d<=W_MISS){bestAbs=d;best=i;}
+    }
+    if(best<0){ return; } // no note near; no penalty for free taps
+    var n2=beatmap[best];n2.judged=true;n2.hit=true;
+    var x=laneX(lane),y=hitLineY();
+    if(bestAbs<=W_PERFECT){ score+=300; combo++; cPerfect++; energy=Math.min(100,energy+3.1);
+      showJudge('PERFECT',COLORS[0]); burst(x,y,COLORS[lane],18); }
+    else if(bestAbs<=W_GOOD){ score+=150; combo++; cGood++; energy=Math.min(100,energy+2.0);
+      showJudge('GOOD',COLORS[3]); burst(x,y,COLORS[lane],9); }
+    else { score+=40; combo++; cGood++; energy=Math.min(100,energy+1.0);
+      showJudge('OK',COLORS[2]); burst(x,y,COLORS[lane],5); }
+    if(combo>maxCombo)maxCombo=combo;
+    score += Math.floor(combo*2); // combo bonus
+    updateHud();
+  }
+  document.addEventListener('keydown',function(e){
+    var k=e.key.toLowerCase();
+    if(k in KEYMAP){e.preventDefault();hitLane(KEYMAP[k]);}
+  });
+
+  function registerMiss(){
+    combo=0;cMiss++;
+    showJudge('MISS','#7a6aa0');
+    updateHud();
+  }
+
+  function updateHud(){
+    elScore.textContent=score.toLocaleString();
+    elEnergy.style.width=energy+'%';
+    if(combo>=4){
+      elCombo.style.opacity='1';
+      elCombo.firstChild.textContent=combo;
+    } else { elCombo.style.opacity='0'; }
+  }
+  var judgeTimer=null;
+  function showJudge(txt,color){
+    elJudge.textContent=txt;elJudge.style.color=color;
+    elJudge.style.transition='none';elJudge.style.opacity='1';
+    elJudge.style.transform='translateY(0) scale(1.08)';
+    if(judgeTimer)clearTimeout(judgeTimer);
+    requestAnimationFrame(function(){
+      elJudge.style.transition='opacity .45s, transform .45s';
+      elJudge.style.opacity='0';elJudge.style.transform='translateY(-18px) scale(1)';
+    });
+  }
+
+  /* ---------- particle FX ---------- */
+  var parts=[];
+  function burst(x,y,color,n){
+    for(var i=0;i<n;i++){
+      var a=Math.random()*7,sp=Math.random()*4+1.5;
+      parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:1,color:color,r:Math.random()*3+1.5});
+    }
+  }
+  function bigConfetti(){
+    for(var i=0;i<160;i++){
+      parts.push({x:Math.random()*W,y:-20-Math.random()*H*0.4,
+        vx:(Math.random()-0.5)*3,vy:Math.random()*3+2,life:1.6,
+        color:COLORS[i%4],r:Math.random()*4+2,rot:Math.random()*7,vr:(Math.random()-0.5)*0.4,sq:true});
+    }
+  }
+  function drawFX(){
+    fxc.clearRect(0,0,W,H);
+    for(var i=parts.length-1;i>=0;i--){
+      var p=parts[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.sq?0.006:0.02;
+      if(p.life<=0||p.y>H+30){parts.splice(i,1);continue;}
+      fxc.globalAlpha=Math.max(0,Math.min(1,p.life));
+      fxc.fillStyle=p.color;
+      if(p.sq){p.rot+=p.vr;fxc.save();fxc.translate(p.x,p.y);fxc.rotate(p.rot);
+        fxc.fillRect(-p.r,-p.r*0.6,p.r*2,p.r*1.2);fxc.restore();}
+      else{fxc.beginPath();fxc.arc(p.x,p.y,p.r,0,7);fxc.fill();}
+    }
+    fxc.globalAlpha=1;
+  }
+
+  /* ---------- render game notes ---------- */
+  function drawNotes(){
+    gx.clearRect(0,0,W,H);
+    var hy=hitLineY(),lw=W/LANES;
+    // lane separators + hit line glow
+    for(var i=0;i<LANES;i++){
+      gx.fillStyle='rgba(255,255,255,0.025)';
+      if(i%2===0)gx.fillRect(i*lw,0,lw,H);
+    }
+    // hit line
+    gx.save();
+    gx.strokeStyle='rgba(255,255,255,0.6)';gx.lineWidth=2;
+    gx.shadowColor='#16e0ff';gx.shadowBlur=18;
+    gx.beginPath();gx.moveTo(8,hy);gx.lineTo(W-8,hy);gx.stroke();
+    gx.restore();
+
+    if(!running)return;
+    var ct=nowSec();
+    var noteH=Math.min(34,lw*0.34);
+    for(var k=0;k<beatmap.length;k++){
+      var n=beatmap[k];
+      if(n.hit){continue;}
+      var dt=n.hitTime-ct; // seconds until it should be hit
+      if(dt>TRAVEL) continue;            // not visible yet
+      if(!n.judged && dt < -W_MISS){ n.judged=true;n.dead=true;registerMiss(); continue;}
+      if(n.dead) {
+        // fading miss handled by skipping
+      }
+      var prog=1-(dt/TRAVEL);            // 0 at top -> 1 at hit line
+      var y=prog*hy;
+      var cx=laneX(n.lane), x=cx-lw*0.36, wdt=lw*0.72;
+      gx.save();
+      gx.globalAlpha=n.dead?0.25:1;
+      gx.fillStyle=COLORS[n.lane];
+      gx.shadowColor=COLORS[n.lane];gx.shadowBlur=16;
+      roundRect(gx,x,y-noteH/2,wdt,noteH,10);gx.fill();
+      gx.globalAlpha=1;gx.fillStyle='rgba(255,255,255,0.85)';
+      gx.fillRect(x+6,y-noteH/2+5,wdt-12,3);
+      gx.restore();
+    }
+  }
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();
+  }
+
+  /* ---------- main loop ---------- */
+  function loop(now){
+    drawBG(now);
+    if(running){ scheduleAudio(); drawNotes(); if(nowSec()>=songEnd){ endGame(); } }
+    else { drawNotes(); }
+    drawFX();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- end / result ---------- */
+  function endGame(){
+    running=false;
+    if(master&&AC){ master.gain.linearRampToValueAtTime(0.0001,AC.currentTime+0.5); }
+    elHud.style.opacity='0';elEnergyWrap.style.opacity='0';elCombo.style.opacity='0';
+    var total=cPerfect+cGood+cMiss;
+    var acc= total? (cPerfect+cGood*0.6)/total : 0;
+    var rank = energy>=100?'S+': acc>0.9?'S': acc>0.78?'A': acc>0.6?'B':'C';
+    document.getElementById('rankText').textContent='評等 '+rank;
+    document.getElementById('finalScore').textContent=score.toLocaleString();
+    document.getElementById('stPerfect').textContent=cPerfect;
+    document.getElementById('stGood').textContent=cGood;
+    document.getElementById('stMiss').textContent=cMiss;
+    document.getElementById('stCombo').textContent=maxCombo;
+    var rl=document.getElementById('rewardLine');
+    var unlocked = energy>=70 || rank==='S'||rank==='S+'||rank==='A';
+    if(unlocked){
+      var code='PULSE-'+(rank.replace('+','P'))+'-'+(1000+Math.floor(Math.random()*9000));
+      rl.innerHTML='能量達標！解鎖限量霓虹罐兌換碼<br><span class="code">'+code+'</span>';
+      bigConfetti();
+    } else {
+      rl.textContent='差一點點就滿能量了，再衝一場解鎖兌換碼 →';
+    }
+    document.getElementById('endScreen').classList.remove('hidden');
+  }
+
+  /* ---------- responsive control mode ---------- */
+  function setupMode(){
+    var touch = ('ontouchstart' in window)|| navigator.maxTouchPoints>0 || W<720;
+    document.getElementById('laneTouch').style.display = touch?'flex':'none';
+    document.getElementById('legendDesktop').style.display = touch?'none':'block';
+  }
+
+  /* ---------- wire up ---------- */
+  document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('retryBtn').addEventListener('click',startGame);
+  document.getElementById('claimBtn').addEventListener('click',function(){
+    burst(W/2,H*0.4,'#fde047',40);bigConfetti();
+    this.textContent='✓ 已加入願望清單！';
+  });
+
+  resize();setupMode();
+  window.addEventListener('resize',setupMode);
+  requestAnimationFrame(loop);
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

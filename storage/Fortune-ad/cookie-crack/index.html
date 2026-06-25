@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>幸茶籤餅 — 捏碎籤餅，解鎖今日運勢！</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #1a0a00;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #fff;
+  touch-action: none;
+}
+#app {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+}
+
+/* Background warm gradient */
+#app::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, #3d1200 0%, #1a0a00 70%);
+  z-index: 0;
+}
+
+/* Floating particles */
+.particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #ffaa40;
+  opacity: 0;
+  animation: float-up linear infinite;
+  z-index: 1;
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-80vh) scale(0); opacity: 0; }
+}
+
+/* Screens */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 2;
+  padding: 24px;
+  text-align: center;
+  transition: opacity 0.5s;
+}
+.screen.hidden { opacity: 0; pointer-events: none; }
+
+/* Brand */
+.brand {
+  font-size: 0.78rem; letter-spacing: 4px; text-transform: uppercase;
+  color: #c8860a; margin-bottom: 12px;
+}
+.main-title {
+  font-size: clamp(2rem, 9vw, 3.6rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffdd80, #ff9a00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  line-height: 1.15; margin-bottom: 10px;
+  filter: drop-shadow(0 0 20px #ffaa0060);
+}
+.sub {
+  font-size: clamp(0.88rem, 3.5vw, 1rem);
+  color: #c8860a; max-width: 300px; line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+/* Cookie canvas area */
+#cookie-wrap {
+  position: relative;
+  width: min(260px, 70vw); height: min(260px, 70vw);
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+#cookie-canvas { display: block; }
+
+/* Hint text under cookie */
+.hint-tap {
+  font-size: 0.9rem; color: #ffaa40;
+  animation: pulse-hint 1.4s ease-in-out infinite;
+  margin-top: -8px; margin-bottom: 20px;
+}
+@keyframes pulse-hint {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+
+/* Fortune reveal screen */
+#fortune-screen {
+  gap: 0;
+}
+.fortune-paper {
+  background: linear-gradient(160deg, #fff9e8, #fff1c4);
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 320px; width: 90%;
+  box-shadow: 0 8px 40px #0007, 0 0 0 2px #ffdd8040;
+  position: relative;
+  animation: paper-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform: scale(0) rotate(-8deg);
+}
+@keyframes paper-in {
+  to { transform: scale(1) rotate(0deg); }
+}
+.fortune-paper::before {
+  content: '✦ 今日籤詩 ✦';
+  display: block;
+  font-size: 0.72rem; letter-spacing: 3px;
+  color: #c8860a; margin-bottom: 14px;
+  text-transform: uppercase;
+}
+.fortune-text {
+  font-size: clamp(1.2rem, 5vw, 1.5rem);
+  font-weight: 700; color: #5c2800;
+  line-height: 1.6; margin-bottom: 12px;
+}
+.fortune-lucky {
+  font-size: 0.82rem; color: #a06020;
+  border-top: 1px dashed #d4a04080;
+  padding-top: 10px; margin-top: 4px;
+  display: flex; justify-content: space-between;
+}
+.confetti-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 10;
+}
+.fortune-brand {
+  margin-top: 20px;
+  font-size: 0.8rem; color: #c8860a; letter-spacing: 2px;
+}
+.fortune-brand span {
+  font-size: 1.3rem; font-weight: 900;
+  background: linear-gradient(135deg, #ffdd80, #ff9a00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: block; margin-bottom: 4px;
+}
+.cta-row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn {
+  padding: 11px 28px; border-radius: 999px;
+  font-size: 0.9rem; font-weight: 700; cursor: pointer;
+  border: none; font-family: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #ffdd80, #ff9a00);
+  color: #5c2800;
+  box-shadow: 0 4px 20px #ff9a0060;
+}
+.btn-primary:hover { transform: scale(1.05); box-shadow: 0 6px 28px #ff9a0080; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #ffaa40;
+  color: #ffaa40;
+}
+.btn-ghost:hover { background: #ffaa4020; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Floating particles injected by JS -->
+
+  <!-- INTRO SCREEN -->
+  <div class="screen" id="intro-screen">
+    <div class="brand">幸茶 Lucky Tea Co.</div>
+    <div class="main-title">今日籤餅<br>等你捏碎</div>
+    <div class="sub">每一片籤餅裡，藏著今天專屬給你的運勢。點擊捏碎，解鎖你的茶緣籤詩。</div>
+    <div id="cookie-wrap">
+      <canvas id="cookie-canvas"></canvas>
+    </div>
+    <div class="hint-tap" id="hint-tap">👆 點擊籤餅</div>
+  </div>
+
+  <!-- FORTUNE SCREEN -->
+  <div class="screen hidden" id="fortune-screen">
+    <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
+    <div class="fortune-paper" id="fortune-paper">
+      <div class="fortune-text" id="fortune-text"></div>
+      <div class="fortune-lucky">
+        <span id="lucky-color">幸運色：—</span>
+        <span id="lucky-number">幸運數：—</span>
+      </div>
+    </div>
+    <div class="fortune-brand">
+      <span>幸茶 Lucky Tea</span>
+      每一口都是好兆頭
+    </div>
+    <div class="cta-row">
+      <button class="btn btn-primary" onclick="goOrder()">立即點一杯 🍵</button>
+      <button class="btn btn-ghost" onclick="resetGame()">再抽一籤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Fortunes data ---
+  const fortunes = [
+    { text: '靜水流深，\n好事悄悄靠近你。', color: '深靛藍', number: 7 },
+    { text: '今日付出的努力，\n明日皆化為果實。', color: '金黃色', number: 3 },
+    { text: '微笑是最好的開場白，\n貴人已在路上。', color: '玫瑰粉', number: 8 },
+    { text: '放下執著，\n你將發現更廣闊的天地。', color: '翡翠綠', number: 5 },
+    { text: '意外之喜即將降臨，\n保持開放的心。', color: '天空藍', number: 9 },
+    { text: '堅持一步，\n就近一步璀璨。', color: '橘金色', number: 1 },
+  ];
+
+  // --- Floating particles ---
+  const app = document.getElementById('app');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.bottom = '-10px';
+    p.style.animationDuration = (4 + Math.random() * 6) + 's';
+    p.style.animationDelay = (Math.random() * 6) + 's';
+    p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+    p.style.opacity = String(0.3 + Math.random() * 0.5);
+    app.appendChild(p);
+  }
+
+  // --- Cookie canvas setup ---
+  const wrap = document.getElementById('cookie-wrap');
+  const canvas = document.getElementById('cookie-canvas');
+  const SIZE = wrap.offsetWidth || 240;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  canvas.style.width = SIZE + 'px';
+  canvas.style.height = SIZE + 'px';
+  const ctx = canvas.getContext('2d');
+
+  // Cookie state: 0 = whole, 1 = cracking, 2 = cracked
+  let phase = 0;
+  let crackProgress = 0; // 0..1
+  let animFrame;
+  let shakeAngle = 0;
+  let shakeT = 0;
+
+  function drawCookie(prog) {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    const cx = SIZE / 2, cy = SIZE / 2;
+    const r = SIZE * 0.38;
+
+    ctx.save();
+
+    // Shake during crack
+    if (prog > 0 && prog < 1) {
+      const shake = Math.sin(shakeT * 18) * (prog * 6);
+      ctx.translate(cx + shake, cy);
+    } else {
+      ctx.translate(cx, cy);
+    }
+
+    if (prog < 1) {
+      // --- Whole cookie ---
+      // Shadow
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = '#ff9a0060';
+
+      // Cookie body - crescent shape using two arcs
+      drawCookieShape(ctx, 0, 0, r, prog);
+
+      // Crack lines if cracking
+      if (prog > 0) {
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#7a3a00';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = prog;
+        // Main crack
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.3);
+        ctx.bezierCurveTo(r * 0.15, 0, -r * 0.15, r * 0.1, 0, r * 0.35);
+        ctx.stroke();
+        // Side cracks
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.05, 0);
+        ctx.lineTo(-r * 0.3, -r * 0.15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r * 0.05, r * 0.1);
+        ctx.lineTo(r * 0.28, r * 0.25);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      // --- Cracked halves ---
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ff9a0040';
+      const split = (prog - 1) * 40; // pixels apart
+      // Left half
+      ctx.save();
+      ctx.translate(-split * 0.6, -split * 0.3);
+      ctx.rotate(-0.15 * (prog - 1) * 3);
+      drawHalfCookie(ctx, 0, 0, r, 'left');
+      ctx.restore();
+      // Right half
+      ctx.save();
+      ctx.translate(split * 0.6, split * 0.3);
+      ctx.rotate(0.15 * (prog - 1) * 3);
+      drawHalfCookie(ctx, 0, 0, r, 'right');
+      ctx.restore();
+      // Fortune strip
+      if (prog > 1.3) {
+        ctx.globalAlpha = Math.min(1, (prog - 1.3) * 3);
+        const stripW = r * 1.1, stripH = r * 0.28;
+        ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = '#fff8';
+        ctx.fillStyle = '#fff9e8';
+        ctx.strokeStyle = '#d4a040';
+        ctx.lineWidth = 1;
+        roundRect(ctx, -stripW / 2, -stripH / 2, stripW, stripH, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.globalAlpha = Math.min(1, (prog - 1.4) * 4);
+        ctx.fillStyle = '#7a3a00';
+        ctx.font = `bold ${Math.round(SIZE * 0.06)}px 'Segoe UI', sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('今日運勢', 0, 0);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawCookieShape(ctx, x, y, r, crack) {
+    // Cookie = golden half-moon / folded shape
+    const gradient = ctx.createRadialGradient(x - r * 0.2, y - r * 0.3, 0, x, y, r);
+    gradient.addColorStop(0, '#ffd580');
+    gradient.addColorStop(0.5, '#e8900a');
+    gradient.addColorStop(1, '#8b4500');
+    ctx.fillStyle = gradient;
+
+    ctx.beginPath();
+    // Outer circle
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner fold shadow
+    ctx.fillStyle = 'rgba(80,30,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + r * 0.05, r * 0.85, r * 0.28, 0, 0, Math.PI);
+    ctx.fill();
+
+    // Texture dots
+    ctx.fillStyle = 'rgba(255,200,80,0.4)';
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const dr = r * (0.45 + Math.random() * 0.25);
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * dr, y + Math.sin(a) * dr, r * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,200,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x - r * 0.22, y - r * 0.28, r * 0.22, r * 0.12, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawHalfCookie(ctx, x, y, r, side) {
+    const gradient = ctx.createRadialGradient(x - r * 0.2, y - r * 0.3, 0, x, y, r);
+    gradient.addColorStop(0, '#ffd580');
+    gradient.addColorStop(0.5, '#e8900a');
+    gradient.addColorStop(1, '#8b4500');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    if (side === 'left') {
+      ctx.arc(x, y, r, Math.PI / 2, Math.PI * 1.5);
+      ctx.lineTo(x, y - r);
+    } else {
+      ctx.arc(x, y, r, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(x, y + r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Jagged crack edge
+    ctx.strokeStyle = '#7a3a00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    const steps = 6;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const jag = (i % 2 === 0 ? 1 : -1) * r * 0.07;
+      ctx.lineTo(x + (side === 'left' ? -jag : jag), y - r + t * r * 2);
+    }
+    ctx.stroke();
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // Initial draw
+  drawCookie(0);
+
+  // --- Cracking animation ---
+  function startCrack() {
+    if (phase !== 0) return;
+    phase = 1;
+    document.getElementById('hint-tap').style.opacity = '0';
+
+    let startTime = null;
+    const CRACK_DUR = 900;
+
+    function animate(ts) {
+      if (!startTime) startTime = ts;
+      const elapsed = ts - startTime;
+      shakeT = elapsed / 1000;
+      crackProgress = Math.min(1, elapsed / CRACK_DUR);
+      drawCookie(crackProgress);
+
+      if (crackProgress < 1) {
+        animFrame = requestAnimationFrame(animate);
+      } else {
+        phase = 2;
+        splitOpen();
+      }
+    }
+    animFrame = requestAnimationFrame(animate);
+  }
+
+  function splitOpen() {
+    let startTime = null;
+    const SPLIT_DUR = 700;
+
+    function animate(ts) {
+      if (!startTime) startTime = ts;
+      const elapsed = ts - startTime;
+      const t = Math.min(1, elapsed / SPLIT_DUR);
+      // ease out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      drawCookie(1 + eased * 1.5);
+
+      if (t < 1) {
+        animFrame = requestAnimationFrame(animate);
+      } else {
+        showFortune();
+      }
+    }
+    animFrame = requestAnimationFrame(animate);
+  }
+
+  function showFortune() {
+    const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+    const intro = document.getElementById('intro-screen');
+    const fortScreen = document.getElementById('fortune-screen');
+
+    intro.classList.add('hidden');
+    fortScreen.classList.remove('hidden');
+
+    document.getElementById('fortune-text').textContent = fortune.text;
+    document.getElementById('lucky-color').textContent = '幸運色：' + fortune.color;
+    document.getElementById('lucky-number').textContent = '幸運數：' + fortune.number;
+
+    // Reset paper animation
+    const paper = document.getElementById('fortune-paper');
+    paper.style.animation = 'none';
+    void paper.offsetWidth;
+    paper.style.animation = '';
+
+    // Confetti burst (inline implementation)
+    const confCanvas = document.getElementById('confetti-canvas');
+    confCanvas.width = window.innerWidth;
+    confCanvas.height = window.innerHeight;
+    launchConfetti(confCanvas);
+  }
+
+  // Event listeners
+  canvas.addEventListener('click', startCrack);
+  canvas.addEventListener('touchend', e => { e.preventDefault(); startCrack(); }, { passive: false });
+
+  // Idle wobble animation
+  let idleT = 0;
+  function idleLoop() {
+    if (phase === 0) {
+      idleT += 0.02;
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.save();
+      ctx.translate(SIZE / 2, SIZE / 2);
+      ctx.rotate(Math.sin(idleT) * 0.06);
+      ctx.translate(-SIZE / 2, -SIZE / 2);
+      drawCookieShape(ctx, SIZE / 2, SIZE / 2 + Math.sin(idleT * 1.3) * 3, SIZE * 0.38, 0);
+      // Shine
+      ctx.fillStyle = 'rgba(255,255,200,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(SIZE / 2 - SIZE * 0.08, SIZE / 2 - SIZE * 0.1, SIZE * 0.085, SIZE * 0.046, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (phase === 0) requestAnimationFrame(idleLoop);
+  }
+  idleLoop();
+
+  // --- Inline confetti ---
+  function launchConfetti(cnv) {
+    const cctx = cnv.getContext('2d');
+    const W = cnv.width, H = cnv.height;
+    const COLORS = ['#ffdd80','#ff9a00','#ff5500','#fff8d0','#c8860a','#ffaacc','#80ddff'];
+    const particles = [];
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: W * 0.5 + (Math.random() - 0.5) * 60,
+        y: H * 0.35,
+        vx: (Math.random() - 0.5) * 14,
+        vy: -(6 + Math.random() * 12),
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.3,
+        w: 6 + Math.random() * 8,
+        h: 4 + Math.random() * 5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 1,
+      });
+    }
+    let start = null;
+    function frame(ts) {
+      if (!start) start = ts;
+      cctx.clearRect(0, 0, W, H);
+      let alive = false;
+      particles.forEach(p => {
+        p.vy += 0.35;
+        p.vx *= 0.99;
+        p.x += p.vx; p.y += p.vy;
+        p.rot += p.rotV;
+        p.alpha = Math.max(0, 1 - (ts - start) / 2200);
+        if (p.alpha > 0 && p.y < H + 20) alive = true;
+        cctx.save();
+        cctx.globalAlpha = p.alpha;
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.rot);
+        cctx.fillStyle = p.color;
+        cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cctx.restore();
+      });
+      if (alive) requestAnimationFrame(frame);
+      else cctx.clearRect(0, 0, W, H);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // Global functions
+  window.goOrder = function() {
+    alert('幸茶門市等你！（虛構品牌示範頁面）');
+  };
+  window.resetGame = function() {
+    phase = 0;
+    crackProgress = 0;
+    shakeT = 0;
+    cancelAnimationFrame(animFrame);
+    document.getElementById('fortune-screen').classList.add('hidden');
+    document.getElementById('intro-screen').classList.remove('hidden');
+    document.getElementById('hint-tap').style.opacity = '1';
+    idleLoop();
+  };
+})();
+</script>
+</body>
+</html>

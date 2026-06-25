@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>神來一籤｜搖搖求今日運勢</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{--bg1:#2a0d12;--bg2:#4a131c;--gold:#f3d27a;--gold2:#c79b3e;--red:#b81f2d;--ink:#2a0d12}
+  html,body{height:100%}
+  body{font-family:"Noto Sans TC",sans-serif;color:#fbe7c8;overflow:hidden;user-select:none;
+    background:radial-gradient(120% 80% at 50% 0%,#5a1620 0,var(--bg2) 50%,var(--bg1) 100%)}
+  #app{position:relative;height:100dvh;max-width:520px;margin:0 auto;display:flex;flex-direction:column;
+    align-items:center;padding:14px 18px env(safe-area-inset-bottom) 18px}
+  /* drifting incense embers */
+  .embers{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .embers i{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:50%;
+    background:radial-gradient(circle,#ffcf6e,#ff8a3a 60%,transparent);animation:ember linear infinite}
+  @keyframes ember{to{transform:translateY(-112dvh) translateX(24px);opacity:0}}
+  header{position:relative;z-index:2;text-align:center}
+  .brand{font-weight:700;letter-spacing:4px;color:var(--gold);font-size:13px}
+  h1{font-family:"Noto Serif TC";font-weight:900;font-size:27px;margin:2px 0;color:#ffe9b8;
+    text-shadow:0 2px 10px rgba(0,0,0,.5)}
+  .sub{font-size:12.5px;color:#e7c79b;line-height:1.5}
+  #stage{position:relative;z-index:2;flex:1;width:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center}
+  /* the bamboo fortune cylinder */
+  .cylinder{position:relative;width:120px;height:210px;cursor:pointer;
+    transform-origin:50% 100%}
+  .cup{position:absolute;inset:0;top:34px;border-radius:14px 14px 18px 18px;
+    background:linear-gradient(90deg,#7a3b1c,#a85a2c 22%,#cf8246 50%,#a85a2c 78%,#6e3417);
+    box-shadow:inset 0 0 14px rgba(0,0,0,.45),0 10px 26px rgba(0,0,0,.5);
+    border:2px solid #5e2a12;overflow:hidden}
+  .cup::before{content:"福";position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);
+    font-family:"Noto Serif TC";font-weight:900;font-size:54px;color:rgba(255,230,170,.22)}
+  .rim{position:absolute;top:28px;left:-6px;right:-6px;height:20px;border-radius:50%/60%;
+    background:linear-gradient(#caa15c,#7a4a20);border:2px solid #5e2a12;z-index:3}
+  .sticks{position:absolute;top:-26px;left:0;right:0;height:70px;z-index:2}
+  .sticks span{position:absolute;bottom:0;width:6px;height:64px;border-radius:3px;
+    background:linear-gradient(#f3e0b0,#c9a45e);transform-origin:bottom center;
+    box-shadow:0 0 2px rgba(0,0,0,.4)}
+  .glow{position:absolute;inset:-30px;border-radius:50%;z-index:0;
+    background:radial-gradient(circle,rgba(243,210,122,.35),transparent 70%);opacity:0;transition:opacity .4s}
+  .cylinder.charging .glow{opacity:1}
+  .shake{animation:shk .28s ease infinite}
+  @keyframes shk{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+  /* the lucky stick that pops out */
+  .popstick{position:absolute;left:50%;top:10px;width:10px;height:150px;border-radius:5px;
+    background:linear-gradient(#fff3d0,#e0bd72);transform:translate(-50%,40px) rotate(0);opacity:0;
+    box-shadow:0 0 10px rgba(243,210,122,.8);z-index:5;
+    display:flex;align-items:flex-start;justify-content:center}
+  .popstick b{margin-top:6px;writing-mode:vertical-rl;font-family:"Noto Serif TC";font-weight:900;
+    font-size:13px;color:#7a1f15}
+  .popstick.out{animation:pop .9s cubic-bezier(.2,1.3,.4,1) forwards}
+  @keyframes pop{0%{transform:translate(-50%,40px);opacity:0}
+    40%{opacity:1}100%{transform:translate(-50%,-150px) rotate(8deg);opacity:1}}
+  /* meter */
+  .meter{position:relative;z-index:2;width:78%;max-width:300px;height:12px;border-radius:999px;
+    background:rgba(0,0,0,.35);border:1px solid rgba(243,210,122,.4);overflow:hidden;margin-top:14px}
+  .meter i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .12s}
+  .hint{position:relative;z-index:2;font-size:12.5px;color:#e7c79b;margin-top:8px;height:18px}
+  .btns{position:relative;z-index:2;display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+  .btn{border:none;border-radius:999px;padding:13px 22px;font-family:"Noto Sans TC";font-weight:900;
+    font-size:15px;cursor:pointer;color:var(--ink);background:linear-gradient(90deg,var(--gold),var(--gold2));
+    box-shadow:0 5px 16px rgba(243,210,122,.35)}
+  .btn:active{transform:scale(.96)}
+  .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold2);box-shadow:none}
+  /* result */
+  .ov{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;
+    background:rgba(20,5,8,.78);backdrop-filter:blur(5px);padding:22px}
+  .ov.on{display:flex;animation:fade .35s}
+  @keyframes fade{from{opacity:0}}
+  .slip{width:100%;max-width:330px;text-align:center;border-radius:16px;padding:26px 22px 22px;
+    background:linear-gradient(180deg,#fff6e0,#f6e3b8);color:#5a1620;position:relative;
+    border:3px solid var(--red);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .slip::before,.slip::after{content:"";position:absolute;left:14px;right:14px;height:2px;background:var(--red);opacity:.5}
+  .slip::before{top:10px}.slip::after{bottom:10px}
+  .seal{position:absolute;top:-18px;right:18px;width:46px;height:46px;border-radius:50%;
+    background:var(--red);color:#ffe9b8;font-family:"Noto Serif TC";font-weight:900;font-size:13px;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.4);
+    transform:rotate(-12deg)}
+  .lvl{font-family:"Noto Serif TC";font-weight:900;font-size:34px;color:var(--red);margin:4px 0}
+  .poem{font-family:"Noto Serif TC";font-weight:600;font-size:17px;line-height:1.9;margin:10px 0;
+    color:#3a1009}
+  .read{font-size:13.5px;line-height:1.7;color:#6b3018;text-align:left;
+    background:rgba(184,31,45,.07);border-radius:10px;padding:10px 12px;margin:8px 0 4px}
+  .read b{color:var(--red)}
+  .cta{display:block;width:100%;margin-top:12px;text-align:center;text-decoration:none;color:#fff;
+    font-weight:900;font-size:15px;padding:14px;border-radius:12px;
+    background:linear-gradient(90deg,var(--red),#7e1019);box-shadow:0 6px 18px rgba(184,31,45,.4)}
+  .ghost2{margin-top:8px;background:none;border:none;color:#a85a2c;font-weight:700;font-size:13px;
+    cursor:pointer;text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="embers" id="embers"></div>
+<div id="app">
+  <header>
+    <div class="brand">好神來 · 神來一籤</div>
+    <h1>搖一搖 · 今日運勢籤</h1>
+    <div class="sub">手機拿起來「搖」籤筒，或長按下方按鈕灌注誠心，<br>氣勢滿了就會跳出一支幸運籤。</div>
+  </header>
+
+  <div id="stage">
+    <div class="cylinder" id="cyl">
+      <div class="glow"></div>
+      <div class="sticks" id="sticks"></div>
+      <div class="rim"></div>
+      <div class="cup"></div>
+      <div class="popstick" id="pop"><b id="popLabel">上上籤</b></div>
+    </div>
+    <div class="meter"><i id="meterFill"></i></div>
+    <div class="hint" id="hint">誠心默念願望，開始搖籤…</div>
+    <div class="btns">
+      <button class="btn" id="shakeBtn">長按搖籤 🙏</button>
+      <button class="btn ghost" id="motionBtn">用手機體感搖</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="slip">
+    <div class="seal">神<br>籤</div>
+    <div style="font-size:13px;color:#a85a2c;letter-spacing:3px">第 <span id="num">—</span> 號</div>
+    <div class="lvl" id="lvl">上上籤</div>
+    <div class="poem" id="poem"></div>
+    <div class="read" id="read"></div>
+    <a class="cta" id="cta" href="#" onclick="return false">領今日限定優惠 →</a>
+    <button class="ghost2" id="again">再求一支籤</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  // embers
+  (function(){const e=document.getElementById('embers');
+    for(let i=0;i<22;i++){const s=document.createElement('i');
+      s.style.left=(Math.random()*100)+'%';s.style.animationDuration=(5+Math.random()*7)+'s';
+      s.style.animationDelay=(-Math.random()*9)+'s';const sc=.6+Math.random()*1.6;
+      s.style.transform=`scale(${sc})`;e.appendChild(s);}})();
+  // sticks in cup
+  (function(){const w=document.getElementById('sticks');
+    for(let i=0;i<9;i++){const s=document.createElement('span');
+      s.style.left=(8+i*12)+'%';s.style.height=(50+Math.random()*22)+'px';
+      s.style.transform=`rotate(${(Math.random()*16-8).toFixed(1)}deg)`;
+      s.style.filter=`brightness(${(.8+Math.random()*.4).toFixed(2)})`;w.appendChild(s);}})();
+
+  const FORTUNES=[
+    {lvl:'上上籤',weight:2,poem:'雲開見月正當頭，<br>千里姻緣一線收。',
+     read:'萬事亨通的一天。<b>主動出擊</b>必有回響，連喝口好茶都覺得甘甜。'},
+    {lvl:'上吉籤',weight:3,poem:'春風送暖入屠蘇，<br>好事連連繞門廬。',
+     read:'貴人就在身邊。<b>把握午後時段</b>談事情、表白、面試都吉。'},
+    {lvl:'中平籤',weight:4,poem:'行船且待潮水至，<br>莫向逆風強出頭。',
+     read:'宜守不宜攻。<b>沉住氣</b>，一杯好神來茶定定神，機會自然來。'},
+    {lvl:'小吉籤',weight:4,poem:'柳暗花明又一村，<br>小事歡喜大事成。',
+     read:'今日有小確幸。<b>留意路邊驚喜</b>，買一送一說不定就被你抽中。'},
+    {lvl:'平安籤',weight:3,poem:'平安二字值千金，<br>守得雲開見好音。',
+     read:'平穩順遂。<b>照顧好身體</b>，多喝水多走動，明日運勢更旺。'}
+  ];
+  function pick(){
+    const total=FORTUNES.reduce((s,f)=>s+f.weight,0);
+    let r=Math.random()*total;
+    for(const f of FORTUNES){ if((r-=f.weight)<0) return f; }
+    return FORTUNES[FORTUNES.length-1];
+  }
+
+  const cyl=document.getElementById('cyl');
+  const meter=document.getElementById('meterFill');
+  const hint=document.getElementById('hint');
+  const pop=document.getElementById('pop');
+  const popLabel=document.getElementById('popLabel');
+  const shakeBtn=document.getElementById('shakeBtn');
+  const motionBtn=document.getElementById('motionBtn');
+
+  let charge=0, holding=false, done=false, raf=null, motionOn=false, lastShake=0;
+  const NEED=100;
+
+  function setMeter(){ meter.style.width=Math.min(100,charge)+'%'; }
+
+  function addCharge(amt){
+    if(done) return;
+    charge+=amt;
+    cyl.classList.add('charging');
+    if(!cyl.classList.contains('shake')) cyl.classList.add('shake');
+    setMeter();
+    if(charge>=NEED) reveal();
+  }
+
+  // hold-to-charge loop (works everywhere, no sensor needed)
+  function tick(){ if(holding && !done){ addCharge(1.6); raf=requestAnimationFrame(tick);} }
+  function startHold(e){ if(done) return; e.preventDefault(); holding=true; hint.textContent='搖啊搖～氣勢上升中！'; tick(); }
+  function endHold(){ holding=false; if(raf)cancelAnimationFrame(raf); if(!done){cyl.classList.remove('shake');
+    hint.textContent=charge>0?'再加把勁，氣勢快滿了！':'誠心默念願望，開始搖籤…';} }
+
+  shakeBtn.addEventListener('mousedown',startHold);
+  shakeBtn.addEventListener('touchstart',startHold,{passive:false});
+  window.addEventListener('mouseup',endHold);
+  window.addEventListener('touchend',endHold);
+  // tap cylinder also charges a bit (graceful, no-camera/no-sensor friendly)
+  cyl.addEventListener('click',()=>{ if(!holding) addCharge(14); });
+
+  function reveal(){
+    if(done) return; done=true; holding=false;
+    cyl.classList.remove('shake'); cyl.classList.add('charging');
+    const f=pick();
+    popLabel.textContent=f.lvl;
+    pop.classList.add('out');
+    hint.textContent='籤出來了！';
+    if(typeof confetti==='function')
+      confetti({particleCount:90,spread:70,origin:{y:.55},
+        colors:['#f3d27a','#b81f2d','#ffe9b8']});
+    setTimeout(()=>{
+      document.getElementById('num').textContent=String(Math.floor(Math.random()*88)+1);
+      document.getElementById('lvl').textContent=f.lvl;
+      document.getElementById('poem').innerHTML=f.poem;
+      document.getElementById('read').innerHTML='【解曰】'+f.read;
+      document.getElementById('ov').classList.add('on');
+    },1000);
+  }
+
+  // device motion (iOS needs permission via gesture)
+  function onMotion(ev){
+    const a=ev.accelerationIncludingGravity||ev.acceleration; if(!a) return;
+    const mag=Math.abs(a.x||0)+Math.abs(a.y||0)+Math.abs(a.z||0);
+    const now=Date.now();
+    if(mag>26 && now-lastShake>90){ lastShake=now; addCharge(6); }
+  }
+  function enableMotion(){
+    const DME=window.DeviceMotionEvent;
+    if(!DME){ hint.textContent='此裝置不支援體感，改用長按搖籤即可 🙏'; return; }
+    const go=()=>{ motionOn=true; window.addEventListener('devicemotion',onMotion);
+      motionBtn.textContent='體感已開啟 ✓'; motionBtn.disabled=true;
+      hint.textContent='拿起手機用力上下搖！'; };
+    if(typeof DME.requestPermission==='function'){
+      DME.requestPermission().then(s=>{ if(s==='granted') go();
+        else hint.textContent='未授權體感，用長按搖籤也可以 🙏'; })
+        .catch(()=>{ hint.textContent='體感無法啟用，改用長按搖籤即可 🙏'; });
+    } else { go(); }
+  }
+  motionBtn.addEventListener('click',enableMotion);
+
+  document.getElementById('again').addEventListener('click',()=>{
+    document.getElementById('ov').classList.remove('on');
+    done=false; charge=0; setMeter(); pop.classList.remove('out');
+    cyl.classList.remove('charging'); hint.textContent='誠心默念願望，再求一支籤…';
+  });
+  document.getElementById('cta').addEventListener('click',()=>{
+    window.location.hash='claim';
+  });
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

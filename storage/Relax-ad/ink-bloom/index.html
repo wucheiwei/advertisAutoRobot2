@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>墨韻文創｜點墨成畫，留下你的宇宙印記</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0D0D1A;overflow:hidden;height:100vh;width:100vw;cursor:crosshair;font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif}
+    #cv{position:fixed;inset:0;width:100%;height:100%}
+
+    /* HUD */
+    .hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;pointer-events:none}
+    .brand{color:rgba(255,255,255,.85);font-size:1rem;font-weight:700;letter-spacing:2px;text-shadow:0 0 20px rgba(150,100,255,.6)}
+    .hint{color:rgba(255,255,255,.45);font-size:.75rem;text-align:right;line-height:1.5}
+    .counter{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 14px;color:rgba(255,255,255,.7);font-size:.8rem;backdrop-filter:blur(6px)}
+
+    /* Brand reveal overlay */
+    .reveal{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px;pointer-events:none;opacity:0;transition:opacity 1.2s ease}
+    .reveal.show{opacity:1;pointer-events:auto}
+    .r-inner{text-align:center;background:rgba(10,8,26,.75);border:1px solid rgba(150,100,255,.3);border-radius:28px;padding:28px 36px;backdrop-filter:blur(20px);max-width:320px;box-shadow:0 0 60px rgba(100,60,200,.25)}
+    .r-logo{font-size:2.2rem;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#A78BFA,#67E8F9,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+    .r-sub{color:rgba(255,255,255,.65);font-size:.85rem;line-height:1.6;margin-bottom:20px}
+    .r-cta{display:inline-block;background:linear-gradient(135deg,#7C3AED,#2DD4BF);color:#fff;border:none;border-radius:14px;padding:13px 32px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 4px 20px rgba(124,58,237,.4);transition:transform .15s;pointer-events:auto}
+    .r-cta:hover{transform:scale(1.06)}
+    .r-reset{display:block;margin-top:10px;color:rgba(255,255,255,.4);font-size:.75rem;cursor:pointer;text-decoration:underline;pointer-events:auto;background:none;border:none;font-family:inherit}
+
+    /* Ripple hint on first load */
+    .pulse{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.35);font-size:.8rem;animation:blink 2s ease-in-out infinite;pointer-events:none;z-index:5}
+    @keyframes blink{0%,100%{opacity:.35}50%{opacity:.7}}
+    .pulse.hide{display:none}
+  </style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div class="hud">
+  <div class="brand">🖋 墨韻文創</div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="counter" id="cnt">點墨 0 次</div>
+    <div class="hint">點擊 / 觸碰<br>留下你的墨痕</div>
+  </div>
+</div>
+
+<div class="reveal" id="rv">
+  <div class="r-inner">
+    <div class="r-logo">墨韻文創</div>
+    <div class="r-sub">每一筆都是心靈的流動<br>讓文字與藝術在指尖綻放</div>
+    <button class="r-cta" onclick="openShop()">探索墨韻文創 →</button>
+    <button class="r-reset" onclick="clearCanvas()">清除畫布，重新創作</button>
+  </div>
+</div>
+
+<div class="pulse" id="pulse">✦ 點擊畫布，釋放你的墨韻 ✦</div>
+
+<script>
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let W,H,drops=0,revealed=false;
+
+function resize(){
+  // preserve existing art by drawing to temp canvas first
+  const tmp=document.createElement('canvas');
+  tmp.width=cv.width;tmp.height=cv.height;
+  tmp.getContext('2d').drawImage(cv,0,0);
+  W=cv.width=window.innerWidth;
+  H=cv.height=window.innerHeight;
+  ctx.fillStyle='#0D0D1A';
+  ctx.fillRect(0,0,W,H);
+  ctx.drawImage(tmp,0,0);
+}
+resize();
+window.addEventListener('resize',resize);
+
+// Ink color palette (brand: indigo, teal, gold, crimson, violet)
+const PALETTE=[
+  ['#4B0082','#7B2FBE','#A855F7'],  // violet
+  ['#0A4A6E','#0E7490','#22D3EE'],  // teal
+  ['#78350F','#B45309','#FCD34D'],  // gold
+  ['#7F1D1D','#B91C1C','#F87171'],  // crimson
+  ['#1E3A5F','#1D4ED8','#93C5FD'],  // indigo
+];
+
+function inkDrop(x,y){
+  const pal=PALETTE[drops%PALETTE.length];
+  drops++;
+  document.getElementById('cnt').textContent=`點墨 ${drops} 次`;
+  document.getElementById('pulse').classList.add('hide');
+
+  // Center blob
+  const r0=18+Math.random()*14;
+  const grd=ctx.createRadialGradient(x,y,0,x,y,r0*1.8);
+  grd.addColorStop(0,pal[2]);
+  grd.addColorStop(0.5,pal[1]);
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.globalAlpha=0.85+Math.random()*0.15;
+  ctx.beginPath();ctx.arc(x,y,r0*1.8,0,Math.PI*2);
+  ctx.fillStyle=grd;ctx.fill();
+
+  // Tendrils
+  const arms=24+Math.floor(Math.random()*16);
+  for(let i=0;i<arms;i++){
+    const angle=(Math.PI*2*i/arms)+(Math.random()-0.5)*0.4;
+    const len=40+Math.random()*120;
+    const steps=Math.floor(len/4);
+    let cx=x,cy=y;
+    const drift=(Math.random()-0.5)*0.3;
+    let a=angle;
+    for(let s=0;s<steps;s++){
+      a+=drift;
+      const prog=s/steps;
+      const blobR=(1-prog)*(3+Math.random()*5)+0.5;
+      cx+=Math.cos(a)*4;cy+=Math.sin(a)*4;
+      ctx.globalAlpha=(1-prog)*0.7*Math.random()+0.05;
+      ctx.beginPath();ctx.arc(cx,cy,blobR,0,Math.PI*2);
+      ctx.fillStyle=prog<0.4?pal[1]:pal[0];
+      ctx.fill();
+    }
+  }
+
+  // Splatter dots
+  for(let i=0;i<30;i++){
+    const sa=Math.random()*Math.PI*2;
+    const sd=20+Math.random()*90;
+    const sx=x+Math.cos(sa)*sd, sy=y+Math.sin(sa)*sd;
+    ctx.globalAlpha=0.3+Math.random()*0.5;
+    ctx.beginPath();ctx.arc(sx,sy,0.8+Math.random()*2.5,0,Math.PI*2);
+    ctx.fillStyle=pal[Math.floor(Math.random()*3)];ctx.fill();
+  }
+
+  ctx.globalAlpha=1;
+
+  // Reveal after 5 drops
+  if(drops>=5&&!revealed){revealed=true;document.getElementById('rv').classList.add('show');}
+}
+
+function getPos(e){
+  const r=cv.getBoundingClientRect();
+  if(e.touches){const t=e.touches[0];return[t.clientX-r.left,t.clientY-r.top];}
+  return[e.clientX-r.left,e.clientY-r.top];
+}
+
+cv.addEventListener('click',e=>{if(document.getElementById('rv').classList.contains('show')&&e.target===cv)return;const[x,y]=getPos(e);inkDrop(x,y);});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const[x,y]=getPos(e);inkDrop(x,y);},{passive:false});
+
+function openShop(){alert('🖋 歡迎來到墨韻文創！\n讓每一件文具都成為你靈感的容器。\n\n限時首購 88 折，輸入代碼：INKBLOOM');}
+
+function clearCanvas(){
+  drops=0;revealed=false;
+  ctx.fillStyle='#0D0D1A';ctx.fillRect(0,0,W,H);
+  document.getElementById('rv').classList.remove('show');
+  document.getElementById('cnt').textContent='點墨 0 次';
+  document.getElementById('pulse').classList.remove('hide');
+}
+
+// Draw a subtle initial watermark so canvas isn't completely empty
+(function initMark(){
+  ctx.fillStyle='#0D0D1A';ctx.fillRect(0,0,W,H);
+  // Faint grid dots
+  ctx.globalAlpha=0.04;
+  ctx.fillStyle='#A78BFA';
+  for(let x=40;x<W;x+=60)for(let y=40;y<H;y+=60){
+    ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

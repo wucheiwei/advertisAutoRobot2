@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>今天辛苦了・吉伊卡哇慰勞所</title>
+<meta name="description" content="說說你今天遇到的鳥事,讓吉伊卡哇們陪你,再生成一格只屬於你的小漫畫,還有今天你值得的犒賞。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --pink:#FFB8CC;--pinkd:#E8607A;
+    --lav:#C8AAEC;--lavd:#8A5EC8;
+    --cream:#FFF8F2;--text:#3A2820;--dim:#9A7A70;--white:#fff;
+    --line:#3A2820;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Noto Sans TC',system-ui,sans-serif;color:var(--text);
+    min-height:100dvh;background:var(--cream);
+    background-image:
+      radial-gradient(circle at 12% 18%,rgba(255,184,204,.28) 0,transparent 46%),
+      radial-gradient(circle at 88% 12%,rgba(200,170,236,.26) 0,transparent 44%),
+      radial-gradient(circle at 50% 96%,rgba(255,232,160,.22) 0,transparent 44%);
+    display:flex;justify-content:center;align-items:flex-start;
+    padding:18px 13px 46px;overflow-x:hidden;
+  }
+  .wrap{width:100%;max-width:430px;margin-top:6px}
+  .sc{display:none}
+  .sc.on{display:block;animation:up .45s cubic-bezier(.2,.8,.25,1)}
+  @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .card{
+    background:var(--white);border-radius:30px;padding:26px 22px 24px;
+    box-shadow:0 14px 44px rgba(200,120,140,.18),0 2px 8px rgba(200,120,140,.08);
+    border:2px solid rgba(255,184,204,.32);position:relative;
+  }
+  .kick{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--lavd);font-weight:700;text-align:center}
+  .btn{padding:14px 18px;border-radius:999px;font-size:15.5px;font-weight:900;font-family:inherit;cursor:pointer;transition:transform .18s,box-shadow .2s,filter .2s;border:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .btn-p{background:linear-gradient(118deg,var(--pink),var(--lav));color:#fff;box-shadow:0 8px 22px rgba(232,96,122,.32)}
+  .btn-p:active{transform:translateY(1px) scale(.99)}
+  .btn-p:hover{filter:brightness(1.05);transform:translateY(-2px);box-shadow:0 12px 28px rgba(232,96,122,.4)}
+  .btn-p:disabled{opacity:.42;filter:grayscale(.3);cursor:not-allowed;box-shadow:none;transform:none}
+  .btn-g{background:#fff;color:var(--dim);border:2px solid rgba(200,155,175,.4)}
+  .btn-g:hover{background:rgba(255,184,204,.1)}
+  .blk{width:100%}
+
+  /* ── 封面 ── */
+  .cover-stage{
+    border-radius:24px;background:linear-gradient(160deg,#FFE3EC 0%,#F1E2FF 52%,#DDF0FF 100%);
+    padding:18px 10px 0;display:flex;align-items:flex-end;justify-content:center;gap:2px;
+    margin-bottom:18px;overflow:hidden;position:relative;min-height:148px;
+  }
+  .cover-stage::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(circle at 20% 90%,rgba(255,255,255,.6),transparent 40%),
+    radial-gradient(circle at 80% 90%,rgba(255,255,255,.5),transparent 42%)}
+  .peek{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+  .peek img{width:84px;height:auto;display:block;filter:drop-shadow(0 5px 8px rgba(120,80,90,.18))}
+  .peek.mid img{width:104px;transform:translateY(-8px)}
+  .peek.s img{width:74px}
+  .float{animation:bob 3.2s ease-in-out infinite}
+  .float.b{animation-delay:.5s}.float.c{animation-delay:1s}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .peek.mid .float{animation-duration:3.6s}
+  h1.title{font-size:30px;font-weight:900;text-align:center;line-height:1.32;margin:16px 0 0;letter-spacing:.01em}
+  h1.title span{color:var(--pinkd)}
+  .lead{font-size:13.5px;color:var(--dim);text-align:center;line-height:1.92;margin:11px 4px 20px}
+  .lead b{color:var(--lavd);font-weight:700}
+  .note{font-size:11.5px;color:var(--dim);text-align:center;margin-top:13px;opacity:.85}
+  .heart{color:var(--pinkd)}
+
+  /* ── 輸入 ── */
+  .step{font-size:12.5px;color:var(--lavd);font-weight:700;margin-bottom:11px;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+  .step .num{background:linear-gradient(120deg,var(--pink),var(--lav));color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+  .buddies{display:flex;gap:8px;margin-bottom:20px}
+  .buddy{flex:1;border:2px solid rgba(200,155,175,.3);border-radius:18px;padding:10px 5px 9px;text-align:center;cursor:pointer;background:rgba(255,250,246,.6);transition:.18s;position:relative}
+  .buddy img{width:52px;height:auto;display:block;margin:0 auto 3px;filter:drop-shadow(0 3px 5px rgba(120,80,90,.16))}
+  .buddy .bn{font-size:12.5px;font-weight:900}
+  .buddy .bt{font-size:9.5px;color:var(--dim);line-height:1.4;margin-top:2px}
+  .buddy:hover{transform:translateY(-2px);border-color:var(--pink)}
+  .buddy.sel{border-color:var(--pinkd);background:rgba(255,184,204,.16);box-shadow:0 6px 16px rgba(232,96,122,.18)}
+  .buddy.sel::after{content:"✓";position:absolute;top:-7px;right:-5px;background:var(--pinkd);color:#fff;width:21px;height:21px;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 2px 6px rgba(232,96,122,.4)}
+  .ta-wrap{position:relative;margin-bottom:11px}
+  textarea#woe{
+    width:100%;min-height:96px;resize:none;border-radius:18px;border:2px solid rgba(200,155,175,.34);
+    background:rgba(255,250,246,.7);padding:14px 14px 26px;font-family:inherit;font-size:14.5px;line-height:1.7;color:var(--text);
+  }
+  textarea#woe:focus{outline:none;border-color:var(--pink);background:#fff}
+  textarea#woe::placeholder{color:#C4ABA4}
+  .cnt{position:absolute;right:13px;bottom:9px;font-size:10.5px;color:#C4ABA4}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px}
+  .chip{font-size:12px;padding:7px 12px;border-radius:999px;border:1.5px solid rgba(200,170,236,.5);background:rgba(200,170,236,.1);color:var(--lavd);font-weight:500;cursor:pointer;transition:.15s}
+  .chip:hover{background:rgba(200,170,236,.22);transform:translateY(-1px)}
+
+  /* ── 生成中 ── */
+  .gen{text-align:center;padding:30px 10px 26px}
+  .gen img{width:140px;height:auto;margin:0 auto;display:block;animation:bob 1.4s ease-in-out infinite;filter:drop-shadow(0 8px 12px rgba(120,80,90,.2))}
+  .gen-t{font-size:16px;font-weight:900;margin-top:18px}
+  .gen-s{font-size:12.5px;color:var(--dim);margin-top:7px;min-height:18px}
+  .dots span{display:inline-block;animation:blink 1.2s infinite}
+  .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+
+  /* ── 結果 ── */
+  .chat{display:flex;gap:11px;align-items:flex-start;margin-bottom:18px}
+  .chat .av{width:54px;height:54px;border-radius:50%;flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;box-shadow:0 4px 12px rgba(200,120,140,.18)}
+  .chat .av img{width:90%;height:auto;margin-bottom:-4px}
+  .bubble{
+    background:linear-gradient(180deg,#fff,#FFF6F9);border:2px solid rgba(255,184,204,.5);
+    border-radius:6px 20px 20px 20px;padding:13px 15px;font-size:14.5px;line-height:1.92;
+    position:relative;flex:1;box-shadow:0 4px 14px rgba(200,120,140,.1);min-height:40px;
+  }
+  .bubble .who{font-size:11.5px;font-weight:900;color:var(--pinkd);margin-bottom:4px}
+  .bubble p{margin:0 0 9px}.bubble p:last-child{margin-bottom:0}
+  .cursor{display:inline-block;width:8px;background:var(--pink);border-radius:2px;animation:blink2 .7s steps(1) infinite;margin-left:1px}
+  @keyframes blink2{50%{opacity:0}}
+
+  .comic-sec{margin:6px 0 0;opacity:0;transform:translateY(14px) scale(.97);transition:opacity .6s,transform .6s}
+  .comic-sec.show{opacity:1;transform:none}
+  .comic-lbl{text-align:center;font-size:11px;letter-spacing:.2em;color:var(--lavd);font-weight:700;margin:18px 0 9px}
+  .comic-frame{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(120,80,90,.22)}
+  canvas#comic{width:100%;display:block}
+  .develop{position:absolute;inset:0;background:#3A2820;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;letter-spacing:.1em;transition:opacity .9s;z-index:2}
+  .develop.gone{opacity:0;pointer-events:none}
+
+  .reward-cta{margin:20px 0 0;background:linear-gradient(135deg,rgba(255,184,204,.2),rgba(200,170,236,.2));border:2px dashed rgba(232,96,122,.4);border-radius:22px;padding:16px 16px 17px;text-align:center}
+  .reward-cta .rl{font-size:11px;letter-spacing:.18em;color:var(--lavd);font-weight:700}
+  .reward-cta .rn{font-size:19px;font-weight:900;margin:5px 0 2px}
+  .reward-cta .rn .em{margin-right:5px}
+  .reward-cta .rs{font-size:12px;color:var(--dim);margin-bottom:13px}
+  .acts{display:flex;gap:8px;margin-top:14px}
+  .acts .btn{flex:1;font-size:13.5px;padding:12px 8px}
+  .again{display:block;width:100%;margin-top:9px;background:none;border:none;color:var(--dim);font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:8px}
+  .disc{font-size:10.5px;color:var(--dim);opacity:.55;text-align:center;margin-top:18px;line-height:1.7}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:.3s;z-index:50;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══════════ 封面 ══════════ -->
+  <section class="sc on" id="s0">
+    <div class="card">
+      <div class="cover-stage">
+        <div class="peek s"><img class="float b" src="chars/usagi.png" alt="烏薩奇" /></div>
+        <div class="peek mid"><img class="float" src="chars/chiikawa.png" alt="吉伊卡哇" /></div>
+        <div class="peek s"><img class="float c" src="chars/hachiware.png" alt="哈齊瓦雷" /></div>
+      </div>
+      <div class="kick">ちいかわ × 今日のごほうび</div>
+      <h1 class="title">今天，<span>辛苦了</span>。</h1>
+      <p class="lead">把今天遇到的鳥事，說給牠們聽。<br><b>吉伊卡哇</b>會陪你,給你一段只對你說的安慰、<br>一格只屬於今天的小漫畫,還有——<br>一份<b>你今天值得的犒賞</b>。</p>
+      <button class="btn btn-p blk" onclick="go('s1')">進入慰勞所 →</button>
+      <p class="note">每個人收到的安慰都不一樣 <span class="heart">♡</span> 說完會想截圖收藏</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 輸入 ══════════ -->
+  <section class="sc" id="s1">
+    <div class="card">
+      <div class="step"><span class="num">1</span>選一個今天想陪你的夥伴</div>
+      <div class="buddies" id="buddyPick"></div>
+
+      <div class="step"><span class="num">2</span>今天遇到什麼鳥事?</div>
+      <div class="ta-wrap">
+        <textarea id="woe" maxlength="60" placeholder="例如:報告做到一半電腦當機,全部重來…&#10;不知道怎麼說也沒關係,牠們感覺得到。"></textarea>
+        <span class="cnt" id="cnt">0 / 60</span>
+      </div>
+      <div class="chips" id="chips"></div>
+
+      <button class="btn btn-p blk" id="goBtn" onclick="submitWoe()" disabled>先選一個夥伴 ↑</button>
+      <p class="note">放心,你打的字不會被傳到任何地方,只有牠們聽見 <span class="heart">♡</span></p>
+    </div>
+  </section>
+
+  <!-- ══════════ 生成中 ══════════ -->
+  <section class="sc" id="s2">
+    <div class="card">
+      <div class="gen">
+        <img id="genImg" src="chars/chiikawa_hug.png" alt="" />
+        <div class="gen-t" id="genT">吉伊卡哇正在認真想…</div>
+        <div class="gen-s"><span id="genS">讀著你說的話</span> <span class="dots"><span>·</span><span>·</span><span>·</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 結果 ══════════ -->
+  <section class="sc" id="s3">
+    <div class="card">
+      <div class="chat">
+        <div class="av" id="rAv"></div>
+        <div class="bubble"><div class="who" id="rWho"></div><div id="rMsg"></div></div>
+      </div>
+
+      <div class="comic-sec" id="comicSec">
+        <div class="comic-lbl">✦ 只屬於今天的你的一格漫畫 ✦</div>
+        <div class="comic-frame">
+          <canvas id="comic" width="720" height="960"></canvas>
+          <div class="develop" id="develop">顯影中…</div>
+        </div>
+
+        <div class="reward-cta">
+          <div class="rl">✦ 今天的你,值得這個 ✦</div>
+          <div class="rn"><span class="em" id="rwEm"></span><span id="rwName"></span></div>
+          <div class="rs" id="rwSub"></div>
+          <button class="btn btn-p blk" onclick="claim()">把今天的犒賞帶回家 →</button>
+        </div>
+
+        <div class="acts">
+          <button class="btn btn-g" onclick="saveComic()">📷 存成圖片</button>
+          <button class="btn btn-g" onclick="shareComic()">分享給朋友</button>
+        </div>
+        <button class="again" onclick="restart()">↻ 再說一件今天的鳥事</button>
+        <p class="disc">本頁為示意性質的互動廣告,文案由頁面即時依你的輸入生成,僅供療癒娛樂。<br>ちいかわ © nagano / 小学館</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════
+   吉伊卡哇 今天辛苦了 慰勞所
+   ── 不靠亂數:安慰內容由「使用者輸入 × 夥伴」決定性生成 ──
+   ════════════════════════════════════════════════════ */
+
+const BUDDIES = {
+  chiikawa:{zh:'吉伊卡哇',jp:'ちいかわ',tag:'會陪你<br>一起難過',img:'chars/chiikawa.png',hug:'chars/chiikawa_hug.png',ring:'#FFE8EC,#FFCCD8'},
+  hachiware:{zh:'哈齊瓦雷',jp:'ハチワレ',tag:'會把你<br>拉回光明面',img:'chars/hachiware.png',hug:'chars/hachiware_hug.png',ring:'#DFF0FF,#C2DFFF'},
+  usagi:{zh:'烏薩奇',jp:'うさぎ',tag:'會讓你<br>笑出來',img:'chars/usagi.png',hug:'chars/usagi_hug.png',ring:'#FFFAE0,#FFE870'},
+};
+
+// 夥伴語氣:開場(帶入引用)、高張力補刀、結尾(帶入犒賞)
+const VOICE = {
+  chiikawa:{
+    open:['嗚嗚…你說「{Q}」…我都聽到了。','「{Q}」…光是聽你說,我的眼眶就熱熱的了…'],
+    openEmpty:['就算說不出來也沒關係…我感覺得到,你今天不太好過…'],
+    intense:'這麼難的一天,你居然撐過來了…',
+    close:['…但是你今天還是撐到現在了,真的好棒、好棒喔。這個「{R}」,是你今天值得的犒賞,收下嘛。',
+           '…謝謝你願意撐著。來,把「{R}」收下,這是只屬於今天的你的獎勵喔。'],
+  },
+  hachiware:{
+    open:['欸欸我有在認真聽喔!你說「{Q}」對吧?','「{Q}」…嗯,這種事換作是誰都會悶的啦。'],
+    openEmpty:['不用說出來也沒關係~我大概感覺到,你今天累累的了!'],
+    intense:'這種程度的鳥事,級別超高的耶!',
+    close:['不過你看,能把它說出來就已經超厲害了!「{R}」送你,這是你今天應得的犒賞~',
+           '所以呢,今天的你已經及格啦!用「{R}」幫自己慶祝一下,你值得的!'],
+  },
+  usagi:{
+    open:['哈!?「{Q}」!?ウラ──!','蛤?「{Q}」?聽起來就有夠煩欸!'],
+    openEmpty:['不講?沒差!反正一看就知道你今天很厭世啦!ウラ!'],
+    intense:'這已經不是普通的鳥事了,是鳥事之王!',
+    close:['算了算了!這種事配個「{R}」剛剛好!吃下去就重開機了,ウラ!',
+           '別想了別想了!「{R}」拿去!吃飽才有力氣繼續耍廢,哈!'],
+  },
+};
+
+// 類別:關鍵字、場景、犒賞、各夥伴的同理內文與漫畫對白
+const CATS = {
+  work:{label:'工作壓力',scene:'night',
+    kw:['加班','工作','上班','專案','案子','報告','簡報','會議','客戶','老闆','業績','kpi','deadline','死線','做不完','改稿','需求','目標','績效','責任','提案','上班族','值班','輪班','排班'],
+    reward:{em:'🍮',name:'深夜限定・濃厚布丁',sub:'忙到現在,先讓舌頭甜一下'},
+    body:{chiikawa:['工作怎麼好像永遠做不完呢…嗚…我光看就覺得肩膀好重。可是你一直、一直在撐著,這件事我都看在眼裡。','那些做不完的事,不是因為你不夠好,是因為它們真的太多了啦…你已經很拚了。'],
+          hachiware:['工作嘛~再大的案子也是一塊一塊吃掉的!你今天已經咬下好大一口了,剩下的明天再說!','做不完很正常啊,這代表別人把重要的事都交給你了耶——只是今天的你需要先休息一下。'],
+          usagi:['工作!?做不完就先不要做啦!ウラ──!地球又不會因為你的報告爆炸!','哈!?加班!?老闆的案子哪有你的肚子重要,先吃!吃完再煩!']},
+    bub:{chiikawa:['你已經\n很努力了…','做不完\n不是你的錯'],hachiware:['一塊一塊\n會吃完的!','重要的事\n才交給你!'],usagi:['先不要做!\nウラ!','地球\n不會爆炸啦!']}},
+
+  blame:{label:'被責備',scene:'rain',
+    kw:['罵','唸','念','檢討','背鍋','怪我','怪罪','責備','釘','訓','批評','挑剔','嫌','數落','甩鍋','指責','被說','刁難','找碴','酸'],
+    reward:{em:'🍓',name:'草莓鮮奶油泡芙',sub:'被唸的嘴,要用甜的補回來'},
+    body:{chiikawa:['被罵的時候…心會縮成一團對不對…嗚嗚。明明你也有你的苦衷,卻只能默默吞下去。','那些話好兇喔…可是說那些話的人,不知道你已經多努力了。我知道,這樣就夠了對吧?'],
+          hachiware:['被唸了齁~深呼吸!別人氣話裡的情緒是他的,不是你的,不用全部接過來揹著喔。','一句罵不能定義你啦!你做對的那些事,只是今天剛好沒被看見而已。'],
+          usagi:['誰罵你!?ウラ──!我去咬他!哈!?','管他唸什麼,左耳進右耳出!你的耳朵又不是垃圾桶!']},
+    bub:{chiikawa:['你的苦衷\n我知道…','心縮成\n一團了吧…'],hachiware:['情緒是他的\n不是你的!','一句罵\n定義不了你!'],usagi:['我去咬他!\nウラ!','耳朵不是\n垃圾桶!']}},
+
+  people:{label:'人際心累',scene:'cloudy',
+    kw:['同事','主管','上司','室友','家人','婆婆','媽','爸','親戚','情緒勒索','八卦','嘴','白目','難相處','擺臉色','句點','句點王','已讀我','冷暴力','勾心','心機','應酬'],
+    reward:{em:'☕',name:'療癒系・熱可可',sub:'對人累了,喝點暖的'},
+    body:{chiikawa:['跟人相處好難喔…要顧到那麼多人的心情,結果你的心情都沒人顧了。我來顧,可以嗎?','有些人就是…沒辦法。但你還願意對人好,這份溫柔很珍貴,別被磨掉了喔。'],
+          hachiware:['人跟人本來就很難100%合拍啦~你已經很努力配合了,剩下的就交給時間吧!','不是每個人都值得你花心力的喔!把力氣留給真正對你好的人,像我這種~'],
+          usagi:['有夠煩!這種人就讓他自己煩自己啦!ウラ!','哈!?別理他!我們去吃好吃的,不帶他!']},
+    bub:{chiikawa:['你的心情\n我來顧…','你的溫柔\n很珍貴…'],hachiware:['力氣留給\n對的人!','交給時間\n就好~'],usagi:['別理他\n去吃飯!','讓他自己\n煩自己!']}},
+
+  love:{label:'感情心事',scene:'heart',
+    kw:['分手','前任','喜歡的人','告白','曖昧','已讀','單身','暗戀','被甩','失戀','情人','喜歡','心動','被句點','冷掉','沒回我','對象','劈腿','遠距','吵架','冷戰','男友','女友','交往'],
+    reward:{em:'🍷',name:'微醺梅酒凍',sub:'心酸的事,配一點點微甜'},
+    body:{chiikawa:['把心放在那裡、等回應的感覺…好難熬喔。你那麼真心,本來就值得被好好回應的。','喜歡一個人不丟臉,會痛是因為你很認真。嗚…我陪你一起難過一下下,好不好?'],
+          hachiware:['感情的事最磨人了~但你能去喜歡、去在乎,本身就是一種很厲害的能力耶!','沒被回應不代表你不好,只是時機跟對象的問題啦。對的人會秒回你的,相信我!'],
+          usagi:['已讀!?ウラ──!這種人不要也罷!','哈!?為這種人難過太浪費了!我們去吃到飽,吃回本!']},
+    bub:{chiikawa:['你的真心\n值得被回應','會痛是\n因為你認真'],hachiware:['對的人\n會秒回你!','去喜歡\n是種能力!'],usagi:['不要\n也罷!ウラ!','去吃到飽\n吃回本!']}},
+
+  money:{label:'荷包見底',scene:'cloudy',
+    kw:['錢','薪水','帳單','房租','破產','負債','卡費','沒錢','貴','漲價','窮','荷包','錢包','月底','吃土','繳費','扣款','存款','花光','付不出'],
+    reward:{em:'🍮',name:'銅板幸福・古早味布丁',sub:'幸福不用很貴,一口就有'},
+    body:{chiikawa:['錢的事最讓人睡不著了…要把每一塊都算得緊緊的,真的好辛苦。你撐起的東西比你想的還多。','不是你不努力,是這世界什麼都好貴喔…你能撐到現在,已經很了不起了。'],
+          hachiware:['月底大家都一樣啦~!沒錢的時候更要找免費的快樂,像是被我安慰這件事,免費喔!','錢會再賺的!但你今天的心情只有一次,別讓帳單把它也扣走了~'],
+          usagi:['沒錢!?ウラ!那就先吃眼前的!未來的錢未來再煩!','哈!?月底!?銅板美食才是宇宙最強,走!']},
+    bub:{chiikawa:['你撐起的\n比你想的多','撐到現在\n很了不起'],hachiware:['錢會再賺\n心情只有一次','免費的快樂\n最珍貴~'],usagi:['未來的錢\n未來再煩!','銅板美食\n宇宙最強!']}},
+
+  tired:{label:'累到沒電',scene:'night',
+    kw:['累','疲憊','沒睡','失眠','熬夜','爆肝','沒力','撐不住','睏','想睡','精疲力盡','沒電','心累','沒睡飽','睡不著','好睏','疲勞','過勞','倦'],
+    reward:{em:'🌙',name:'好好睡・熱燕麥奶',sub:'今天早點關機,明天再開'},
+    body:{chiikawa:['你是不是…已經累到連喊累的力氣都沒有了?嗚…來,靠著我,什麼都不用做。','累成這樣還願意撐著,你真的好努力。但現在可以先放下了喔,我幫你顧著。'],
+          hachiware:['電量見底了齁~人不是機器,需要充電很正常的!今天的任務就是「好好休息」!','你已經盡力跑了一整天了,現在抵達終點線囉~可以躺平領獎了!'],
+          usagi:['累就睡!ウラ──!世界交給明天的你處理!','哈!?還在撐!?快躺下!棉被在呼喚你了!']},
+    bub:{chiikawa:['靠著我\n什麼都別做','可以先\n放下了喔…'],hachiware:['今天的任務\n是休息!','跑到終點了\n躺平領獎!'],usagi:['累就睡!\n交給明天!','棉被在\n呼喚你了!']}},
+
+  commute:{label:'通勤地獄',scene:'rain',
+    kw:['通勤','塞車','捷運','公車','遲到','趕車','人擠人','擠','開車','擠爆','誤點','班次','月台','客運','高鐵','塞','轉車','機車','尖峰'],
+    reward:{em:'🍵',name:'通勤救星・抹茶歐蕾',sub:'被人潮榨乾,補一杯回來'},
+    body:{chiikawa:['一大早就被人潮擠得喘不過氣…還沒開始一天,就先耗掉好多力氣了對吧…辛苦你了。','光是平安到家這件事,今天就已經很不容易了。你做到了喔,真的。'],
+          hachiware:['通勤地獄每天都在打怪~你能準時抵達根本是隱藏版的厲害技能耶!','被擠成沙丁魚還是撐過來了,給今天的自己拍拍手,這超不簡單的!'],
+          usagi:['塞車!?ウラ──!我下車用跑的還比較快啦!','哈!?人擠人!?這種時候就放空想等下要吃什麼!']},
+    bub:{chiikawa:['平安到家\n就很棒了…','先耗掉\n好多力氣吧'],hachiware:['準時抵達\n是隱藏技能!','給自己\n拍拍手!'],usagi:['用跑的\n比較快啦!','放空想\n等下吃什麼!']}},
+
+  study:{label:'考試課業',scene:'night',
+    kw:['考試','期中','期末','作業','被當','成績','讀書','論文','分數','重修','複習','段考','模擬考','學測','指考','研究所','口試','當掉','補考','畢業','實驗','教授','學分'],
+    reward:{em:'🧋',name:'醒腦・厚奶茶凍飲',sub:'讀到斷電,先喝一口回魂'},
+    body:{chiikawa:['書怎麼都讀不完、分數又不聽話…那種努力卻看不到盡頭的感覺,好折磨喔…','分數不能代表你有多努力。你坐在那裡撐著沒放棄,這件事比任何成績都重要。'],
+          hachiware:['考試只是人生的一個小關卡啦~這關沒過還有下一關,你的價值才不是一張考卷決定的!','你今天讀進去的東西不會消失喔!它們都偷偷存起來了,總有一天會幫到你!'],
+          usagi:['被當!?ウラ──!那科老師也太沒眼光!','哈!?還在讀!?腦袋要冒煙了啦!先吃點甜的充電!']},
+    bub:{chiikawa:['努力看不到\n盡頭好折磨','沒放棄\n比成績重要'],hachiware:['價值不是\n考卷決定的!','讀進去的\n不會消失!'],usagi:['老師\n沒眼光啦!','腦袋冒煙了\n快充電!']}},
+
+  health:{label:'身體不適',scene:'cloudy',
+    kw:['生病','感冒','頭痛','胃痛','發燒','不舒服','痛','受傷','過敏','咳嗽','喉嚨','中暑','經痛','牙痛','掛號','看醫生','身體','拉肚子','暈','流鼻水'],
+    reward:{em:'🍯',name:'暖暖・蜂蜜薑茶',sub:'身體不舒服,先把自己顧好'},
+    body:{chiikawa:['身體不舒服還要硬撐…最讓人心疼了。現在什麼都別想,把自己照顧好最重要喔。','痛痛飛走~我幫你呼呼。生病的時候特別脆弱,你不孤單,我都在這裡。'],
+          hachiware:['身體拉警報,就是要你休息的訊號啦~乖乖聽它的話,趕快好起來最重要!','把所有煩惱先丟一邊!現在你唯一的工作就是「康復」,這個你最擅長了~'],
+          usagi:['痛痛!?ウラ!病菌給我滾出去!','哈!?還不去休息!?吃飽睡飽,病就怕你了!']},
+    bub:{chiikawa:['痛痛飛走\n呼呼~','把自己顧好\n最重要…'],hachiware:['唯一的工作\n是康復!','身體在叫你\n休息喔~'],usagi:['病菌\n給我滾!','吃飽睡飽\n病就怕你!']}},
+
+  weather:{label:'壞天氣',scene:'rain',
+    kw:['下雨','淋雨','雨','颱風','濕','曬','悶熱','寒流','潮濕','梅雨','大太陽','飆汗','濕冷','陰天','起霧','濕答答'],
+    reward:{em:'☔',name:'壞天氣・暖薑撞奶',sub:'外面再糟,嘴裡可以很暖'},
+    body:{chiikawa:['天氣這麼壞,連心情都會跟著濕濕的…你淋著這樣的天還是出門了,好努力喔。','壞天氣不會永遠的,雨總會停。在那之前,我陪你躲一下下,好不好?'],
+          hachiware:['天氣不好,我們就自己製造好心情啊~這種天最適合窩著耍廢,剛剛好!','雨後會有彩虹,悶熱過後會有涼風~撐過這陣子,舒服的日子在後面等你!'],
+          usagi:['下雨!?ウラ──!那就在家當一顆廢廢的球!','哈!?這種天還出門!?快回家裹棉被啦!']},
+    bub:{chiikawa:['雨\n總會停的…','我陪你\n躲一下下…'],hachiware:['雨後\n會有彩虹~','最適合\n窩著耍廢!'],usagi:['在家當\n廢廢的球!','快回家\n裹棉被!']}},
+
+  fail:{label:'搞砸了',scene:'rain',
+    kw:['搞砸','失敗','出包','犯錯','被拒絕','沒上','落榜','沒過','丟臉','糗','凸槌','婁子','做錯','失誤','砸鍋','打槍','沒錄取','面試','被退','搞錯','忘記'],
+    reward:{em:'🍡',name:'重新開始・草莓大福',sub:'跌倒了,先吃顆甜的再站起來'},
+    body:{chiikawa:['搞砸的時候,最想找個洞鑽進去對不對…可是你願意去嘗試,本身就很勇敢了喔。','會犯錯,是因為你真的有在做事啊。那些什麼都不做的人,才永遠不會出錯呢。'],
+          hachiware:['失敗只是還沒成功啦~這次的凸槌,會變成下次的經驗值,一點都不浪費!','你被拒絕,不代表你不好,只代表這次不適合而已。對的機會還在後面排隊呢!'],
+          usagi:['出包!?ウラ──!下次再來就好啦!','哈!?這就難過喔!?跌倒了就順便撿個地上的零錢啊!']},
+    bub:{chiikawa:['願意嘗試\n就很勇敢了','有做事\n才會犯錯啊'],hachiware:['失敗只是\n還沒成功~','對的機會\n在排隊呢!'],usagi:['下次再來\n就好啦!','順便撿個\n零錢啊!']}},
+
+  lonely:{label:'好孤單',scene:'night',
+    kw:['孤單','一個人','沒人','寂寞','孤獨','沒朋友','邊緣','沒人懂','沒人理','被冷落','被排擠','落單','獨自','沒人陪','空虛'],
+    reward:{em:'🍮',name:'陪伴・雙人份熱布丁',sub:'今晚,至少還有我陪你吃'},
+    body:{chiikawa:['一個人的時候,安靜得讓人發慌對不對…可是現在,你不是一個人喔,我就在這裡呢。','覺得沒人懂你的時候最孤單了…但你願意說出來,我就會努力懂你,一點一點地。'],
+          hachiware:['偶爾覺得孤單很正常啦~但你看,你現在就在跟我聊天啊!緣分隨時都在發生喔!','你不是沒人喜歡,只是還沒遇到對的同類~像我們這種好夥伴,正在路上找你呢!'],
+          usagi:['一個人!?ウラ!那正好!想做什麼都不用管別人!','哈!?寂寞!?那我們現在就是朋友了啊!走,吃飯!']},
+    bub:{chiikawa:['你不是\n一個人喔','我會努力\n懂你的…'],hachiware:['緣分隨時\n在發生!','好夥伴\n正在路上!'],usagi:['現在我們\n就是朋友!','想做什麼\n都不用管!']}},
+
+  general:{label:'說不上來的累',scene:'cloudy',
+    kw:['煩','爛','糟','衰','倒楣','崩潰','厭世','撐','廢','躺平','鳥','心情差','低潮','無力','不想','好難','委屈','難過','想哭','空','卡','悶'],
+    reward:{em:'🍮',name:'今日限定・療癒布丁',sub:'說不上來的累,也值得被犒賞'},
+    body:{chiikawa:['有時候就是說不上來哪裡不對,可是整個人都好沉…那種感覺,我懂的,真的。','你不用解釋為什麼難過,難過不需要理由。光是今天有好好活著,就已經很棒了。'],
+          hachiware:['有些日子就是莫名卡卡的~這不是你的問題,是今天它自己不乖啦!明天會不一樣的!','把這種悶悶的感覺說出來就對了!壞情緒最怕被講出來,講完它就軟掉一半了~'],
+          usagi:['煩!?ウラ──!那就用力大叫一聲,把它吼走!','哈!?厭世!?這種日子就是要亂吃一波才能重開機啦!']},
+    bub:{chiikawa:['難過\n不需要理由','今天有活著\n就很棒了'],hachiware:['明天會\n不一樣的!','講出來\n它就軟一半~'],usagi:['大叫一聲\n吼走它!','亂吃一波\n重開機!']}},
+};
+
+const INTENSIFIERS = ['超','爆','很','真的','最','死','快','崩潰','受不了','累死','氣死','好想哭','超級','非常','瘋','無敵','整個','完全','一直','overload','已經'];
+
+// ── 決定性雜湊 & 種子挑選(取代亂數) ──
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function pick(arr,seed){return arr[seed%arr.length];}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// ── 核心:分析輸入,選出類別與強度 ──
+function analyze(text){
+  const t=(text||'').toLowerCase();
+  let best='general',bestScore=0;
+  for(const key in CATS){
+    if(key==='general')continue;
+    let sc=0;
+    for(const kw of CATS[key].kw){ if(t.includes(kw.toLowerCase())) sc += kw.length>=2?2:1; }
+    if(sc>bestScore){bestScore=sc;best=key;}
+  }
+  // general 關鍵字也算一點(但不蓋過明確類別)
+  if(bestScore===0){ for(const kw of CATS.general.kw){ if(t.includes(kw)) {best='general';break;} } }
+  let intensity=0;
+  for(const w of INTENSIFIERS){ if(t.includes(w.toLowerCase())) intensity++; }
+  if(t.length>=22) intensity++;
+  return {cat:best, intense:intensity>=2, matched:bestScore>0};
+}
+
+// ── 組裝安慰文(回傳段落陣列)──
+function compose(text, buddy){
+  const a=analyze(text);
+  const C=CATS[a.cat], V=VOICE[buddy];
+  const q=(text||'').trim();
+  const Q=q.length>20?q.slice(0,19)+'…':q;
+  const seedBase=hashStr((q||'空')+'|'+buddy);
+  const sOpen=hashStr(q+buddy+'open'), sBody=hashStr(q+buddy+'body'), sClose=hashStr(q+buddy+'close'), sBub=hashStr(q+buddy+'bub');
+
+  let opener = q ? pick(V.open,sOpen).replace('{Q}',Q) : V.openEmpty[0];
+  if(a.intense && q) opener += V.intense;
+  const body = pick(C.body[buddy], sBody);
+  const close = pick(V.close, sClose).replace('{R}', C.reward.name);
+  const bubble = pick(C.bub[buddy], sBub);
+
+  return {paras:[opener, body, close], cat:a.cat, scene:C.scene, reward:C.reward, bubble, seed:seedBase, label:C.label, intense:a.intense};
+}
+
+/* ════════════ 流程 ════════════ */
+let chosen=null, result=null, imgCache={};
+
+function preload(src){ if(imgCache[src])return imgCache[src]; const i=new Image(); i.src=src; imgCache[src]=i; return i; }
+Object.values(BUDDIES).forEach(b=>{preload(b.img);preload(b.hug);});
+
+function go(id){ document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on'); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// 建立夥伴選擇卡
+function buildBuddies(){
+  const el=document.getElementById('buddyPick');
+  el.innerHTML=Object.entries(BUDDIES).map(([k,b])=>
+    `<div class="buddy" data-k="${k}" onclick="chooseBuddy('${k}')">
+       <img src="${b.img}" alt="${b.zh}" />
+       <div class="bn">${b.zh}</div><div class="bt">${b.tag}</div>
+     </div>`).join('');
+}
+function chooseBuddy(k){
+  chosen=k;
+  document.querySelectorAll('.buddy').forEach(b=>b.classList.toggle('sel', b.dataset.k===k));
+  const btn=document.getElementById('goBtn');
+  btn.disabled=false;
+  btn.textContent=`讓${BUDDIES[k].zh}安慰我 ♡`;
+}
+
+// 快速詞
+const CHIPS=['加班到崩潰','被主管唸','錢包見底','累到不想動','被句點/已讀','通勤好擠','考試考砸','就是很厭世'];
+function buildChips(){
+  document.getElementById('chips').innerHTML=CHIPS.map(c=>`<span class="chip" onclick="useChip('${c}')">${c}</span>`).join('');
+}
+function useChip(c){ const ta=document.getElementById('woe'); ta.value=c; updCnt(); ta.focus(); }
+function updCnt(){ const v=document.getElementById('woe').value; document.getElementById('cnt').textContent=`${v.length} / 60`; }
+
+function submitWoe(){
+  if(!chosen) return;
+  let text=document.getElementById('woe').value.trim();
+  result=compose(text, chosen);
+  const b=BUDDIES[chosen];
+
+  // 生成中畫面
+  document.getElementById('genImg').src=b.hug;
+  document.getElementById('genT').textContent=`${b.zh}正在認真想…`;
+  const steps=['讀著你說的話','把心揉成一團安慰','畫一格只給你的漫畫','找出今天你值得的犒賞'];
+  let si=0; document.getElementById('genS').textContent=steps[0];
+  go('s2');
+  const timer=setInterval(()=>{ si++; if(si<steps.length) document.getElementById('genS').textContent=steps[si]; },520);
+  setTimeout(()=>{ clearInterval(timer); showResult(); }, 2050);
+}
+
+// 結果:逐字打出安慰,再顯影漫畫
+function showResult(){
+  const b=BUDDIES[chosen];
+  const av=document.getElementById('rAv');
+  av.style.background=`linear-gradient(135deg,${b.ring})`;
+  av.innerHTML=`<img src="${b.hug}" alt="${b.zh}">`;
+  document.getElementById('rWho').textContent=`${b.zh}・${b.jp}`;
+  document.getElementById('rMsg').innerHTML='';
+
+  // 犒賞卡
+  document.getElementById('rwEm').textContent=result.reward.em;
+  document.getElementById('rwName').textContent=result.reward.name;
+  document.getElementById('rwSub').textContent=result.reward.sub;
+
+  go('s3');
+  typeParagraphs(result.paras, document.getElementById('rMsg'), ()=>{
+    drawComic();
+    document.getElementById('comicSec').classList.add('show');
+    setTimeout(()=>{ document.getElementById('develop').classList.add('gone'); celebrate(); }, 650);
+  });
+}
+
+function typeParagraphs(paras, host, done){
+  let pi=0;
+  function nextPara(){
+    if(pi>=paras.length){ done&&done(); return; }
+    const p=document.createElement('p'); host.appendChild(p);
+    const txt=paras[pi]; let ci=0;
+    const cur=document.createElement('span'); cur.className='cursor'; cur.textContent=' '; p.appendChild(cur);
+    const iv=setInterval(()=>{
+      ci++;
+      cur.insertAdjacentText('beforebegin', txt[ci-1]);
+      if(ci>=txt.length){ clearInterval(iv); cur.remove(); pi++; setTimeout(nextPara, 200); }
+    }, 27);
+  }
+  nextPara();
+}
+
+/* ════════════ 漫畫(canvas)════════════ */
+const SCENES={
+  night:{sky:['#2E2659','#544A86'],accent:'#C8AAEC',el:'star'},
+  rain:{sky:['#7C8AA8','#B3BDD2'],accent:'#90A8C8',el:'rain'},
+  cloudy:{sky:['#C9BFDC','#EBE3F0'],accent:'#B6A4CE',el:'cloud'},
+  heart:{sky:['#FFB9CF','#FFE2EE'],accent:'#E8607A',el:'heart'},
+};
+
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function wrapCJK(ctx,text,maxW){const out=[];let line='';for(const ch of text){if(ctx.measureText(line+ch).width>maxW&&line){out.push(line);line=ch;}else line+=ch;}if(line)out.push(line);return out;}
+
+async function drawComic(){
+  const cv=document.getElementById('comic'); const ctx=cv.getContext('2d');
+  const W=720,H=960; const b=BUDDIES[chosen]; const S=SCENES[result.scene];
+  try{ await document.fonts.load('900 30px "Noto Sans TC"'); await document.fonts.load('700 22px "Noto Sans TC"'); }catch(e){}
+  const rng=mulberry32(result.seed);
+  const F=s=>`"Noto Sans TC",sans-serif`;
+
+  // 底
+  ctx.fillStyle='#FFF8F2'; ctx.fillRect(0,0,W,H);
+  // 外框
+  ctx.lineWidth=10; ctx.strokeStyle='#3A2820'; rr(ctx,14,14,W-28,H-28,28); ctx.stroke();
+
+  const M=30, IW=W-M*2;
+  // 標題帶
+  const hY=30,hH=92;
+  ctx.save(); rr(ctx,M,hY,IW,hH,20); ctx.clip();
+  const hg=ctx.createLinearGradient(0,hY,IW,hY+hH); hg.addColorStop(0,'#FFB8CC');hg.addColorStop(1,'#C8AAEC');
+  ctx.fillStyle=hg; ctx.fillRect(M,hY,IW,hH);
+  ctx.restore();
+  rr(ctx,M,hY,IW,hH,20); ctx.lineWidth=5; ctx.strokeStyle='#3A2820'; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.textBaseline='middle';
+  ctx.font=`900 30px ${F()}`; ctx.textAlign='left'; ctx.fillText('今日のおつかれ手帳',M+22,hY+38);
+  ctx.font=`700 16px ${F()}`; ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fillText('ちいかわ 慰勞所 ・ '+result.label,M+22,hY+68);
+  const d=new Date(); const ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  ctx.textAlign='right'; ctx.font=`900 17px ${F()}`; ctx.fillStyle='#fff'; ctx.fillText(ds,M+IW-20,hY+46);
+
+  // 場景
+  const scY=hY+hH+14, scH=388;
+  ctx.save(); rr(ctx,M,scY,IW,scH,20); ctx.clip();
+  const sg=ctx.createLinearGradient(0,scY,0,scY+scH); sg.addColorStop(0,S.sky[0]);sg.addColorStop(1,S.sky[1]);
+  ctx.fillStyle=sg; ctx.fillRect(M,scY,IW,scH);
+  // 場景元素(決定性)
+  drawSceneEls(ctx,S,M,scY,IW,scH,rng);
+  // 地板
+  ctx.fillStyle='rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(M+IW/2,scY+scH+30,IW*0.8,90,0,0,Math.PI*2); ctx.fill();
+  // 角色
+  const img=imgCache[b.hug];
+  const chH=276, chW=chH*0.694;
+  const chX=M+44, chY=scY+scH-chH+6;
+  // 影子
+  ctx.fillStyle='rgba(40,25,20,.16)'; ctx.beginPath(); ctx.ellipse(chX+chW/2,scY+scH-12,chW*0.5,18,0,0,Math.PI*2); ctx.fill();
+  if(img&&img.complete&&img.naturalWidth){ ctx.drawImage(img,chX,chY,chW,chH); }
+  else { ctx.font='150px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐭',chX+chW/2,chY+chH/2); }
+  // 對話泡泡
+  drawBubble(ctx, result.bubble, M+IW*0.40, scY+30, M+IW-26, chX+chW*0.6, chY+30, F());
+  ctx.restore();
+  rr(ctx,M,scY,IW,scH,20); ctx.lineWidth=5; ctx.strokeStyle='#3A2820'; ctx.stroke();
+
+  // 「今天的鳥事」
+  const capY=scY+scH+16, capH=120;
+  rr(ctx,M,capY,IW,capH,18); ctx.fillStyle='#FBF1F4'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='rgba(232,96,122,.35)'; ctx.stroke();
+  ctx.textBaseline='top'; ctx.textAlign='left';
+  ctx.font=`900 16px ${F()}`; ctx.fillStyle='#E8607A'; ctx.fillText('今天的鳥事',M+20,capY+16);
+  ctx.font=`700 21px ${F()}`; ctx.fillStyle='#3A2820';
+  const woeText=(document.getElementById('woe').value.trim()||'今天就是…說不上來的好累');
+  const qlines=wrapCJK(ctx,'「'+woeText+'」',IW-44).slice(0,2);
+  qlines.forEach((ln,i)=>ctx.fillText(ln, M+20, capY+44+i*30));
+
+  // 犒賞
+  const rwY=capY+capH+16, rwH=132;
+  ctx.save(); rr(ctx,M,rwY,IW,rwH,18); ctx.clip();
+  const rg=ctx.createLinearGradient(M,rwY,M+IW,rwY); rg.addColorStop(0,'#FFE8EE');rg.addColorStop(1,'#EEE6FF');
+  ctx.fillStyle=rg; ctx.fillRect(M,rwY,IW,rwH); ctx.restore();
+  rr(ctx,M,rwY,IW,rwH,18); ctx.lineWidth=4; ctx.setLineDash([9,7]); ctx.strokeStyle='#E8607A'; ctx.stroke(); ctx.setLineDash([]);
+  // 圓圈裝 emoji
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(M+62,rwY+rwH/2,46,0,Math.PI*2); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#FFB8CC'; ctx.stroke();
+  ctx.font='52px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(result.reward.em,M+62,rwY+rwH/2+3);
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.font=`900 15px ${F()}`; ctx.fillStyle='#8A5EC8'; ctx.fillText('✦ 今天的你,值得這個',M+124,rwY+24);
+  ctx.font=`900 23px ${F()}`; ctx.fillStyle='#3A2820';
+  const rn=wrapCJK(ctx,result.reward.name,IW-150).slice(0,2);
+  rn.forEach((ln,i)=>ctx.fillText(ln,M+124,rwY+50+i*28));
+
+  // 頁尾
+  ctx.textAlign='center'; ctx.font=`700 14px ${F()}`; ctx.fillStyle='#B59A92';
+  ctx.fillText(`${b.zh} 陪你度過了今天 ♡   #今天辛苦了`, W/2, rwY+rwH+22);
+}
+
+function drawSceneEls(ctx,S,x,y,w,h,rng){
+  ctx.save();
+  if(S.el==='star'){
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    for(let i=0;i<26;i++){const sx=x+rng()*w,sy=y+rng()*h*0.8,r=rng()*1.8+0.6;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();}
+    // 月亮
+    ctx.fillStyle='rgba(255,247,210,.95)'; ctx.beginPath(); ctx.arc(x+w-58,y+52,30,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=S.sky[0]; ctx.beginPath(); ctx.arc(x+w-46,y+44,26,0,Math.PI*2); ctx.fill();
+  }else if(S.el==='rain'){
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2.4; ctx.lineCap='round';
+    for(let i=0;i<34;i++){const rx=x+rng()*w,ry=y+rng()*h*0.85;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx-7,ry+18);ctx.stroke();}
+    ctx.fillStyle='rgba(255,255,255,.45)';
+    [[x+70,y+50,34],[x+w-90,y+44,40],[x+w/2,y+30,30]].forEach(c=>{ctx.beginPath();ctx.ellipse(c[0],c[1],c[2],c[2]*0.6,0,0,Math.PI*2);ctx.fill();});
+  }else if(S.el==='cloud'){
+    ctx.fillStyle='rgba(255,255,255,.55)';
+    [[x+80,y+54,40],[x+w-100,y+46,48],[x+w/2+30,y+86,30]].forEach(c=>{
+      for(const o of [[-26,6,22],[0,-6,28],[26,6,24]]){ctx.beginPath();ctx.arc(c[0]+o[0],c[1]+o[1],c[2],0,Math.PI*2);ctx.fill();}
+    });
+  }else if(S.el==='heart'){
+    for(let i=0;i<16;i++){const hx=x+rng()*w,hy=y+rng()*h*0.85,s=rng()*10+8;ctx.save();ctx.translate(hx,hy);ctx.fillStyle=`rgba(255,255,255,${0.35+rng()*0.4})`;heartPath(ctx,s);ctx.fill();ctx.restore();}
+  }
+  ctx.restore();
+}
+function heartPath(ctx,s){ctx.beginPath();ctx.moveTo(0,s*0.3);ctx.bezierCurveTo(0,-s*0.1,-s,-s*0.1,-s,s*0.35);ctx.bezierCurveTo(-s,s*0.7,0,s,0,s*1.05);ctx.bezierCurveTo(0,s,s,s*0.7,s,s*0.35);ctx.bezierCurveTo(s,-s*0.1,0,-s*0.1,0,s*0.3);ctx.closePath();}
+
+function drawBubble(ctx, text, x, y, x2, tailX, tailY, font){
+  const lines=text.split('\n'); ctx.font=`900 24px ${font}`;
+  let maxw=0; lines.forEach(l=>maxw=Math.max(maxw,ctx.measureText(l).width));
+  const padX=20,padY=16,lh=32;
+  const w=Math.min(maxw+padX*2, x2-x), h=lines.length*lh+padY*2;
+  // 尾巴
+  ctx.fillStyle='#fff'; ctx.strokeStyle='#3A2820'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(x+w*0.3,y+h-6); ctx.lineTo(tailX,tailY+20); ctx.lineTo(x+w*0.3+34,y+h-6); ctx.closePath(); ctx.fill();
+  rr(ctx,x,y,w,h,18); ctx.fill(); ctx.stroke();
+  // 蓋住尾巴接縫
+  ctx.fillStyle='#fff'; ctx.fillRect(x+w*0.3+1,y+h-7,32,6);
+  ctx.fillStyle='#3A2820'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  lines.forEach((l,i)=>ctx.fillText(l, x+w/2, y+padY+lh/2+i*lh));
+}
+
+/* ════════════ 動作 ════════════ */
+function celebrate(){
+  if(typeof confetti!=='function')return;
+  const c={chiikawa:['#FFB8CC','#FFE8EC','#E8607A'],hachiware:['#C2DFFF','#DFF0FF','#8FA8C8'],usagi:['#FFE870','#FFFAE0','#E8A23C']}[chosen];
+  confetti({particleCount:70,spread:62,origin:{y:0.7},colors:c,scalar:0.9});
+}
+function claim(){
+  celebrate();
+  toast(`已放進今天的犒賞清單 ♡（此為示意廣告）`);
+}
+function saveComic(){
+  try{
+    const url=document.getElementById('comic').toDataURL('image/png');
+    const a=document.createElement('a'); a.href=url; a.download=`今天辛苦了_${chosen}.png`; a.click();
+    toast('已存成圖片,去分享吧 ♡');
+  }catch(e){ toast('長按上方漫畫即可儲存圖片'); }
+}
+async function shareComic(){
+  const b=BUDDIES[chosen];
+  const txt=`${b.zh}聽完我今天的鳥事,給了我一格漫畫和今天的犒賞:「${result.reward.name}」。\n你也去說說你的今天吧 → 今天辛苦了・吉伊卡哇慰勞所`;
+  try{
+    const cv=document.getElementById('comic');
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    const file=new File([blob],'今天辛苦了.png',{type:'image/png'});
+    if(blob && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],text:txt,title:'今天辛苦了・吉伊卡哇慰勞所'}); return;
+    }
+  }catch(e){}
+  try{
+    if(navigator.share){ await navigator.share({text:txt,url:location.href}); return; }
+  }catch(e){ return; }
+  try{ await navigator.clipboard.writeText(txt+'\n'+location.href); toast('已複製文字,截圖一起分享吧 ♡'); }
+  catch(e){ toast('截圖這張漫畫,分享給朋友吧 ♡'); }
+}
+function restart(){
+  document.getElementById('comicSec').classList.remove('show');
+  document.getElementById('develop').classList.remove('gone');
+  document.getElementById('woe').value=''; updCnt();
+  go('s1');
+}
+let toastT;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2400); }
+
+document.getElementById('woe').addEventListener('input', updCnt);
+buildBuddies(); buildChips();
+</script>
+
+<script>
+/* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+(function(){
+  let lastTouchEnd=0;
+  document.addEventListener('touchend',function(e){
+    const now=Date.now();
+    if(now-lastTouchEnd<=300) e.preventDefault();
+    lastTouchEnd=now;
+  },{passive:false});
+  document.addEventListener('gesturestart',function(e){e.preventDefault();});
+  document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mr. Oops 織布工坊 — 創作你的毛線圖案</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --wood-dark: #6B3F1F;
+      --wood-mid: #8B5E3C;
+      --wood-light: #C4956A;
+      --wood-pale: #E8C99A;
+      --bg: #FDF6EC;
+      --text-dark: #3A2210;
+      --text-mid: #6B4A30;
+      --accent: #D95B43;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Georgia', '微軟正黑體', 'Heiti TC', serif;
+      color: var(--text-dark);
+    }
+
+    /* ── Screens ── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      overflow: hidden;
+    }
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97);
+    }
+
+    /* ── Decorative background threads ── */
+    .bg-threads {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Intro screen ── */
+    #screen-intro {
+      gap: 28px;
+      padding: 32px 24px;
+      z-index: 1;
+    }
+    .brand-badge {
+      background: var(--wood-dark);
+      color: #FDF6EC;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+    .intro-title {
+      font-size: clamp(28px, 7vw, 42px);
+      color: var(--wood-dark);
+      text-align: center;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+    .intro-title span {
+      color: var(--accent);
+    }
+    .intro-subtitle {
+      font-size: clamp(14px, 3.5vw, 17px);
+      color: var(--text-mid);
+      text-align: center;
+      line-height: 1.7;
+      max-width: 320px;
+    }
+    .loom-preview-wrap {
+      position: relative;
+      width: min(260px, 70vw);
+      aspect-ratio: 1;
+    }
+    #canvas-preview {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    .btn-primary {
+      background: var(--wood-dark);
+      color: #FDF6EC;
+      border: none;
+      padding: 16px 48px;
+      font-size: 18px;
+      font-family: inherit;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 18px rgba(107,63,31,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+    .btn-primary:active {
+      transform: scale(0.96);
+      box-shadow: 0 2px 8px rgba(107,63,31,0.25);
+    }
+    .intro-hint {
+      font-size: 12px;
+      color: #A07850;
+      text-align: center;
+    }
+
+    /* ── Loom screen ── */
+    #screen-loom {
+      justify-content: flex-start;
+      padding: 0;
+      z-index: 1;
+      gap: 0;
+    }
+    .loom-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 8px;
+      background: var(--wood-dark);
+      color: #FDF6EC;
+      flex-shrink: 0;
+    }
+    .loom-header-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .progress-label {
+      font-size: 12px;
+      opacity: 0.8;
+      background: rgba(255,255,255,0.15);
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+    .loom-body {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px 6px;
+      gap: 10px;
+      overflow: hidden;
+    }
+    #canvas-loom {
+      border-radius: 4px;
+      cursor: crosshair;
+      touch-action: none;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    /* Palette */
+    .palette-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .palette-label {
+      font-size: 11px;
+      color: var(--text-mid);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .palette-row {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .swatch {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+    }
+    .swatch:active {
+      transform: scale(0.88);
+    }
+    .swatch.selected {
+      border-color: var(--wood-dark);
+      transform: scale(1.18);
+      box-shadow: 0 0 0 3px var(--wood-pale);
+    }
+    /* Bottom buttons */
+    .loom-actions {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      padding: 6px 16px 14px;
+      flex-shrink: 0;
+    }
+    .btn-clear {
+      flex: 1;
+      background: transparent;
+      border: 2px solid var(--wood-mid);
+      color: var(--wood-mid);
+      padding: 11px;
+      font-size: 15px;
+      font-family: inherit;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+    .btn-clear:active {
+      transform: scale(0.96);
+      background: var(--wood-pale);
+    }
+    .btn-finish {
+      flex: 2;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 11px;
+      font-size: 15px;
+      font-family: inherit;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(217,91,67,0.4);
+      transition: opacity 0.2s, transform 0.1s, filter 0.2s;
+    }
+    .btn-finish:disabled {
+      opacity: 0.38;
+      box-shadow: none;
+      cursor: not-allowed;
+      filter: grayscale(0.4);
+    }
+    .btn-finish:not(:disabled):active {
+      transform: scale(0.96);
+    }
+
+    /* ── Result screen ── */
+    #screen-result {
+      gap: 20px;
+      padding: 24px 20px 32px;
+      z-index: 1;
+      overflow-y: auto;
+    }
+    .result-badge {
+      background: #2E6E4E;
+      color: #fff;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+    .result-title {
+      font-size: clamp(22px, 6vw, 32px);
+      color: var(--wood-dark);
+      text-align: center;
+      font-weight: 700;
+    }
+    .fabric-frame {
+      position: relative;
+      padding: 14px;
+      background: var(--wood-mid);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(107,63,31,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .fabric-frame::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 2px solid var(--wood-pale);
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    #canvas-result {
+      display: block;
+      border-radius: 6px;
+      width: min(280px, 75vw);
+      height: min(280px, 75vw);
+      image-rendering: pixelated;
+    }
+    .compliment {
+      font-size: clamp(14px, 3.5vw, 16px);
+      color: var(--text-mid);
+      text-align: center;
+      line-height: 1.8;
+      max-width: 300px;
+    }
+    .compliment strong {
+      color: var(--wood-dark);
+    }
+    .btn-cta {
+      background: linear-gradient(135deg, #D95B43 0%, #C44A32 100%);
+      color: #fff;
+      border: none;
+      padding: 17px 36px;
+      font-size: 16px;
+      font-family: inherit;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 24px rgba(217,91,67,0.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+      width: 100%;
+      max-width: 320px;
+    }
+    .btn-cta:active {
+      transform: scale(0.96);
+      box-shadow: 0 3px 12px rgba(217,91,67,0.3);
+    }
+    .btn-redo {
+      background: transparent;
+      border: 2px solid var(--wood-light);
+      color: var(--wood-mid);
+      padding: 11px 28px;
+      font-size: 14px;
+      font-family: inherit;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-redo:active {
+      background: var(--wood-pale);
+    }
+
+    /* Particle canvas */
+    #canvas-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas-particles"></canvas>
+
+<!-- ── Intro ── -->
+<div id="screen-intro" class="screen">
+  <canvas id="canvas-preview" width="260" height="260"></canvas>
+  <div class="brand-badge">Mr. Oops 精紡毛線工廠</div>
+  <h1 class="intro-title">織布工坊<br><span>創作你的毛線圖案</span></h1>
+  <p class="intro-subtitle">選好毛線顏色，在織布機上一格一格編織出屬於你的獨特圖案。</p>
+  <button class="btn-primary" id="btn-start">開始編織</button>
+  <p class="intro-hint">點選格子即可填色 · 完成後查看成品</p>
+</div>
+
+<!-- ── Loom editor ── -->
+<div id="screen-loom" class="screen hidden">
+  <div class="loom-header">
+    <span class="loom-header-title">🧶 織布工坊</span>
+    <span class="progress-label" id="progress-label">已填 0 / 20 格</span>
+  </div>
+  <div class="loom-body">
+    <canvas id="canvas-loom"></canvas>
+    <div class="palette-section">
+      <div class="palette-label">選擇毛線顏色</div>
+      <div class="palette-row" id="palette-row"></div>
+    </div>
+  </div>
+  <div class="loom-actions">
+    <button class="btn-clear" id="btn-clear">清除</button>
+    <button class="btn-finish" id="btn-finish" disabled>完成作品</button>
+  </div>
+</div>
+
+<!-- ── Result ── -->
+<div id="screen-result" class="screen hidden">
+  <div class="result-badge">✨ 作品完成</div>
+  <h2 class="result-title">你的毛線織物</h2>
+  <div class="fabric-frame">
+    <canvas id="canvas-result" width="280" height="280"></canvas>
+  </div>
+  <p class="compliment" id="compliment-text"></p>
+  <button class="btn-cta" id="btn-cta">用這個配色選購 Mr. Oops 毛線</button>
+  <button class="btn-redo" id="btn-redo">再織一件</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ────────────────────────────────────────
+     Constants
+  ──────────────────────────────────────── */
+  const COLS = 10;
+  const ROWS = 10;
+  const MIN_FILLED = 20;
+
+  const YARN_COLORS = [
+    { name: '珊瑚紅', hex: '#E8614A' },
+    { name: '奶油白', hex: '#F5E6C8' },
+    { name: '深海藍', hex: '#2C4A7C' },
+    { name: '鼠尾草綠', hex: '#7A9E7E' },
+    { name: '芥末黃', hex: '#D4A017' },
+    { name: '赤陶橘', hex: '#C4623A' },
+    { name: '薰衣草', hex: '#A882B8' },
+    { name: '炭灰', hex: '#4A4A4A' },
+  ];
+
+  const WOOD_DARK   = '#6B3F1F';
+  const WOOD_MID    = '#8B5E3C';
+  const WOOD_LIGHT  = '#C4956A';
+  const WOOD_PALE   = '#E8C99A';
+  const WARP_COLOR  = 'rgba(180,150,110,0.45)';
+  const EMPTY_CELL  = '#F5EDE0';
+  const CELL_BORDER = 'rgba(180,150,110,0.25)';
+
+  /* ────────────────────────────────────────
+     State
+  ──────────────────────────────────────── */
+  let grid        = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  let selectedIdx = 0;
+  let filledCount = 0;
+  let animating   = {};   // key = "r,c", value = { progress 0-1, color }
+  let particles   = [];
+  let rafId       = null;
+
+  /* ────────────────────────────────────────
+     DOM
+  ──────────────────────────────────────── */
+  const screenIntro  = document.getElementById('screen-intro');
+  const screenLoom   = document.getElementById('screen-loom');
+  const screenResult = document.getElementById('screen-result');
+  const btnStart     = document.getElementById('btn-start');
+  const btnClear     = document.getElementById('btn-clear');
+  const btnFinish    = document.getElementById('btn-finish');
+  const btnCta       = document.getElementById('btn-cta');
+  const btnRedo      = document.getElementById('btn-redo');
+  const progressLabel= document.getElementById('progress-label');
+  const paletteRow   = document.getElementById('palette-row');
+  const complimentEl = document.getElementById('compliment-text');
+
+  const cvPreview  = document.getElementById('canvas-preview');
+  const cvLoom     = document.getElementById('canvas-loom');
+  const cvResult   = document.getElementById('canvas-result');
+  const cvParticles= document.getElementById('canvas-particles');
+
+  const ctxPreview  = cvPreview.getContext('2d');
+  const ctxLoom     = cvLoom.getContext('2d');
+  const ctxResult   = cvResult.getContext('2d');
+  const ctxParticles= cvParticles.getContext('2d');
+
+  /* ────────────────────────────────────────
+     Sizing
+  ──────────────────────────────────────── */
+  let cellSize = 32;
+  let loomOffX = 0;
+  let loomOffY = 0;
+  const FRAME  = 24; // frame thickness on loom canvas
+
+  function computeLoomSize() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // available area: full width minus padding, reserve space for header + palette + buttons
+    const reservedH = 56 + 80 + 70; // header + palette + actions
+    const avail = Math.min(vw - 24, vh - reservedH - 16);
+    const inner = Math.max(180, Math.min(avail, 420));
+    cellSize = Math.floor((inner - FRAME * 2) / COLS);
+    const totalInner = cellSize * COLS;
+    const total = totalInner + FRAME * 2;
+    cvLoom.width  = total;
+    cvLoom.height = total;
+    cvLoom.style.width  = total + 'px';
+    cvLoom.style.height = total + 'px';
+    loomOffX = FRAME;
+    loomOffY = FRAME;
+  }
+
+  function resizeParticles() {
+    cvParticles.width  = window.innerWidth;
+    cvParticles.height = window.innerHeight;
+  }
+
+  /* ────────────────────────────────────────
+     Preview canvas (intro)
+  ──────────────────────────────────────── */
+  function drawIntroPreview() {
+    const c = cvPreview;
+    const ctx = ctxPreview;
+    const sz = c.width;
+    const frame = 16;
+    const cs = Math.floor((sz - frame * 2) / COLS);
+
+    ctx.clearRect(0, 0, sz, sz);
+
+    // wooden frame
+    drawWoodFrame(ctx, 0, 0, sz, sz, frame);
+
+    // demo pattern (diagonal + random)
+    const demo = [
+      [0,0,0,2,2,2,0,0,0,0],
+      [0,6,0,2,3,2,0,6,0,0],
+      [6,6,6,2,2,2,6,6,6,0],
+      [0,6,4,0,0,0,4,6,0,0],
+      [0,4,4,4,0,4,4,4,0,0],
+      [0,0,4,4,4,4,4,0,0,0],
+      [0,5,0,4,1,4,0,5,0,0],
+      [5,5,5,0,1,0,5,5,5,0],
+      [0,5,0,1,1,1,0,5,0,0],
+      [0,0,0,0,1,0,0,0,0,0],
+    ];
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let cc = 0; cc < COLS; cc++) {
+        const x = frame + cc * cs;
+        const y = frame + r  * cs;
+        const idx = demo[r][cc];
+        ctx.fillStyle = idx === 0 ? EMPTY_CELL : YARN_COLORS[idx].hex;
+        ctx.fillRect(x, y, cs, cs);
+      }
+    }
+    // warp threads
+    for (let cc = 0; cc <= COLS; cc++) {
+      const x = frame + cc * cs;
+      ctx.strokeStyle = WARP_COLOR;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x, frame);
+      ctx.lineTo(x, frame + ROWS * cs);
+      ctx.stroke();
+    }
+  }
+
+  /* ────────────────────────────────────────
+     Wood frame helper
+  ──────────────────────────────────────── */
+  function drawWoodFrame(ctx, x, y, w, h, frame) {
+    // outer
+    const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+    grad.addColorStop(0, WOOD_MID);
+    grad.addColorStop(0.4, WOOD_LIGHT);
+    grad.addColorStop(1, WOOD_DARK);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 10);
+    ctx.fill();
+
+    // inner inset shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.roundRect(x + frame - 3, y + frame - 3, w - (frame - 3)*2, h - (frame - 3)*2, 4);
+    ctx.fill();
+
+    // inner background
+    ctx.fillStyle = '#F9F1E4';
+    ctx.beginPath();
+    ctx.roundRect(x + frame, y + frame, w - frame * 2, h - frame * 2, 2);
+    ctx.fill();
+
+    // grain lines
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = WOOD_DARK;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const gy = y + 6 + i * (frame / 5);
+      ctx.beginPath();
+      ctx.moveTo(x + 8, gy);
+      ctx.lineTo(x + w - 8, gy);
+      ctx.stroke();
+      // bottom
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + h - 6 - i * (frame / 5));
+      ctx.lineTo(x + w - 8, y + h - 6 - i * (frame / 5));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // corner pegs
+    const pegR = frame * 0.28;
+    const pegPos = [
+      [x + frame * 0.5, y + frame * 0.5],
+      [x + w - frame * 0.5, y + frame * 0.5],
+      [x + frame * 0.5, y + h - frame * 0.5],
+      [x + w - frame * 0.5, y + h - frame * 0.5],
+    ];
+    pegPos.forEach(([px, py]) => {
+      const g2 = ctx.createRadialGradient(px - pegR * 0.3, py - pegR * 0.3, pegR * 0.1, px, py, pegR);
+      g2.addColorStop(0, WOOD_PALE);
+      g2.addColorStop(1, WOOD_DARK);
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.arc(px, py, pegR, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  /* ────────────────────────────────────────
+     Loom drawing
+  ──────────────────────────────────────── */
+  function drawLoom() {
+    const ctx = ctxLoom;
+    const W = cvLoom.width;
+    const H = cvLoom.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // wooden frame
+    drawWoodFrame(ctx, 0, 0, W, H, FRAME);
+
+    // cells
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        drawCell(ctx, r, c, 0);
+      }
+    }
+
+    // warp threads (over cells)
+    ctx.save();
+    ctx.strokeStyle = WARP_COLOR;
+    ctx.lineWidth = 1.5;
+    for (let c = 0; c <= COLS; c++) {
+      const x = loomOffX + c * cellSize;
+      ctx.beginPath();
+      ctx.moveTo(x, loomOffY);
+      ctx.lineTo(x, loomOffY + ROWS * cellSize);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // selected color indicator strip inside top frame
+    ctx.save();
+    ctx.fillStyle = YARN_COLORS[selectedIdx].hex;
+    ctx.globalAlpha = 0.85;
+    const stripH = 5;
+    ctx.beginPath();
+    ctx.roundRect(loomOffX, loomOffY - 11, COLS * cellSize, stripH, 3);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCell(ctx, r, c, animProgress) {
+    const x = loomOffX + c * cellSize;
+    const y = loomOffY + r * cellSize;
+    const color = grid[r][c];
+
+    // base fill
+    ctx.fillStyle = color ? color : EMPTY_CELL;
+    ctx.fillRect(x, y, cellSize, cellSize);
+
+    if (color) {
+      // weft thread texture
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      for (let i = 2; i < cellSize; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + i);
+        ctx.lineTo(x + cellSize, y + i);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // slight shade on bottom/right
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, y + cellSize - 2, cellSize, 2);
+      ctx.fillRect(x + cellSize - 2, y, 2, cellSize);
+      ctx.restore();
+    }
+
+    // cell border
+    ctx.strokeStyle = CELL_BORDER;
+    ctx.lineWidth = 0.7;
+    ctx.strokeRect(x + 0.35, y + 0.35, cellSize - 0.7, cellSize - 0.7);
+
+    // animation ripple
+    if (animProgress > 0 && color) {
+      const scale = 1 + animProgress * 0.25 * Math.sin(animProgress * Math.PI);
+      const cx = x + cellSize / 2;
+      const cy = y + cellSize / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.translate(-cx, -cy);
+      ctx.globalAlpha = (1 - animProgress) * 0.6;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, cellSize, cellSize);
+      ctx.restore();
+    }
+  }
+
+  function redrawAnimatedCells() {
+    const keys = Object.keys(animating);
+    if (keys.length === 0) return false;
+    keys.forEach(key => {
+      const [r, c] = key.split(',').map(Number);
+      const prog = animating[key];
+      // redraw just that cell background first
+      const x = loomOffX + c * cellSize;
+      const y = loomOffY + r * cellSize;
+      ctxLoom.clearRect(x, y, cellSize, cellSize);
+      ctxLoom.fillStyle = '#F9F1E4';
+      ctxLoom.fillRect(x, y, cellSize, cellSize);
+      drawCell(ctxLoom, r, c, prog);
+    });
+    return true;
+  }
+
+  /* ────────────────────────────────────────
+     Particles
+  ──────────────────────────────────────── */
+  function spawnParticles(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8 + (Math.random() - 0.5) * 0.4;
+      const speed = 1.5 + Math.random() * 2.5;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.2,
+        radius: 3 + Math.random() * 3,
+        color,
+        life: 1,
+        decay: 0.04 + Math.random() * 0.03,
+      });
+    }
+  }
+
+  function updateParticles() {
+    ctxParticles.clearRect(0, 0, cvParticles.width, cvParticles.height);
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.12;
+      p.life -= p.decay;
+      ctxParticles.save();
+      ctxParticles.globalAlpha = Math.max(0, p.life);
+      ctxParticles.fillStyle = p.color;
+      ctxParticles.beginPath();
+      ctxParticles.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
+      ctxParticles.fill();
+      ctxParticles.restore();
+    });
+  }
+
+  /* ────────────────────────────────────────
+     Animation loop
+  ──────────────────────────────────────── */
+  function animationLoop() {
+    rafId = requestAnimationFrame(animationLoop);
+    // advance cell animations
+    const keys = Object.keys(animating);
+    keys.forEach(key => {
+      animating[key] += 0.07;
+      if (animating[key] >= 1) delete animating[key];
+    });
+    if (keys.length) {
+      // warp threads need to be on top, so redraw warp after cells
+      redrawAnimatedCells();
+      // redraw warp threads over animated cells
+      ctxLoom.save();
+      ctxLoom.strokeStyle = WARP_COLOR;
+      ctxLoom.lineWidth = 1.5;
+      keys.forEach(key => {
+        const c = parseInt(key.split(',')[1]);
+        const xL = loomOffX + c * cellSize;
+        const xR = loomOffX + (c + 1) * cellSize;
+        for (let xi = xL; xi <= xR; xi += cellSize) {
+          ctxLoom.beginPath();
+          ctxLoom.moveTo(xi, loomOffY);
+          ctxLoom.lineTo(xi, loomOffY + ROWS * cellSize);
+          ctxLoom.stroke();
+        }
+      });
+      ctxLoom.restore();
+    }
+    updateParticles();
+  }
+
+  /* ────────────────────────────────────────
+     Input handling
+  ──────────────────────────────────────── */
+  function getCellFromEvent(e) {
+    const rect = cvLoom.getBoundingClientRect();
+    const scaleX = cvLoom.width  / rect.width;
+    const scaleY = cvLoom.height / rect.height;
+    let clientX, clientY;
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    const cx = (clientX - rect.left)  * scaleX;
+    const cy = (clientY - rect.top)   * scaleY;
+    const c  = Math.floor((cx - loomOffX) / cellSize);
+    const r  = Math.floor((cy - loomOffY) / cellSize);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) return { r, c };
+    return null;
+  }
+
+  let painting = false;
+  let lastCell = null;
+
+  function paintCell(r, c) {
+    const key = r + ',' + c;
+    if (lastCell && lastCell.r === r && lastCell.c === c) return;
+    lastCell = { r, c };
+    const color = YARN_COLORS[selectedIdx].hex;
+    if (grid[r][c] !== color) {
+      if (!grid[r][c]) filledCount++;
+      grid[r][c] = color;
+      animating[key] = 0;
+      // particle spawn at cell center (need to translate to screen coords)
+      const rect   = cvLoom.getBoundingClientRect();
+      const scaleX = rect.width  / cvLoom.width;
+      const scaleY = rect.height / cvLoom.height;
+      const px = rect.left + (loomOffX + c * cellSize + cellSize / 2) * scaleX;
+      const py = rect.top  + (loomOffY + r * cellSize + cellSize / 2) * scaleY;
+      spawnParticles(px, py, color);
+      updateProgress();
+      drawLoom();
+    }
+  }
+
+  cvLoom.addEventListener('mousedown', e => {
+    painting = true;
+    lastCell = null;
+    const cell = getCellFromEvent(e);
+    if (cell) paintCell(cell.r, cell.c);
+  });
+  cvLoom.addEventListener('mousemove', e => {
+    if (!painting) return;
+    const cell = getCellFromEvent(e);
+    if (cell) paintCell(cell.r, cell.c);
+  });
+  window.addEventListener('mouseup', () => { painting = false; lastCell = null; });
+
+  cvLoom.addEventListener('touchstart', e => {
+    e.preventDefault();
+    painting = true;
+    lastCell = null;
+    const cell = getCellFromEvent(e);
+    if (cell) paintCell(cell.r, cell.c);
+  }, { passive: false });
+  cvLoom.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const cell = getCellFromEvent(e);
+    if (cell) paintCell(cell.r, cell.c);
+  }, { passive: false });
+  cvLoom.addEventListener('touchend', () => { painting = false; lastCell = null; });
+
+  /* ────────────────────────────────────────
+     Palette
+  ──────────────────────────────────────── */
+  function buildPalette() {
+    YARN_COLORS.forEach((yarn, i) => {
+      const sw = document.createElement('button');
+      sw.className = 'swatch' + (i === 0 ? ' selected' : '');
+      sw.style.background = yarn.hex;
+      sw.title = yarn.name;
+      sw.setAttribute('aria-label', yarn.name);
+      sw.addEventListener('click', () => {
+        document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+        selectedIdx = i;
+        drawLoom(); // refresh color strip
+      });
+      paletteRow.appendChild(sw);
+    });
+  }
+
+  function updateProgress() {
+    const need = Math.max(0, MIN_FILLED - filledCount);
+    if (need > 0) {
+      progressLabel.textContent = `已填 ${filledCount} / ${MIN_FILLED} 格`;
+      btnFinish.disabled = true;
+    } else {
+      progressLabel.textContent = `已填 ${filledCount} 格 ✓`;
+      btnFinish.disabled = false;
+    }
+  }
+
+  /* ────────────────────────────────────────
+     Result
+  ──────────────────────────────────────── */
+  function renderResult() {
+    const ctx = ctxResult;
+    const sz  = cvResult.width;  // 280
+    const cs  = sz / COLS;
+
+    ctx.clearRect(0, 0, sz, sz);
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const color = grid[r][c] || EMPTY_CELL;
+        ctx.fillStyle = color;
+        ctx.fillRect(c * cs, r * cs, cs, cs);
+
+        // weft texture
+        if (grid[r][c]) {
+          ctx.save();
+          ctx.globalAlpha = 0.18;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth   = 1.2;
+          for (let i = 3; i < cs; i += 5) {
+            ctx.beginPath();
+            ctx.moveTo(c * cs, r * cs + i);
+            ctx.lineTo(c * cs + cs, r * cs + i);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    // warp threads
+    ctx.save();
+    ctx.strokeStyle = 'rgba(160,120,70,0.4)';
+    ctx.lineWidth   = 1.5;
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * cs, 0);
+      ctx.lineTo(c * cs, sz);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // overall linen-like horizontal weft lines
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#6B3F1F';
+    ctx.lineWidth   = 1;
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath();
+      ctx.moveTo(0, r * cs);
+      ctx.lineTo(sz, r * cs);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // compliment
+    const usedColors = new Set(grid.flat().filter(Boolean));
+    const colorNames = [...usedColors].map(h => {
+      const found = YARN_COLORS.find(y => y.hex === h);
+      return found ? found.name : '';
+    }).filter(Boolean);
+    const colorStr = colorNames.length
+      ? colorNames.slice(0, 3).join('、') + (colorNames.length > 3 ? ' 等' : '')
+      : '多彩';
+    complimentEl.innerHTML =
+      `你用了 <strong>${colorStr}</strong> 編織出這件獨特的作品！<br>` +
+      `Mr. Oops 精紡毛線工廠提供超過 80 種顏色，讓你的創意無限延伸。`;
+  }
+
+  /* ────────────────────────────────────────
+     Screen transitions
+  ──────────────────────────────────────── */
+  function showScreen(el) {
+    [screenIntro, screenLoom, screenResult].forEach(s => {
+      if (s === el) s.classList.remove('hidden');
+      else s.classList.add('hidden');
+    });
+  }
+
+  /* ────────────────────────────────────────
+     Celebration particles burst
+  ──────────────────────────────────────── */
+  function burst() {
+    const cx = window.innerWidth  / 2;
+    const cy = window.innerHeight / 2;
+    YARN_COLORS.forEach((y, i) => {
+      setTimeout(() => {
+        for (let j = 0; j < 12; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 5;
+          particles.push({
+            x: cx, y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 3,
+            radius: 4 + Math.random() * 5,
+            color: y.hex,
+            life: 1,
+            decay: 0.018 + Math.random() * 0.015,
+          });
+        }
+      }, i * 60);
+    });
+  }
+
+  /* ────────────────────────────────────────
+     Button handlers
+  ──────────────────────────────────────── */
+  btnStart.addEventListener('click', () => {
+    showScreen(screenLoom);
+    computeLoomSize();
+    drawLoom();
+  });
+
+  btnClear.addEventListener('click', () => {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    filledCount = 0;
+    animating = {};
+    updateProgress();
+    drawLoom();
+  });
+
+  btnFinish.addEventListener('click', () => {
+    burst();
+    showScreen(screenResult);
+    renderResult();
+  });
+
+  btnCta.addEventListener('click', () => {
+    // CTA action — would link to product page
+    alert('即將帶您前往 Mr. Oops 精紡毛線工廠選色頁面！');
+  });
+
+  btnRedo.addEventListener('click', () => {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    filledCount = 0;
+    animating = {};
+    updateProgress();
+    showScreen(screenLoom);
+    computeLoomSize();
+    drawLoom();
+  });
+
+  /* ────────────────────────────────────────
+     Resize
+  ──────────────────────────────────────── */
+  window.addEventListener('resize', () => {
+    resizeParticles();
+    if (!screenLoom.classList.contains('hidden')) {
+      computeLoomSize();
+      drawLoom();
+    }
+  });
+
+  /* ────────────────────────────────────────
+     Init
+  ──────────────────────────────────────── */
+  function init() {
+    resizeParticles();
+    buildPalette();
+    updateProgress();
+    drawIntroPreview();
+    animationLoop();
+  }
+
+  init();
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

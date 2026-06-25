@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open /Users/zack/Desktop/immersive-advertise/index.html)",
+      "WebFetch(domain:www.pexels.com)",
+      "Bash(ipconfig getifaddr *)"
+    ]
+  }
+}

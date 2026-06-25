@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>夾娃娃大師｜挑戰必夾中，贏取神秘好禮</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{background:linear-gradient(160deg,#1a0533 0%,#0d1a33 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif;color:#fff;overflow-x:hidden}
+    .hdr{width:100%;text-align:center;padding:16px 16px 10px;position:relative}
+    .brand{font-size:1.5rem;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#FF9FF3,#FFC2C7,#FFE878);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .slogan{font-size:.75rem;color:rgba(255,255,255,.5);margin-top:3px}
+    .stats{display:flex;gap:12px;justify-content:center;margin-top:10px}
+    .stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:4px 16px;font-size:.82rem;font-weight:700}
+    .stat span{color:#FFE878}
+
+    /* Machine */
+    .machine-wrap{position:relative;width:100%;max-width:400px;padding:0 12px}
+    canvas{display:block;border-radius:16px;box-shadow:0 0 40px rgba(150,80,255,.25),0 20px 60px rgba(0,0,0,.5);width:100%;height:auto}
+
+    /* Controls */
+    .controls{display:flex;gap:12px;align-items:center;padding:14px 16px;max-width:400px;width:100%}
+    .ctrl-btn{flex:1;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:16px;padding:14px 8px;font-size:1.4rem;cursor:pointer;font-family:inherit;color:#fff;transition:all .15s;user-select:none;-webkit-user-select:none}
+    .ctrl-btn:hover{background:rgba(255,255,255,.18);transform:scale(1.05)}
+    .ctrl-btn:active{transform:scale(.95)}
+    .drop-btn{flex:2;background:linear-gradient(135deg,#7C3AED,#EC4899);border:none;border-radius:16px;padding:14px;font-size:.95rem;font-weight:900;cursor:pointer;font-family:inherit;color:#fff;letter-spacing:1px;box-shadow:0 4px 18px rgba(124,58,237,.4);transition:all .15s;user-select:none;-webkit-user-select:none}
+    .drop-btn:hover{transform:scale(1.04)}
+    .drop-btn:active{transform:scale(.96)}
+    .drop-btn:disabled{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);box-shadow:none;cursor:default;transform:none}
+
+    /* Overlay */
+    .ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}
+    .ov.show{display:flex}
+    .ov-box{background:linear-gradient(135deg,#1a0533,#0d1a33);border:1px solid rgba(255,255,255,.2);border-radius:28px;padding:36px 28px;text-align:center;max-width:300px;box-shadow:0 0 60px rgba(150,80,255,.3)}
+    .ov-ic{font-size:4rem;margin-bottom:12px;display:block}
+    .ov-title{font-size:1.6rem;font-weight:900;margin-bottom:8px}
+    .ov-sub{font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:24px;line-height:1.6}
+    .ov-cta{display:block;width:100%;background:linear-gradient(135deg,#7C3AED,#EC4899);color:#fff;border:none;border-radius:14px;padding:15px;font-size:.95rem;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 4px 18px rgba(124,58,237,.35);margin-bottom:10px;transition:transform .15s}
+    .ov-cta:hover{transform:scale(1.04)}
+    .ov-again{background:transparent;border:2px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);border-radius:14px;padding:11px;width:100%;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:transform .15s}
+    .ov-again:hover{transform:scale(1.04)}
+
+    /* Confetti canvas */
+    #cfc{position:fixed;inset:0;pointer-events:none;z-index:999}
+  </style>
+</head>
+<body>
+<canvas id="cfc"></canvas>
+
+<div class="hdr">
+  <div class="brand">🎮 夾娃娃大師</div>
+  <div class="slogan">挑戰必夾中，贏取神秘好禮！</div>
+  <div class="stats">
+    <div class="stat">剩餘機會 <span id="tries">5</span> 次</div>
+    <div class="stat">已獲獎品 <span id="score">0</span> 個</div>
+  </div>
+</div>
+
+<div class="machine-wrap">
+  <canvas id="gc" width="380" height="380"></canvas>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btnL" onclick="moveClaw(-1)">◀</button>
+  <button class="drop-btn" id="btnD" onclick="dropClaw()">⬇ 夾！</button>
+  <button class="ctrl-btn" id="btnR" onclick="moveClaw(1)">▶</button>
+</div>
+
+<!-- Overlays -->
+<div class="ov" id="ovWin">
+  <div class="ov-box">
+    <span class="ov-ic">🎉</span>
+    <div class="ov-title" style="color:#FFE878">夾中了！</div>
+    <div class="ov-sub" id="winMsg">恭喜你夾到了神秘好禮！<br>憑此畫面至門市領取獎品。</div>
+    <button class="ov-cta" onclick="claimPrize()">🎁 立即領獎</button>
+    <button class="ov-again" onclick="closeOverlay('ovWin')">繼續挑戰</button>
+  </div>
+</div>
+
+<div class="ov" id="ovEnd">
+  <div class="ov-box">
+    <span class="ov-ic" id="endIc">😅</span>
+    <div class="ov-title" id="endTitle">機會用完啦！</div>
+    <div class="ov-sub" id="endMsg">下次再挑戰吧！<br>每日可免費挑戰 5 次。</div>
+    <button class="ov-cta" onclick="location.reload()">再玩一次 ↺</button>
+    <button class="ov-again" onclick="claimPrize()">🛒 前往門市購物</button>
+  </div>
+</div>
+
+<script>
+// ── Canvas setup ──
+const gc=document.getElementById('gc');
+const gx=gc.getContext('2d');
+const W=380,H=380;
+
+// ── Game constants ──
+const RAIL_Y=72;          // y of the rail
+const CLAW_MIN_X=60;
+const CLAW_MAX_X=320;
+const CLAW_START_X=190;
+const WIRE_MIN=55;        // wire length at rest
+const WIRE_MAX=250;       // max wire extension
+const DROP_SPEED=3.5;
+const RISE_SPEED=4;
+const MOVE_SPEED=8;
+
+// ── Prize definitions ──
+const PRIZE_DEFS=[
+  {x:90, y:210,r:22,type:'bear', color:'#F4A261',grabbed:false},
+  {x:160,y:240,r:20,type:'star', color:'#FFD166',grabbed:false},
+  {x:230,y:215,r:22,type:'cat',  color:'#A29BFE',grabbed:false},
+  {x:300,y:235,r:20,type:'heart',color:'#EF476F',grabbed:false},
+  {x:130,y:290,r:22,type:'bear', color:'#26C0AB',grabbed:false},
+  {x:260,y:285,r:20,type:'star', color:'#F78C6B',grabbed:false},
+];
+
+// ── Game state ──
+let G={
+  state:'IDLE',   // IDLE | DROPPING | RETURNING
+  clawX:CLAW_START_X,
+  wireLen:WIRE_MIN,
+  grabbedPrize:null,
+  tries:5,
+  score:0,
+  prizes:PRIZE_DEFS.map(p=>({...p})),
+  resultMsg:''
+};
+
+// ── Drawing helpers ──
+function drawMachine(){
+  // Background inside machine
+  gx.fillStyle='#0F1B2E';
+  gx.beginPath();
+  gx.roundRect(6,6,W-12,H-12,12);
+  gx.fill();
+
+  // Colorful prize area background
+  const grad=gx.createLinearGradient(0,120,0,H-10);
+  grad.addColorStop(0,'#1a2540');
+  grad.addColorStop(1,'#0D1220');
+  gx.fillStyle=grad;
+  gx.fillRect(6,115,W-12,H-121);
+
+  // Sparkle dots in prize area
+  gx.fillStyle='rgba(255,255,255,.04)';
+  for(let i=0;i<30;i++){
+    const rx=(Math.sin(i*127.3)*0.5+0.5)*(W-30)+10;
+    const ry=(Math.sin(i*93.7)*0.5+0.5)*160+130;
+    gx.beginPath();gx.arc(rx,ry,1.2,0,Math.PI*2);gx.fill();
+  }
+
+  // Machine border
+  gx.strokeStyle='rgba(150,100,255,.5)';
+  gx.lineWidth=3;
+  gx.beginPath();gx.roundRect(6,6,W-12,H-12,12);gx.stroke();
+
+  // Top panel (control area above rail)
+  gx.fillStyle='rgba(80,40,120,.4)';
+  gx.fillRect(6,6,W-12,112);
+  gx.strokeStyle='rgba(150,100,255,.4)';
+  gx.lineWidth=1.5;
+  gx.beginPath();gx.moveTo(6,118);gx.lineTo(W-6,118);gx.stroke();
+
+  // Rail
+  gx.fillStyle='#8B6FE8';
+  gx.fillRect(20,RAIL_Y-4,W-40,8);
+  gx.fillStyle='rgba(255,255,255,.3)';
+  gx.fillRect(20,RAIL_Y-3,W-40,3);
+
+  // Rail end caps
+  [20,W-20].forEach(rx=>{
+    gx.fillStyle='#6C4DD8';
+    gx.beginPath();gx.arc(rx,RAIL_Y,7,0,Math.PI*2);gx.fill();
+  });
+
+  // Brand label on machine
+  gx.fillStyle='rgba(255,232,120,.7)';
+  gx.font='bold 11px "PingFang TC",system-ui,sans-serif';
+  gx.textAlign='center';
+  gx.fillText('★ 夾娃娃大師 ★',W/2,H-12);
+}
+
+function drawPrizes(){
+  G.prizes.forEach(p=>{
+    if(p.grabbed)return;
+    gx.save();
+    gx.translate(p.x,p.y);
+    if(p.type==='bear')drawBear(gx,p.color,p.r);
+    else if(p.type==='star')drawStar(gx,p.color,p.r);
+    else if(p.type==='heart')drawHeart(gx,p.color,p.r);
+    else if(p.type==='cat')drawCat(gx,p.color,p.r);
+    gx.restore();
+  });
+}
+
+function drawBear(c,color,r){
+  // Ears
+  [[-r*.6,-r*.85],[r*.6,-r*.85]].forEach(([ex,ey])=>{
+    c.beginPath();c.arc(ex,ey,r*.38,0,Math.PI*2);c.fillStyle=color;c.fill();
+    c.beginPath();c.arc(ex,ey,r*.2,0,Math.PI*2);c.fillStyle='rgba(0,0,0,.2)';c.fill();
+  });
+  // Body
+  c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fillStyle=color;c.fill();
+  // Face
+  c.beginPath();c.arc(0,r*.1,r*.55,0,Math.PI*2);c.fillStyle='rgba(255,255,255,.2)';c.fill();
+  // Eyes
+  [[-r*.28,-r*.15],[r*.28,-r*.15]].forEach(([ex,ey])=>{
+    c.beginPath();c.arc(ex,ey,r*.13,0,Math.PI*2);c.fillStyle='#1a0533';c.fill();
+    c.beginPath();c.arc(ex+r*.04,ey-r*.04,r*.04,0,Math.PI*2);c.fillStyle='#fff';c.fill();
+  });
+  // Nose
+  c.beginPath();c.arc(0,r*.1,r*.1,0,Math.PI*2);c.fillStyle='#1a0533';c.fill();
+}
+
+function drawStar(c,color,r){
+  c.beginPath();
+  for(let i=0;i<5;i++){
+    const a=(-Math.PI/2)+(Math.PI*2/5)*i;
+    const a2=a+Math.PI/5;
+    if(i===0)c.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+    else c.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+    c.lineTo(Math.cos(a2)*r*.45,Math.sin(a2)*r*.45);
+  }
+  c.closePath();c.fillStyle=color;c.fill();
+  c.strokeStyle='rgba(255,255,255,.3)';c.lineWidth=1;c.stroke();
+  // Eyes
+  [[-r*.2,-r*.1],[r*.2,-r*.1]].forEach(([ex,ey])=>{
+    c.beginPath();c.arc(ex,ey,r*.1,0,Math.PI*2);c.fillStyle='#1a0533';c.fill();
+  });
+}
+
+function drawHeart(c,color,r){
+  const s=r/22;
+  c.beginPath();
+  c.moveTo(0,r*.4);
+  c.bezierCurveTo(r*1.1,-r*.3,r*1.2,-r*1.1,0,-r*.5);
+  c.bezierCurveTo(-r*1.2,-r*1.1,-r*1.1,-r*.3,0,r*.4);
+  c.fillStyle=color;c.fill();
+  c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=1.5;c.stroke();
+}
+
+function drawCat(c,color,r){
+  // Ears (triangles)
+  [[-r*.5,-r*.85],[r*.5,-r*.85]].forEach(([ex,ey])=>{
+    c.beginPath();
+    c.moveTo(ex,ey+r*.5);c.lineTo(ex-r*.3,ey-r*.3);c.lineTo(ex+r*.3,ey-r*.3);
+    c.closePath();c.fillStyle=color;c.fill();
+  });
+  // Head
+  c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fillStyle=color;c.fill();
+  // Face blush
+  [[-r*.45,r*.25],[r*.45,r*.25]].forEach(([bx,by])=>{
+    c.beginPath();c.arc(bx,by,r*.25,0,Math.PI*2);c.fillStyle='rgba(255,100,100,.25)';c.fill();
+  });
+  // Eyes
+  [[-r*.3,-r*.1],[r*.3,-r*.1]].forEach(([ex,ey])=>{
+    c.beginPath();c.ellipse(ex,ey,r*.14,r*.18,0,0,Math.PI*2);c.fillStyle='#1a0533';c.fill();
+    c.beginPath();c.arc(ex+r*.04,ey-r*.05,r*.05,0,Math.PI*2);c.fillStyle='#fff';c.fill();
+  });
+  // Nose + whiskers
+  c.beginPath();c.arc(0,r*.12,r*.09,0,Math.PI*2);c.fillStyle='#EC4899';c.fill();
+  c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=1;
+  [[-1,1]].forEach(([sx])=>{
+    c.beginPath();c.moveTo(sx*r*.12,r*.12);c.lineTo(sx*r*.55,r*.05);c.stroke();
+    c.beginPath();c.moveTo(sx*r*.12,r*.18);c.lineTo(sx*r*.55,r*.28);c.stroke();
+  });
+}
+
+function drawClaw(){
+  const cx=G.clawX;
+  const wireTop=RAIL_Y+4;
+  const wireBot=wireTop+G.wireLen;
+  const open=G.state!=='RETURNING'||!G.grabbedPrize;
+
+  // Carriage
+  gx.fillStyle='#6C4DD8';
+  gx.beginPath();gx.roundRect(cx-16,RAIL_Y-12,32,16,4);gx.fill();
+  gx.fillStyle='rgba(255,255,255,.2)';
+  gx.beginPath();gx.roundRect(cx-14,RAIL_Y-11,28,6,3);gx.fill();
+
+  // Wire
+  gx.strokeStyle='rgba(200,180,255,.7)';
+  gx.lineWidth=2.5;
+  gx.beginPath();gx.moveTo(cx,wireTop);gx.lineTo(cx,wireBot-16);gx.stroke();
+
+  // Claw head (circle)
+  gx.fillStyle='#9B6FF0';
+  gx.beginPath();gx.arc(cx,wireBot-10,9,0,Math.PI*2);gx.fill();
+  gx.strokeStyle='rgba(255,255,255,.3)';gx.lineWidth=1.5;
+  gx.beginPath();gx.arc(cx,wireBot-10,9,0,Math.PI*2);gx.stroke();
+
+  // 3 Prongs
+  const spread=open?18:8;
+  const prongLen=22;
+  [[-spread,0],[spread,0]].forEach(([ox])=>{
+    gx.strokeStyle='#B38BF8';gx.lineWidth=3;
+    gx.beginPath();
+    gx.moveTo(cx,wireBot-2);
+    gx.lineTo(cx+ox,wireBot+prongLen);
+    gx.stroke();
+    // Prong tip curl
+    gx.beginPath();
+    gx.arc(cx+ox+(ox>0?4:-4),wireBot+prongLen,4,0,Math.PI*2);
+    gx.fillStyle='#9B6FF0';gx.fill();
+  });
+  // Center prong
+  gx.strokeStyle='#B38BF8';gx.lineWidth=3;
+  gx.beginPath();gx.moveTo(cx,wireBot-2);gx.lineTo(cx,wireBot+prongLen);gx.stroke();
+  gx.beginPath();gx.arc(cx,wireBot+prongLen,4,0,Math.PI*2);gx.fillStyle='#9B6FF0';gx.fill();
+
+  // Grabbed prize attached to claw
+  if(G.grabbedPrize&&G.state==='RETURNING'){
+    const p=G.grabbedPrize;
+    gx.save();gx.translate(cx,wireBot+prongLen+p.r);
+    if(p.type==='bear')drawBear(gx,p.color,p.r*.8);
+    else if(p.type==='star')drawStar(gx,p.color,p.r*.8);
+    else if(p.type==='heart')drawHeart(gx,p.color,p.r*.8);
+    else if(p.type==='cat')drawCat(gx,p.color,p.r*.8);
+    gx.restore();
+  }
+}
+
+function drawUI(){
+  // "Tries" indicators
+  for(let i=0;i<5;i++){
+    gx.beginPath();
+    gx.arc(W/2-40+i*20,25,6,0,Math.PI*2);
+    gx.fillStyle=i<G.tries?'#FFE878':'rgba(255,255,255,.15)';
+    gx.fill();
+  }
+  // State message
+  const msgs={IDLE:'← → 移動爪子，按下「夾！」',DROPPING:'夾爪下降中…',RETURNING:G.grabbedPrize?'🎊 夾到了！':'空爪…再試一次！'};
+  gx.fillStyle='rgba(255,255,255,.6)';
+  gx.font='12px "PingFang TC",system-ui,sans-serif';
+  gx.textAlign='center';
+  gx.fillText(msgs[G.state]||'',W/2,48);
+}
+
+// ── Main draw ──
+function draw(){
+  gx.clearRect(0,0,W,H);
+  drawMachine();
+  drawPrizes();
+  drawClaw();
+  drawUI();
+}
+
+// ── Game logic ──
+let animId=null;
+function gameLoop(){
+  if(G.state==='DROPPING'){
+    G.wireLen+=DROP_SPEED;
+    const clawBottom=RAIL_Y+4+G.wireLen+22+4;
+    // Check collision with prizes
+    if(!G.grabbedPrize){
+      G.prizes.forEach(p=>{
+        if(!p.grabbed){
+          const dist=Math.abs(G.clawX-p.x);
+          if(dist<p.r+8&&clawBottom>=p.y-p.r&&clawBottom<=p.y+p.r+16){
+            G.grabbedPrize=p;
+            p.grabbed=true;
+          }
+        }
+      });
+    }
+    if(G.wireLen>=WIRE_MAX||G.grabbedPrize){
+      G.state='RETURNING';
+    }
+  } else if(G.state==='RETURNING'){
+    G.wireLen-=RISE_SPEED;
+    if(G.wireLen<=WIRE_MIN){
+      G.wireLen=WIRE_MIN;
+      G.tries--;
+      document.getElementById('tries').textContent=G.tries;
+      if(G.grabbedPrize){
+        G.score++;
+        document.getElementById('score').textContent=G.score;
+        const won=G.grabbedPrize;
+        G.grabbedPrize=null;
+        G.state='IDLE';
+        draw();
+        showWin(won);
+        return;
+      } else {
+        G.state='IDLE';
+        if(G.tries<=0||(G.prizes.every(p=>p.grabbed))){
+          draw();showEnd();return;
+        }
+        setControls(true);
+      }
+    }
+  }
+  draw();
+  if(G.state!=='IDLE')animId=requestAnimationFrame(gameLoop);
+}
+
+function moveClaw(dir){
+  if(G.state!=='IDLE')return;
+  G.clawX=Math.max(CLAW_MIN_X,Math.min(CLAW_MAX_X,G.clawX+dir*MOVE_SPEED));
+  draw();
+}
+function dropClaw(){
+  if(G.state!=='IDLE')return;
+  setControls(false);
+  G.state='DROPPING';
+  G.grabbedPrize=null;
+  gameLoop();
+}
+function setControls(on){
+  document.getElementById('btnL').disabled=!on;
+  document.getElementById('btnD').disabled=!on;
+  document.getElementById('btnR').disabled=!on;
+}
+
+function showWin(prize){
+  const names={bear:'泰迪熊布偶',star:'星星公仔',heart:'愛心抱枕',cat:'貓咪玩偶'};
+  document.getElementById('winMsg').innerHTML=`恭喜夾到【${names[prize.type]||'神秘獎品'}】！<br>憑此畫面至門市免費領取 🎁`;
+  document.getElementById('ovWin').classList.add('show');
+  launchConfetti();
+}
+function showEnd(){
+  const got=G.score;
+  document.getElementById('endIc').textContent=got>0?'🏆':'😅';
+  document.getElementById('endTitle').textContent=got>0?`太強了！獲得 ${got} 個獎品`:'下次一定夾得到！';
+  document.getElementById('endMsg').innerHTML=got>0?'前往門市出示此畫面<br>兌換你的精彩好禮 🎁':'挑戰次數用完啦～<br>每日可免費挑戰 5 次！';
+  document.getElementById('ovEnd').classList.add('show');
+}
+function closeOverlay(id){
+  document.getElementById(id).classList.remove('show');
+  if(G.tries>0)setControls(true);
+  else showEnd();
+}
+function claimPrize(){alert('🎁 請至全台夾娃娃大師門市\n出示此畫面即可兌換獎品！\n\n限時活動：2026/06/17 – 2026/07/31');}
+
+// ── Confetti ──
+function launchConfetti(){
+  const c=document.getElementById('cfc');
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const ctx2=c.getContext('2d');
+  const cols=['#FF9FF3','#FFE878','#67E8F9','#fff','#A78BFA'];
+  const ps=Array.from({length:100},()=>({
+    x:Math.random()*c.width,y:-20-Math.random()*c.height,
+    w:6+Math.random()*6,h:3+Math.random()*3,
+    vy:4+Math.random()*5,vx:(Math.random()-.5)*3,
+    rot:Math.random()*360,rs:(Math.random()-.5)*10,
+    col:cols[Math.floor(Math.random()*cols.length)]
+  }));
+  let t=0;
+  function frame(){
+    ctx2.clearRect(0,0,c.width,c.height);
+    ps.forEach(p=>{
+      p.y+=p.vy;p.x+=p.vx;p.rot+=p.rs;
+      ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.rot*Math.PI/180);
+      ctx2.globalAlpha=Math.max(0,1-t/80);
+      ctx2.fillStyle=p.col;ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx2.restore();
+    });
+    if(++t<90)requestAnimationFrame(frame);
+    else ctx2.clearRect(0,0,c.width,c.height);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft')moveClaw(-1);
+  else if(e.key==='ArrowRight')moveClaw(1);
+  else if(e.key===' '||e.key==='ArrowDown'){e.preventDefault();dropClaw();}
+});
+
+// ── Mobile hold buttons ──
+let holdId=null;
+function startHold(dir){
+  moveClaw(dir);
+  holdId=setInterval(()=>moveClaw(dir),80);
+}
+function stopHold(){clearInterval(holdId);holdId=null;}
+document.getElementById('btnL').addEventListener('pointerdown',()=>startHold(-1));
+document.getElementById('btnR').addEventListener('pointerdown',()=>startHold(1));
+['pointerup','pointerleave','pointercancel'].forEach(ev=>{
+  document.getElementById('btnL').addEventListener(ev,stopHold);
+  document.getElementById('btnR').addEventListener(ev,stopHold);
+});
+
+// ── Init ──
+draw();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

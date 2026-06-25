@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>晨光刮刮樂｜刮出你的幸運咖啡</title>
+<style>
+  :root {
+    --gold: #f5c542; --cream: #fff8ee;
+    --brown: #6b3a1f; --orange: #e8682a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow-x: hidden; }
+  body {
+    font-family: "Noto Sans TC", system-ui, -apple-system, sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #3d1a00 0%, #1a0a00 70%);
+    color: var(--cream);
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 30px;
+  }
+  .header { width: 100%; padding: 24px 20px 0; text-align: center; }
+  .brand { font-size: 14px; letter-spacing: 0.3em; color: var(--gold); opacity: 0.85; }
+  .headline {
+    font-size: clamp(26px, 7vw, 42px); font-weight: 900; line-height: 1.2; margin-top: 8px;
+    background: linear-gradient(135deg, #f5c542 0%, #ffaa00 50%, #f5c542 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .sub { font-size: 14px; color: rgba(255,248,238,0.65); margin-top: 8px; }
+
+  /* coffee cup SVG area */
+  .cup-wrap { margin: 18px auto 0; position: relative; width: 80px; height: 74px; }
+  .steam { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .sl { width: 4px; height: 20px; background: linear-gradient(to top, rgba(255,255,255,0.45), transparent); border-radius: 2px; animation: rise 1.6s ease-in-out infinite; }
+  .sl:nth-child(2) { animation-delay: 0.4s; height: 26px; }
+  .sl:nth-child(3) { animation-delay: 0.8s; }
+  @keyframes rise { 0%{transform:scaleY(0.3) translateY(8px);opacity:0} 50%{opacity:1} 100%{transform:scaleY(1.2) translateY(-8px);opacity:0} }
+
+  /* Scratch card */
+  .scratch-container { margin: 22px auto 0; width: min(340px, 92vw); }
+  .scratch-label { text-align: center; font-size: 12px; letter-spacing: 0.12em; color: rgba(255,248,238,0.45); margin-bottom: 10px; }
+  .scratch-wrapper {
+    position: relative; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 0 30px rgba(245,197,66,0.22), 0 8px 32px rgba(0,0,0,0.5);
+    border: 2px solid rgba(245,197,66,0.28);
+  }
+  .prize-layer {
+    width: 100%; min-height: 220px; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 28px 20px; user-select: none;
+  }
+  .prize-emoji { font-size: 56px; line-height: 1; }
+  .prize-title { font-size: 22px; font-weight: 900; color: #1a0a00; margin-top: 12px; }
+  .prize-desc { font-size: 13px; color: #5a3a1a; margin-top: 6px; text-align: center; }
+  #scratchCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 14px; cursor: crosshair; touch-action: none; }
+  .progress-wrap { margin-top: 12px; background: rgba(255,255,255,0.1); border-radius: 100px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--orange), var(--gold)); border-radius: 100px; width: 0%; transition: width 0.2s; }
+  .progress-hint { text-align: center; font-size: 12px; color: rgba(255,248,238,0.45); margin-top: 6px; }
+  .revealed-badge { display: none; text-align: center; margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--gold); animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes popIn { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  /* CTA */
+  .cta-area { margin: 18px auto 0; width: min(340px, 92vw); text-align: center; }
+  .cta-btn {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, #f5c542, #e8682a);
+    color: #1a0a00; font-weight: 900; font-size: 17px;
+    padding: 16px 36px; border-radius: 100px; border: none; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(245,197,66,0.38);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .cta-btn:active { transform: scale(0.97); }
+  .cta-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .cta-note { font-size: 12px; color: rgba(255,248,238,0.4); margin-top: 10px; }
+  .reset-btn { display: none; background: transparent; border: 1px solid rgba(245,197,66,0.4); color: var(--gold); font-size: 13px; padding: 8px 20px; border-radius: 100px; cursor: pointer; margin-top: 12px; }
+
+  /* Floating beans */
+  .beans { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .bean { position: absolute; width: 10px; height: 14px; background: radial-gradient(ellipse at 40% 35%, #7b4f2e, #3b1f0a); border-radius: 50%; opacity: 0.12; animation: floatBean linear infinite; }
+  @keyframes floatBean { 0%{transform:translateY(110vh) rotate(0deg)} 100%{transform:translateY(-20vh) rotate(360deg)} }
+
+  /* Confetti canvas */
+  #confettiCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+</style>
+</head>
+<body>
+<div class="beans" id="beans"></div>
+<canvas id="confettiCanvas"></canvas>
+
+<header class="header">
+  <div class="brand">☕ Morning Glow Coffee</div>
+  <h1 class="headline">刮刮樂<br/>刮出幸運好禮</h1>
+  <p class="sub">每天一次・限時限量・刮完即止</p>
+  <div class="cup-wrap">
+    <div class="steam"><div class="sl"></div><div class="sl"></div><div class="sl"></div></div>
+    <svg width="70" height="60" viewBox="0 0 70 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 18 L15 52 Q15 56 19 56 L51 56 Q55 56 55 52 L60 18 Z" fill="#6b3a1f" stroke="#f5c542" stroke-width="1.5"/>
+      <path d="M10 18 L60 18 Q62 18 62 15 L62 13 Q62 10 60 10 L10 10 Q8 10 8 13 L8 15 Q8 18 10 18 Z" fill="#8b4a2f"/>
+      <path d="M55 28 Q65 28 65 35 Q65 42 55 42" stroke="#f5c542" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="35" cy="18" rx="22" ry="5" fill="rgba(200,140,80,0.25)"/>
+    </svg>
+  </div>
+</header>
+
+<div class="scratch-container">
+  <div class="scratch-label">▼ 用手指刮開銀色區域</div>
+  <div class="scratch-wrapper" id="scratchWrapper">
+    <div class="prize-layer">
+      <div class="prize-emoji" id="prizeEmoji">🎁</div>
+      <div class="prize-title" id="prizeTitle"></div>
+      <div class="prize-desc" id="prizeDesc"></div>
+    </div>
+    <canvas id="scratchCanvas"></canvas>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="progress-hint" id="progressHint">刮開 70% 即可揭曉</div>
+  <div class="revealed-badge" id="revealedBadge">🎉 恭喜！獎項已揭曉！</div>
+</div>
+
+<div class="cta-area">
+  <button class="cta-btn" id="ctaBtn" disabled>立即兌換好禮</button>
+  <p class="cta-note">*活動每日 09:00–23:00・每人每日限刮一次</p>
+  <button class="reset-btn" id="resetBtn">再刮一張 ↺</button>
+</div>
+
+<script>
+(function(){
+  /* ── Prizes ── */
+  const PRIZES = [
+    { emoji:"☕", title:"免費拿鐵一杯", desc:"憑券至門市兌換・限今日有效", color:"#2ecc71" },
+    { emoji:"🧁", title:"限定馬卡龍兩入", desc:"指定口味隨機出貨・可堂食或外帶", color:"#e67e22" },
+    { emoji:"💳", title:"消費折抵 $50", desc:"單筆消費 $150 以上適用", color:"#3498db" },
+    { emoji:"🫙", title:"精品掛耳咖啡 ×3", desc:"莊園單品・手沖風味", color:"#9b59b6" },
+    { emoji:"🎟️", title:"咖啡師體驗課優惠券", desc:"原價 $800・限期 7 天", color:"#e74c3c" },
+    { emoji:"✨", title:"再試一次！", desc:"明天記得再刮，好運即將到來", color:"#95a5a6" },
+  ];
+  const W = [15, 20, 25, 10, 5, 25];
+  function pickPrize() {
+    const t = W.reduce((a,b)=>a+b,0); let r = Math.random()*t;
+    for(let i=0;i<PRIZES.length;i++){ r-=W[i]; if(r<=0) return PRIZES[i]; }
+    return PRIZES[PRIZES.length-1];
+  }
+
+  let currentPrize = pickPrize();
+  function renderPrize(p) {
+    document.getElementById('prizeEmoji').textContent = p.emoji;
+    document.getElementById('prizeTitle').textContent = p.title;
+    document.getElementById('prizeTitle').style.color = p.color;
+    document.getElementById('prizeDesc').textContent = p.desc;
+  }
+  renderPrize(currentPrize);
+
+  /* ── Floating beans ── */
+  const beansEl = document.getElementById('beans');
+  for(let i=0;i<14;i++){
+    const b = document.createElement('div'); b.className='bean';
+    b.style.cssText=`left:${Math.random()*100}%;animation-duration:${8+Math.random()*14}s;animation-delay:-${Math.random()*15}s;width:${8+Math.random()*10}px;height:${11+Math.random()*12}px;`;
+    beansEl.appendChild(b);
+  }
+
+  /* ── Pure-JS confetti ── */
+  const confettiCanvas = document.getElementById('confettiCanvas');
+  const cctx = confettiCanvas.getContext('2d');
+  let particles = [];
+  let animId = null;
+  const COLORS = ['#f5c542','#e8682a','#fff8ee','#2ecc71','#3498db','#e74c3c'];
+
+  function resizeConfetti() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+  resizeConfetti();
+  window.addEventListener('resize', resizeConfetti);
+
+  function spawnConfetti(n) {
+    for(let i=0;i<n;i++){
+      particles.push({
+        x: Math.random()*confettiCanvas.width,
+        y: Math.random()*confettiCanvas.height*0.5 - 20,
+        vx: (Math.random()-0.5)*6,
+        vy: Math.random()*4+2,
+        w: Math.random()*10+5,
+        h: Math.random()*6+3,
+        rot: Math.random()*360,
+        rv: (Math.random()-0.5)*8,
+        color: COLORS[Math.floor(Math.random()*COLORS.length)],
+        alpha: 1,
+        life: 180+Math.floor(Math.random()*60)
+      });
+    }
+    if(!animId) animConfetti();
+  }
+
+  function animConfetti() {
+    cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    particles = particles.filter(p=>p.life>0);
+    for(const p of particles){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.rot+=p.rv; p.life--;
+      p.alpha = p.life<60 ? p.life/60 : 1;
+      cctx.save(); cctx.globalAlpha=p.alpha;
+      cctx.translate(p.x,p.y); cctx.rotate(p.rot*Math.PI/180);
+      cctx.fillStyle=p.color;
+      cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      cctx.restore();
+    }
+    animId = particles.length ? requestAnimationFrame(animConfetti) : null;
+  }
+
+  /* ── Canvas scratch ── */
+  const wrapper = document.getElementById('scratchWrapper');
+  const canvas = document.getElementById('scratchCanvas');
+  const ctx = canvas.getContext('2d');
+  let revealed = false;
+
+  function initCanvas() {
+    const w = wrapper.offsetWidth;
+    const h = wrapper.offsetHeight || 220;
+    canvas.width = w; canvas.height = h;
+    const grad = ctx.createLinearGradient(0,0,w,h);
+    grad.addColorStop(0,'#bfc2c7'); grad.addColorStop(0.35,'#e8eaed');
+    grad.addColorStop(0.5,'#c8cacf'); grad.addColorStop(0.7,'#f0f2f5'); grad.addColorStop(1,'#a8aaaf');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
+    // texture
+    ctx.fillStyle='rgba(255,255,255,0.07)';
+    for(let i=0;i<280;i++){ ctx.beginPath(); ctx.arc(Math.random()*w,Math.random()*h,Math.random()*2.5,0,Math.PI*2); ctx.fill(); }
+    // hint
+    ctx.save(); ctx.globalAlpha=0.38;
+    ctx.fillStyle='#666';
+    const fs = Math.min(w/6,38);
+    ctx.font=`bold ${fs}px system-ui,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('► 刮開我 ◄',w/2,h/2);
+    ctx.restore();
+  }
+
+  function getPos(e){
+    const r=canvas.getBoundingClientRect();
+    if(e.touches) return {x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};
+    return {x:e.clientX-r.left,y:e.clientY-r.top};
+  }
+
+  function scratch(x,y){
+    ctx.globalCompositeOperation='destination-out';
+    ctx.beginPath(); ctx.arc(x,y,30,0,Math.PI*2); ctx.fill();
+    updatePct();
+  }
+
+  function updatePct(){
+    if(revealed) return;
+    const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let t=0; for(let i=3;i<d.length;i+=4) if(d[i]<128) t++;
+    const pct=(t/(canvas.width*canvas.height))*100;
+    document.getElementById('progressBar').style.width=Math.min(pct,100)+'%';
+    if(pct>=70) revealPrize();
+  }
+
+  function revealPrize(){
+    if(revealed) return; revealed=true;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    document.getElementById('progressBar').style.width='100%';
+    document.getElementById('progressHint').style.display='none';
+    document.getElementById('revealedBadge').style.display='block';
+    document.getElementById('ctaBtn').disabled=false;
+    document.getElementById('resetBtn').style.display='inline-block';
+    spawnConfetti(150);
+  }
+
+  let down=false;
+  canvas.addEventListener('mousedown',e=>{down=true;const p=getPos(e);scratch(p.x,p.y);});
+  canvas.addEventListener('mousemove',e=>{if(!down)return;const p=getPos(e);scratch(p.x,p.y);});
+  canvas.addEventListener('mouseup',()=>down=false);
+  canvas.addEventListener('mouseleave',()=>down=false);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();down=true;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!down)return;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchend',()=>down=false);
+
+  document.getElementById('ctaBtn').addEventListener('click',()=>{
+    alert('🎉 兌換成功！\n\n獎品：'+currentPrize.title+'\n'+currentPrize.desc+'\n\n請截圖此畫面至晨光咖啡門市出示。');
+  });
+
+  document.getElementById('resetBtn').addEventListener('click',()=>{
+    revealed=false;
+    document.getElementById('progressBar').style.width='0%';
+    document.getElementById('progressHint').style.display='block';
+    document.getElementById('revealedBadge').style.display='none';
+    document.getElementById('ctaBtn').disabled=true;
+    document.getElementById('resetBtn').style.display='none';
+    currentPrize=pickPrize();
+    renderPrize(currentPrize);
+    initCanvas();
+  });
+
+  window.addEventListener('load',initCanvas);
+  setTimeout(initCanvas,120);
+})();
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

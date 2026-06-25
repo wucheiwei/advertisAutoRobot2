@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js\" -o /tmp/mft.js)",
+      "Bash(grep -o '.\\\\{160\\\\}this.userDeviceId = s, this.environmentDeviceId = c' /tmp/mft.js)",
+      "Bash(grep -o 'class [A-Za-z]* {[^!]\\\\{0,40\\\\}constructor\\({[^}]*}\\)' /tmp/mft.js)",
+      "Bash(grep -o 'constructor\\({[a-zA-Z:, =._]*}\\)' /tmp/mft.js)",
+      "Bash(grep -o 'o = {[^;]\\\\{0,120\\\\}video.facingMode = \"user\"' /tmp/mft.js)"
+    ]
+  }
+}

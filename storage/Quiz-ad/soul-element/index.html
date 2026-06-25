@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>靈魂元素測驗 × AURA 香氛</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --fire: #FF6B35; --water: #4FC3F7;
+      --earth: #81C784; --air: #CE93D8;
+      --bg: #080818; --card: #12122A;
+    }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* ── Starfield ── */
+    #starfield {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+    /* ── Layout ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 440px;
+      padding: 28px 20px 40px;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center;
+    }
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; animation: fadeUp .5s ease both; }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(24px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    /* ── Intro ── */
+    .brand {
+      font-size: 2.8rem; font-weight: 900;
+      letter-spacing: .35em; text-align: center;
+      background: linear-gradient(135deg,#FF6B35,#CE93D8,#4FC3F7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .brand-sub {
+      font-size: .78rem; letter-spacing: .22em;
+      color: rgba(255,255,255,.4); margin-bottom: 44px; text-align: center;
+    }
+    .intro-title {
+      font-size: 1.65rem; font-weight: 700;
+      text-align: center; line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .intro-sub {
+      font-size: .92rem; color: rgba(255,255,255,.65);
+      text-align: center; line-height: 1.9; margin-bottom: 40px;
+    }
+    .elements-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 10px; width: 100%; margin-bottom: 44px;
+    }
+    .el-chip {
+      padding: 14px 6px; border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      text-align: center; font-size: 1.6rem;
+    }
+    .el-chip small {
+      display: block; font-size: .65rem;
+      letter-spacing: .12em; margin-top: 6px;
+      color: rgba(255,255,255,.5);
+    }
+    /* ── CTA Button ── */
+    .btn {
+      width: 100%; padding: 17px;
+      border: none; border-radius: 50px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; letter-spacing: .1em;
+      background: linear-gradient(135deg,#FF6B35,#CE93D8);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(206,147,216,.35);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(206,147,216,.55); }
+    .btn:active { transform: translateY(0); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.65);
+      padding: 14px; border-radius: 50px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: .9rem; cursor: pointer;
+      width: 100%; margin-top: 12px;
+      transition: all .2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.07); color: #fff; }
+    /* ── Progress ── */
+    .prog-wrap { width: 100%; margin-bottom: 36px; }
+    .prog-meta {
+      display: flex; justify-content: space-between;
+      font-size: .78rem; color: rgba(255,255,255,.45);
+      margin-bottom: 8px;
+    }
+    .prog-bar {
+      height: 4px; background: rgba(255,255,255,.1);
+      border-radius: 2px; overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg,#FF6B35,#CE93D8);
+      border-radius: 2px; transition: width .55s ease;
+    }
+    /* ── Question ── */
+    .q-label {
+      font-size: .72rem; letter-spacing: .25em;
+      color: rgba(255,255,255,.35);
+      margin-bottom: 14px; text-align: center;
+    }
+    .q-text {
+      font-size: 1.3rem; font-weight: 700;
+      text-align: center; line-height: 1.6;
+      margin-bottom: 34px;
+    }
+    .choices { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+    .c-btn {
+      width: 100%; padding: 15px 18px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      color: #fff; font-family: 'Noto Sans TC', sans-serif;
+      font-size: .93rem; text-align: left;
+      cursor: pointer; display: flex; align-items: center;
+      gap: 14px; transition: all .22s;
+    }
+    .c-btn:hover {
+      background: rgba(255,255,255,.1);
+      border-color: rgba(255,255,255,.28);
+      transform: translateX(5px);
+    }
+    .c-btn.picked {
+      background: rgba(206,147,216,.18);
+      border-color: #CE93D8;
+    }
+    .c-key {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.1); flex-shrink: 0;
+      display: flex; align-items: center;
+      justify-content: center; font-size: .8rem; font-weight: 700;
+    }
+    /* ── Result ── */
+    .r-glow {
+      width: 120px; height: 120px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.6rem; margin-bottom: 20px;
+      position: relative;
+    }
+    .r-glow::after {
+      content: ''; position: absolute; inset: -12px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--el-color) 0%, transparent 70%);
+      opacity: .25; animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:.25} 50%{transform:scale(1.15);opacity:.45} }
+    .r-el-name {
+      font-size: .78rem; letter-spacing: .3em;
+      color: rgba(255,255,255,.5); margin-bottom: 8px;
+    }
+    .r-title {
+      font-size: 2rem; font-weight: 900;
+      margin-bottom: 20px; text-align: center;
+    }
+    .r-desc {
+      font-size: .93rem; color: rgba(255,255,255,.72);
+      text-align: center; line-height: 1.95; margin-bottom: 28px;
+    }
+    .perfume-box {
+      width: 100%; padding: 22px 20px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px; text-align: center; margin-bottom: 30px;
+    }
+    .p-label {
+      font-size: .7rem; letter-spacing: .22em;
+      color: rgba(255,255,255,.38); margin-bottom: 10px;
+    }
+    .p-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .p-note { font-size: .83rem; color: rgba(255,255,255,.52); }
+  </style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="wrapper">
+
+  <!-- INTRO -->
+  <div class="screen active" id="s-intro">
+    <div class="brand">AURA</div>
+    <div class="brand-sub">靈魂香氛 · 元素系列</div>
+    <div class="intro-title">你的靈魂<br>屬於哪個元素？</div>
+    <div class="intro-sub">五個問題，喚醒你內在的元素天賦<br>找到獨一無二的靈魂香氛</div>
+    <div class="elements-grid">
+      <div class="el-chip">🔥<small>火 FIRE</small></div>
+      <div class="el-chip">💧<small>水 WATER</small></div>
+      <div class="el-chip">🌿<small>土 EARTH</small></div>
+      <div class="el-chip">🌬️<small>風 AIR</small></div>
+    </div>
+    <button class="btn" onclick="startQuiz()">開始元素測驗</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="s-quiz">
+    <div class="prog-wrap">
+      <div class="prog-meta">
+        <span id="pLabel">問題 1 / 5</span>
+        <span id="pPct">0%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="pFill" style="width:0%"></div></div>
+    </div>
+    <div class="q-label" id="qLabel">QUESTION 01</div>
+    <div class="q-text" id="qText"></div>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="s-result">
+    <div class="r-glow" id="rGlow"></div>
+    <div class="r-el-name" id="rElName"></div>
+    <div class="r-title" id="rTitle"></div>
+    <div class="r-desc" id="rDesc"></div>
+    <div class="perfume-box">
+      <div class="p-label">✦ 你的專屬靈魂香氛 ✦</div>
+      <div class="p-name" id="pName"></div>
+      <div class="p-note" id="pNote"></div>
+    </div>
+    <button class="btn" id="rCTA" onclick="goCTA()">立即探索專屬香氛 →</button>
+    <button class="btn-ghost" onclick="resetQuiz()">再測一次</button>
+  </div>
+</div>
+
+<script>
+/* ── Starfield ── */
+(function () {
+  var cv = document.getElementById('starfield');
+  var ct = cv.getContext('2d');
+  var stars = [];
+  function init() {
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    stars = [];
+    for (var i = 0; i < 80; i++) {
+      stars.push({
+        x: Math.random() * cv.width, y: Math.random() * cv.height,
+        r: Math.random() * 1.2 + 0.3,
+        a: Math.random() * 0.6 + 0.1,
+        vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15,
+        pa: Math.random() * Math.PI * 2, ps: Math.random() * 0.02 + 0.005
+      });
+    }
+  }
+  function tick() {
+    ct.clearRect(0, 0, cv.width, cv.height);
+    stars.forEach(function (s) {
+      s.pa += s.ps;
+      var alpha = s.a * (0.6 + 0.4 * Math.sin(s.pa));
+      ct.beginPath(); ct.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ct.fillStyle = 'rgba(206,147,216,' + alpha + ')'; ct.fill();
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < 0) s.x = cv.width; if (s.x > cv.width) s.x = 0;
+      if (s.y < 0) s.y = cv.height; if (s.y > cv.height) s.y = 0;
+    });
+    requestAnimationFrame(tick);
+  }
+  init(); tick();
+  window.addEventListener('resize', init);
+})();
+
+/* ── Data ── */
+var QUESTIONS = [
+  {
+    text: '假日午後，你最想做什麼？',
+    choices: [
+      { text: '去爬山衝浪，流汗冒險', el: 'fire' },
+      { text: '泡個長浴，聽音樂放空', el: 'water' },
+      { text: '下廚煮頓好料，待在家', el: 'earth' },
+      { text: '逛美術館或舊書店', el: 'air' }
+    ]
+  },
+  {
+    text: '遇到壓力，你第一反應是？',
+    choices: [
+      { text: '直接行動，先做再說', el: 'fire' },
+      { text: '靜下來，分析所有選項', el: 'water' },
+      { text: '找親友傾訴心情', el: 'earth' },
+      { text: '散步聽歌，讓思緒漂流', el: 'air' }
+    ]
+  },
+  {
+    text: '你夢想中的居家香氣是？',
+    choices: [
+      { text: '濃郁煙燻木質，霸氣有力', el: 'fire' },
+      { text: '淡淡海鹽，清冽透涼', el: 'water' },
+      { text: '泥土青草，自然溫厚', el: 'earth' },
+      { text: '白麝香，若有若無飄渺', el: 'air' }
+    ]
+  },
+  {
+    text: '深夜 12 點，你最可能在做什麼？',
+    choices: [
+      { text: '還在工作或衝刺目標', el: 'fire' },
+      { text: '寫日記或靜靜發呆', el: 'water' },
+      { text: '整理房間或準備明日便當', el: 'earth' },
+      { text: '畫畫、寫作或追紀錄片', el: 'air' }
+    ]
+  },
+  {
+    text: '你最欣賞朋友的哪種特質？',
+    choices: [
+      { text: '熱情勇敢，說做就做', el: 'fire' },
+      { text: '溫柔體貼，善解人意', el: 'water' },
+      { text: '踏實可靠，始終如一', el: 'earth' },
+      { text: '天馬行空，充滿創意', el: 'air' }
+    ]
+  }
+];
+
+var RESULTS = {
+  fire: {
+    icon: '🔥', color: '#FF6B35', elName: '火 · FIRE', title: '熱情探索者',
+    desc: '你充滿活力，勇於挑戰，天生的行動力讓你總是走在最前線。失敗只會讓你燃得更烈，每次挫折都成為你的燃料。',
+    perfume: '燃 · IGNITE', note: '煙燻木質調 / 黑胡椒 · 雪松 · 龍涎香'
+  },
+  water: {
+    icon: '💧', color: '#4FC3F7', elName: '水 · WATER', title: '深思靜謐者',
+    desc: '你敏銳細膩，善於感知他人情緒，流動是你的本能。最複雜的局面中，你能找到最柔軟的解法。',
+    perfume: '流 · FLOW', note: '海鹽茶香調 / 海鹽 · 龍井茶 · 鳶尾花'
+  },
+  earth: {
+    icon: '🌿', color: '#81C784', elName: '土 · EARTH', title: '穩健守護者',
+    desc: '你腳踏實地，溫暖包容，是身邊所有人的定海神針。你的穩定如大地，讓每個靠近你的人都感到安心。',
+    perfume: '根 · ROOT', note: '森林廣藿香調 / 廣藿香 · 苔蘚 · 岩蘭草'
+  },
+  air: {
+    icon: '🌬️', color: '#CE93D8', elName: '風 · AIR', title: '自由創想者',
+    desc: '你飄逸靈動，不受框架束縛，帶給世界全新的視角。像風一樣觸碰萬物，留下印記卻難以被定義。',
+    perfume: '翔 · SOAR', note: '雲霧白麝香調 / 白麝香 · 鈴蘭 · 薄霧茉莉'
+  }
+};
+
+var scores = { fire: 0, water: 0, earth: 0, air: 0 };
+var currentQ = 0;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz() {
+  scores = { fire: 0, water: 0, earth: 0, air: 0 };
+  currentQ = 0;
+  showScreen('s-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  var q = QUESTIONS[currentQ];
+  var pct = Math.round((currentQ / QUESTIONS.length) * 100);
+  document.getElementById('pLabel').textContent = '問題 ' + (currentQ + 1) + ' / ' + QUESTIONS.length;
+  document.getElementById('pPct').textContent = pct + '%';
+  document.getElementById('pFill').style.width = pct + '%';
+  document.getElementById('qLabel').textContent = 'QUESTION ' + ('0' + (currentQ + 1)).slice(-2);
+  document.getElementById('qText').textContent = q.text;
+  var keys = ['A', 'B', 'C', 'D'];
+  var box = document.getElementById('choices');
+  box.innerHTML = '';
+  q.choices.forEach(function (c, i) {
+    var btn = document.createElement('button');
+    btn.className = 'c-btn';
+    btn.innerHTML = '<span class="c-key">' + keys[i] + '</span><span>' + c.text + '</span>';
+    btn.onclick = function () { pick(c.el, btn); };
+    box.appendChild(btn);
+  });
+}
+
+function pick(el, btn) {
+  document.querySelectorAll('.c-btn').forEach(function (b) { b.classList.remove('picked'); b.disabled = true; });
+  btn.classList.add('picked');
+  scores[el]++;
+  setTimeout(function () {
+    currentQ++;
+    if (currentQ < QUESTIONS.length) {
+      var sq = document.getElementById('s-quiz');
+      sq.classList.remove('active');
+      setTimeout(function () { sq.classList.add('active'); renderQ(); }, 280);
+    } else {
+      showResult();
+    }
+  }, 520);
+}
+
+function showResult() {
+  var winner = Object.keys(scores).reduce(function (a, b) { return scores[a] >= scores[b] ? a : b; });
+  var r = RESULTS[winner];
+  var glow = document.getElementById('rGlow');
+  glow.textContent = r.icon;
+  glow.style.setProperty('--el-color', r.color);
+  glow.style.background = 'radial-gradient(circle, ' + r.color + '22 0%, transparent 70%)';
+  document.getElementById('rElName').textContent = r.elName;
+  document.getElementById('rTitle').textContent = r.title;
+  document.getElementById('rDesc').textContent = r.desc;
+  document.getElementById('pName').textContent = r.perfume;
+  document.getElementById('pNote').textContent = r.note;
+  showScreen('s-result');
+  setTimeout(function () {
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 120, spread: 75, origin: { y: 0.55 }, colors: ['#FF6B35', '#CE93D8', '#4FC3F7', '#81C784'] });
+    }
+  }, 400);
+}
+
+function goCTA() { alert('AURA 靈魂香氛元素系列\n2026 夏季限定開賣！\n\n點擊確定加入候補名單，搶先嗅聞。'); }
+function resetQuiz() { showScreen('s-intro'); }
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>

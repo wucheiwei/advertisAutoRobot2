@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登入 · 媒體</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans TC', system-ui, sans-serif;
+      background: #170a0e;
+      background-image: radial-gradient(ellipse at 50% 30%, #3a1620 0%, #170a0e 65%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #f0d9a8;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: #2a1018;
+      border: 1px solid rgba(201,168,76,0.28);
+      border-radius: 2px;
+      box-shadow:
+        0 0 0 1px rgba(201,168,76,0.06),
+        0 28px 64px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(201,168,76,0.1);
+      padding: 48px 44px 40px;
+      width: min(92vw, 400px);
+      text-align: center;
+    }
+    .logo {
+      display: block;
+      height: 34px; width: auto;
+      margin: 0 auto 28px;
+      mix-blend-mode: screen;
+      filter: brightness(1.1);
+    }
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px; font-weight: 600;
+      color: #c9a84c;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+    .sub { font-size: 15px; color: #9a7c50; margin-bottom: 32px; line-height: 1.6; letter-spacing: 0.03em; }
+    .field { position: relative; margin-bottom: 12px; }
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid rgba(201,168,76,0.22);
+      border-radius: 1px;
+      font-size: 15px;
+      color: #f0d9a8;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      font-family: inherit;
+      background: rgba(201,168,76,0.03);
+      letter-spacing: 0.04em;
+    }
+    input::placeholder { color: #4a3822; }
+    input:focus {
+      border-color: rgba(201,168,76,0.55);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.07);
+      background: rgba(201,168,76,0.05);
+    }
+    .btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid rgba(201,168,76,0.45);
+      border-radius: 1px;
+      background: rgba(201,168,76,0.1);
+      color: #c9a84c;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .btn:hover {
+      background: rgba(201,168,76,0.18);
+      border-color: rgba(201,168,76,0.65);
+      box-shadow: 0 0 16px rgba(201,168,76,0.1);
+    }
+    .btn:active { background: rgba(201,168,76,0.26); }
+    .msg {
+      min-height: 20px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #c47a5a;
+      letter-spacing: 0.04em;
+    }
+    .footer { margin-top: 40px; font-size: 12px; color: #2e2214; letter-spacing: 0.14em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>媒體</h1>
+    <p class="sub">請輸入帳號以繼續</p>
+    <div class="field">
+      <input id="username" type="text" placeholder="帳號" autocomplete="off" spellcheck="false" />
+    </div>
+    <button class="btn" id="enter">登入</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+
+  <script>
+    const LIFF_ID = '2010410095-KBQbtX0t';
+
+    function redirectAfterLogin() {
+      const next = new URLSearchParams(location.search).get('next');
+      window.location.replace(next && next.startsWith('/') ? next : '/');
+    }
+
+    (async function checkExistingSession() {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (res.ok) redirectAfterLogin();
+      } catch (_) {}
+    })();
+
+    (async function liffAutoLogin() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isInClient()) return;
+        if (!liff.isLoggedIn()) return;
+        const profile = await liff.getProfile();
+        localStorage.setItem('lineUserId', profile.userId);
+        localStorage.setItem('lineDisplayName', profile.displayName);
+        if (profile.pictureUrl) localStorage.setItem('lineAvatar', profile.pictureUrl);
+        localStorage.setItem('user', profile.displayName);
+        await fetch('/api/login/line', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ displayName: profile.displayName }),
+        });
+        redirectAfterLogin();
+      } catch (e) {
+        console.info('[LIFF] 一般瀏覽器模式');
+      }
+    })();
+
+    const input = document.getElementById('username');
+    const msg   = document.getElementById('msg');
+    input.focus();
+
+    async function submit() {
+      const username = input.value.trim();
+      if (!username) { msg.textContent = '登入失敗'; return; }
+      msg.textContent = '';
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username }),
+        });
+        if (!res.ok) { msg.textContent = '登入失敗'; return; }
+        const data = await res.json();
+        localStorage.setItem('user', data.username || username);
+        redirectAfterLogin();
+      } catch (err) {
+        msg.textContent = '登入失敗';
+      }
+    }
+
+    document.getElementById('enter').addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  </script>
+</body>
+</html>

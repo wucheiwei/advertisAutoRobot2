@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LUMÉ 今日穿搭挑戰 — 配出你的完美造型</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:linear-gradient(160deg,#1a0533 0%,#2d0a5e 50%,#0d1a3a 100%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;color:#fff;
+  overflow-x:hidden;touch-action:manipulation;user-select:none;
+}
+
+/* ─── header ─── */
+.hdr{text-align:center;padding:14px 0 8px;}
+.brand{font-size:.7rem;letter-spacing:5px;opacity:.55;text-transform:uppercase;margin-bottom:4px;}
+h1{font-size:1.3rem;font-weight:900;letter-spacing:1px;}
+.sub{font-size:.7rem;opacity:.6;margin-top:3px;}
+
+/* ─── score bar ─── */
+.score-bar{
+  display:flex;gap:0;width:92%;max-width:400px;
+  background:rgba(255,255,255,.06);border-radius:12px;
+  padding:8px 16px;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+}
+.score-item{text-align:center;}
+.sv{font-size:1.2rem;font-weight:700;color:#e879f9;}
+.sl{font-size:.58rem;opacity:.6;margin-top:1px;}
+.divider{width:1px;height:28px;background:rgba(255,255,255,.12);}
+
+/* ─── mannequin area ─── */
+.stage{
+  width:92%;max-width:400px;
+  display:flex;gap:12px;align-items:flex-start;
+  margin-bottom:12px;
+}
+.mannequin-wrap{
+  flex:1;display:flex;justify-content:center;
+  background:rgba(255,255,255,.05);border-radius:18px;
+  padding:14px 0 10px;min-height:220px;position:relative;
+}
+.mannequin{position:relative;width:100px;height:190px;}
+
+/* SVG mannequin parts */
+.m-head{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:42px;height:42px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#f5c5a3,#d4956a);
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.m-hair{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:44px;height:22px;border-radius:22px 22px 0 0;
+  transition:background .4s;
+}
+.m-neck{
+  position:absolute;top:38px;left:50%;transform:translateX(-50%);
+  width:14px;height:10px;background:#d4956a;
+  border-radius:2px;
+}
+.m-top{
+  position:absolute;top:46px;left:50%;transform:translateX(-50%);
+  width:72px;height:62px;border-radius:8px 8px 4px 4px;
+  transition:background .4s,box-shadow .4s;
+}
+.m-top::before{ /* collar */
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:20px;height:12px;border-radius:0 0 8px 8px;
+  background:rgba(0,0,0,.15);
+}
+.m-sleeve-l,.m-sleeve-r{
+  position:absolute;top:46px;
+  width:16px;height:44px;border-radius:8px;
+  transition:background .4s;
+}
+.m-sleeve-l{left:0;}
+.m-sleeve-r{right:0;}
+.m-bottom{
+  position:absolute;top:102px;left:50%;transform:translateX(-50%);
+  width:68px;height:60px;border-radius:4px 4px 8px 8px;
+  transition:background .4s,box-shadow .4s;
+}
+.m-leg-l,.m-leg-r{
+  position:absolute;top:158px;
+  width:28px;height:28px;border-radius:4px 4px 6px 6px;
+  background:#d4956a;
+}
+.m-leg-l{left:12px;}
+.m-leg-r{right:12px;}
+.m-shoe-l,.m-shoe-r{
+  position:absolute;top:180px;
+  width:30px;height:12px;border-radius:4px;
+  transition:background .4s;
+}
+.m-shoe-l{left:10px;}
+.m-shoe-r{right:10px;}
+.m-acc{
+  position:absolute;top:36px;left:50%;transform:translateX(-50%);
+  width:52px;height:8px;border-radius:4px;opacity:.9;
+  transition:background .4s,opacity .4s;
+}
+
+/* rating stars */
+.rating{
+  position:absolute;bottom:8px;left:0;right:0;text-align:center;
+  font-size:1.1rem;letter-spacing:2px;
+}
+
+/* ─── category panel ─── */
+.panel{flex:0 0 auto;width:55%;max-width:220px;display:flex;flex-direction:column;gap:8px;}
+.cat{background:rgba(255,255,255,.07);border-radius:14px;padding:8px 10px;}
+.cat-label{font-size:.62rem;opacity:.55;letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;}
+.options{display:flex;flex-wrap:wrap;gap:6px;}
+.opt{
+  width:36px;height:36px;border-radius:10px;border:2px solid transparent;
+  cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+  position:relative;
+}
+.opt:active{transform:scale(.9);}
+.opt.selected{border-color:#e879f9;box-shadow:0 0 10px rgba(232,121,249,.5);}
+.opt-swatch{width:100%;height:100%;border-radius:8px;}
+
+/* ─── cta ─── */
+.cta-zone{
+  width:92%;max-width:400px;display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding-bottom:18px;
+}
+.share-line{font-size:.72rem;opacity:.55;}
+.cta-btn{
+  background:linear-gradient(90deg,#d946ef,#7c3aed);
+  border:none;color:#fff;font-size:.95rem;font-weight:700;
+  padding:12px 36px;border-radius:50px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(217,70,239,.4);transition:transform .12s;
+  width:100%;max-width:300px;
+}
+.cta-btn:active{transform:scale(.97);}
+
+/* ─── combo badge ─── */
+.combo-badge{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  background:linear-gradient(135deg,#d946ef,#7c3aed);
+  padding:14px 28px;border-radius:20px;font-size:1.1rem;font-weight:900;
+  z-index:50;pointer-events:none;transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  text-align:center;box-shadow:0 8px 32px rgba(217,70,239,.5);
+}
+.combo-badge.show{transform:translate(-50%,-50%) scale(1);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="brand">LUMÉ Fashion</div>
+  <h1>✨ 今日穿搭挑戰</h1>
+  <div class="sub">點選搭配你的完美造型，解鎖獨家優惠</div>
+</div>
+
+<div class="score-bar">
+  <div class="score-item"><div class="sv" id="v-score">0</div><div class="sl">時尚分</div></div>
+  <div class="divider"></div>
+  <div class="score-item"><div class="sv" id="v-combos">0</div><div class="sl">完美搭配</div></div>
+  <div class="divider"></div>
+  <div class="score-item"><div class="sv" id="v-discount">0%</div><div class="sl">折扣</div></div>
+</div>
+
+<div class="stage">
+  <!-- Mannequin -->
+  <div class="mannequin-wrap">
+    <div class="mannequin" id="manny">
+      <div class="m-hair" id="m-hair"></div>
+      <div class="m-head"></div>
+      <div class="m-neck"></div>
+      <div class="m-sleeve-l" id="m-sleeve-l"></div>
+      <div class="m-sleeve-r" id="m-sleeve-r"></div>
+      <div class="m-top" id="m-top"></div>
+      <div class="m-bottom" id="m-bottom"></div>
+      <div class="m-leg-l"></div>
+      <div class="m-leg-r"></div>
+      <div class="m-shoe-l" id="m-shoe-l"></div>
+      <div class="m-shoe-r" id="m-shoe-r"></div>
+      <div class="m-acc" id="m-acc"></div>
+    </div>
+    <div class="rating" id="rating">⭐⭐⭐</div>
+  </div>
+
+  <!-- Option Panel -->
+  <div class="panel">
+    <!-- 上衣 -->
+    <div class="cat">
+      <div class="cat-label">上衣</div>
+      <div class="options" id="tops-opts"></div>
+    </div>
+    <!-- 下身 -->
+    <div class="cat">
+      <div class="cat-label">下身</div>
+      <div class="options" id="btm-opts"></div>
+    </div>
+    <!-- 鞋款 -->
+    <div class="cat">
+      <div class="cat-label">鞋款</div>
+      <div class="options" id="shoe-opts"></div>
+    </div>
+    <!-- 配件 -->
+    <div class="cat">
+      <div class="cat-label">配件</div>
+      <div class="options" id="acc-opts"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cta-zone">
+  <div class="share-line" id="combo-desc">搭配任意三件，解鎖折扣！</div>
+  <button class="cta-btn" onclick="window.open('#','_blank')">🛍 立即選購這套造型</button>
+</div>
+
+<div class="combo-badge" id="combo-badge"></div>
+
+<script>
+/* ── catalogue ── */
+const TOPS = [
+  { label:'白T',  top:'#f0f0f0', sleeve:'#e0e0e0', hair:'#3d2b1f', score:30 },
+  { label:'藍條', top:'#3b82f6', sleeve:'#2563eb', hair:'#3d2b1f', score:40 },
+  { label:'粉衫', top:'#f9a8d4', sleeve:'#f472b6', hair:'#5c3a1e', score:50 },
+  { label:'黑T',  top:'#1f2937', sleeve:'#111827', hair:'#1a0a0a', score:35 },
+  { label:'橘衛', top:'#f97316', sleeve:'#ea580c', hair:'#5c3a1e', score:45 },
+];
+const BOTTOMS = [
+  { label:'牛仔', btm:'#1d4ed8', score:35 },
+  { label:'白裙', btm:'#f9fafb', score:45 },
+  { label:'黑褲', btm:'#1f2937', score:40 },
+  { label:'格紋', btm:'linear-gradient(45deg,#dc2626 25%,#fff 25%,#fff 50%,#dc2626 50%,#dc2626 75%,#fff 75%)', score:55 },
+  { label:'卡其', btm:'#d6c5a0', score:38 },
+];
+const SHOES = [
+  { label:'白鞋', shoe:'#f9fafb', score:30 },
+  { label:'黑靴', shoe:'#111827', score:45 },
+  { label:'紅跟', shoe:'#dc2626', score:55 },
+  { label:'米色', shoe:'#e7d8c0', score:35 },
+];
+const ACCS = [
+  { label:'無',   acc:'transparent', accOpacity:0, score:0 },
+  { label:'金鍊', acc:'#fbbf24',     accOpacity:1, score:20 },
+  { label:'珍珠', acc:'#f9fafb',     accOpacity:1, score:25 },
+  { label:'彩虹', acc:'linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#a78bfa)', accOpacity:1, score:30 },
+];
+
+/* ── combos (top-idx, btm-idx, shoe-idx, acc-idx) → bonus + message ── */
+const COMBOS = [
+  { keys:[0,2,0,0], msg:'清新日系 ☁️', bonus:30 },
+  { keys:[3,2,1,1], msg:'率性全黑 🖤', bonus:40 },
+  { keys:[2,1,2,2], msg:'浪漫公主 🌸', bonus:50 },
+  { keys:[4,0,2,3], msg:'街頭酷女 🔥', bonus:45 },
+  { keys:[1,3,0,3], msg:'復古格紋 🎀', bonus:35 },
+];
+
+/* ── state ── */
+let sel = { top:0, btm:0, shoe:0, acc:0 };
+let totalScore = 0, comboCount = 0, seenCombos = new Set();
+
+/* ── helpers ── */
+const $ = id => document.getElementById(id);
+
+function applyStyle() {
+  const t = TOPS[sel.top], b = BOTTOMS[sel.btm], s = SHOES[sel.shoe], a = ACCS[sel.acc];
+  $('m-top').style.background = t.top;
+  $('m-top').style.boxShadow = `inset 0 -3px 8px rgba(0,0,0,.2)`;
+  $('m-sleeve-l').style.background = t.sleeve;
+  $('m-sleeve-r').style.background = t.sleeve;
+  $('m-bottom').style.background = b.btm;
+  $('m-bottom').style.boxShadow = `inset 0 3px 8px rgba(0,0,0,.15)`;
+  $('m-shoe-l').style.background = s.shoe;
+  $('m-shoe-r').style.background = s.shoe;
+  $('m-hair').style.background = t.hair;
+  if (a.accOpacity === 0) {
+    $('m-acc').style.opacity = '0';
+  } else {
+    $('m-acc').style.background = a.acc;
+    $('m-acc').style.opacity = '1';
+  }
+
+  // compute score
+  const rawScore = t.score + b.score + s.score + a.score;
+  // check combo
+  const matchCombo = COMBOS.find(c =>
+    c.keys[0]===sel.top && c.keys[1]===sel.btm && c.keys[2]===sel.shoe && c.keys[3]===sel.acc
+  );
+  let stars, rating;
+  if (rawScore >= 140) { stars='⭐⭐⭐⭐⭐'; rating=5; }
+  else if (rawScore >= 110) { stars='⭐⭐⭐⭐'; rating=4; }
+  else if (rawScore >= 80)  { stars='⭐⭐⭐'; rating=3; }
+  else { stars='⭐⭐'; rating=2; }
+  $('rating').textContent = stars;
+
+  if (matchCombo) {
+    const key = matchCombo.keys.join(',');
+    if (!seenCombos.has(key)) {
+      seenCombos.add(key);
+      comboCount++;
+      totalScore += rawScore + matchCombo.bonus;
+      showCombo(matchCombo.msg, matchCombo.bonus);
+    } else {
+      totalScore = Math.max(totalScore, rawScore);
+    }
+    $('combo-desc').textContent = `完美搭配！${matchCombo.msg}`;
+  } else {
+    totalScore = Math.max(totalScore, rawScore);
+    $('combo-desc').textContent = rawScore >= 110 ? '高分造型！繼續挑戰更多搭配~' : '搭配任意三件，解鎖折扣！';
+  }
+
+  $('v-score').textContent = totalScore;
+  $('v-combos').textContent = comboCount;
+  const discount = Math.min(30, comboCount * 5 + (totalScore >= 200 ? 10 : 0));
+  $('v-discount').textContent = discount > 0 ? discount + '%' : '0%';
+}
+
+function showCombo(msg, bonus) {
+  const el = $('combo-badge');
+  el.textContent = `${msg}\n+${bonus} 時尚分！`;
+  el.style.whiteSpace = 'pre';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+function buildOptions(containerId, items, key) {
+  const container = $(containerId);
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'opt' + (i === 0 ? ' selected' : '');
+    div.title = item.label;
+    // color swatch
+    const swatch = document.createElement('div');
+    swatch.className = 'opt-swatch';
+    swatch.style.background = item[Object.keys(item)[0]]; // first color prop
+    // Use specific color prop based on category
+    if (key==='top')  swatch.style.background = item.top;
+    if (key==='btm')  swatch.style.background = item.btm;
+    if (key==='shoe') swatch.style.background = item.shoe;
+    if (key==='acc')  swatch.style.background = i===0 ? '#555' : item.acc;
+    if (key==='acc' && i===0) {
+      swatch.style.background = 'transparent';
+      div.textContent = '✕';
+      div.style.color = '#888';
+      div.style.fontSize = '.9rem';
+    }
+    if (key!=='acc' || i!==0) div.appendChild(swatch);
+    div.addEventListener('click', () => {
+      container.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      div.classList.add('selected');
+      sel[key] = i;
+      applyStyle();
+    });
+    container.appendChild(div);
+  });
+}
+
+/* ── init ── */
+buildOptions('tops-opts', TOPS,    'top');
+buildOptions('btm-opts',  BOTTOMS, 'btm');
+buildOptions('shoe-opts', SHOES,   'shoe');
+buildOptions('acc-opts',  ACCS,    'acc');
+applyStyle();
+</script>
+</body>
+</html>

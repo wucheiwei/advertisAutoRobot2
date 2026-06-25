@@ -1,0 +1,478 @@
+/* ===================================================================
+   橡樹街末日 · THE END OF OAK STREET
+   行動裝置優先 (mobile-first) 的相機濾鏡體驗
+   =================================================================== */
+
+:root {
+  --lime: #8be04e;
+  --lime-bright: #9bf25a;
+  --orange: #d96a2b;
+  --stone: #c9bb96;
+  --stone-dark: #8a7a4f;
+  --ink: #0c120c;
+  --ink-soft: #141a14;
+  --text: #f3f1e7;
+  --muted: #b9c2ad;
+  --radius: 18px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+/* ---------- Screen scaffolding ---------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen.is-active { display: flex; }
+
+.screen__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+}
+.screen__bg--jungle {
+  background-color: #0a120a;
+  background-image:
+    /* 全局淡淡壓暗 + 上下稍微加深，純粹為了文字可讀性（不擋住叢林） */
+    linear-gradient(
+      180deg,
+      rgba(6,12,6,.45) 0%,
+      rgba(6,12,6,.22) 22%,
+      rgba(6,12,6,.28) 55%,
+      rgba(6,12,6,.55) 100%
+    ),
+    url("../assets/bg-jungle.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.screen__bg--dusk {
+  background: linear-gradient(180deg, #24344a 0%, #3a3324 45%, #1a150e 100%);
+}
+.screen__bg--dino-pattern {
+  background: #18221a;
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(120,160,100,.06) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 60%, rgba(120,160,100,.05) 0 2px, transparent 3px),
+    linear-gradient(180deg, #1b251c, #0f160f);
+}
+
+.screen__content {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: calc(28px + var(--safe-top)) 26px calc(28px + var(--safe-bottom));
+}
+.screen__content--center {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 18px;
+}
+
+/* ---------- Typography ---------- */
+.warning-tag {
+  color: var(--lime);
+  font-weight: 800;
+  letter-spacing: .35em;
+  font-size: 15px;
+}
+.title-stone {
+  font-size: clamp(44px, 14vw, 72px);
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: 1.05;
+  color: #d8d0bd;
+  text-shadow:
+    0 1px 0 #6e6750, 0 2px 0 #57523f,
+    0 4px 8px rgba(0,0,0,.6), 0 0 1px rgba(0,0,0,.9);
+}
+.title-stone--sm { font-size: clamp(30px, 9vw, 44px); }
+
+.lede {
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--text);
+  font-weight: 600;
+  text-shadow: 0 2px 6px rgba(0,0,0,.6);
+}
+.lede--sm { font-size: 16px; color: var(--stone); }
+
+.detected { color: var(--stone); font-size: 17px; font-weight: 600; letter-spacing: .04em; }
+.note { color: var(--muted); font-size: 13px; }
+.note--warn {
+  color: var(--lime);
+  line-height: 1.55;
+  white-space: pre-line;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 20px;
+  padding: 16px 40px;
+  border-radius: 999px;
+  color: #08210a;
+  transition: transform .08s ease, filter .15s ease;
+  width: min(86%, 360px);
+  letter-spacing: .05em;
+}
+.btn:active { transform: scale(.97); }
+.btn--lime {
+  background: linear-gradient(180deg, var(--lime-bright), var(--lime));
+  box-shadow: 0 6px 20px rgba(139,224,78,.35), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.btn--orange {
+  background: linear-gradient(180deg, #e0772f, var(--orange));
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(217,106,43,.4), inset 0 1px 0 rgba(255,255,255,.3);
+}
+.btn--stone {
+  background: linear-gradient(180deg, #cdbf99, #9a8b60);
+  color: #2a2410;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.35);
+  border: 1px solid #7a6c45;
+}
+.btn--ghost {
+  background: #9a9a9a;
+  color: #fff;
+  font-size: 16px;
+  padding: 12px 32px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+.btn--map { font-size: 17px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+/* hidden 屬性需蓋過上面的 display，未選取時才會真的隱藏 */
+.btn--map[hidden] { display: none; }
+
+.link-btn {
+  background: none; border: none; color: var(--muted);
+  font-family: inherit; font-size: 14px; text-decoration: underline;
+  cursor: pointer; padding: 6px;
+}
+
+/* ---------- Screen 2: 解鎖 (固定比例舞台) ---------- */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.screen--unlock {
+  background: #15110b;            /* 兩側/上下若有空隙，補深石色 */
+  align-items: center; justify-content: center;
+  padding: 0;
+}
+/* 背景圖原始比例 640 x 1385：維持比例放大到「覆蓋」整個畫面，
+   多餘的邊溢出被 #app 的 overflow:hidden 裁掉，所以不會露出深色邊框；
+   疊加元素仍以 stage 的 % 定位，跟著圖一起縮放，永遠對齊。 */
+.unlock-stage {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 640 / 1385;
+  width: max(100%, calc(100dvh * 640 / 1385));
+  background: url("../assets/bg-unlock.jpg") center / cover no-repeat;
+  overflow: hidden;
+}
+/* 可替換的恐龍 icon：正好落在綠框卡片內部 */
+.unlock-stage__icon {
+  position: absolute;
+  left: 36.2%; top: 51.7%;
+  width: 27.6%; height: 13.7%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+}
+/* 疊在背景「開啟相機」按鈕上的透明可點區 */
+.unlock-stage__go {
+  position: absolute;
+  left: 22%; top: 82%;
+  width: 56%; height: 8.5%;
+  background: transparent; border: none; border-radius: 12px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.unlock-stage__go:active { background: rgba(255,255,255,.08); }
+
+/* ---------- Screen 3: camera ---------- */
+.screen--camera { background: #000; }
+.camera__video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  background: #000;
+}
+.camera__video.is-mirrored { transform: scaleX(-1); }
+.camera__frame {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  /* 滿版拉伸填滿，不裁切濾鏡的任何邊緣 */
+  object-fit: fill;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .15s ease;
+}
+.camera__frame.is-ready {
+  opacity: 1;
+  visibility: visible;
+}
+.camera__canvas { position: absolute; inset: 0; }
+
+.camera__permission {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8,12,8,.92);
+  padding: 30px;
+}
+.camera__permission.is-hidden { display: none; }
+.camera__permission-inner { text-align: center; max-width: 320px; }
+.cam-icon { font-size: 52px; margin-bottom: 12px; }
+.camera__permission h3 { font-size: 24px; margin-bottom: 10px; color: var(--lime); }
+.camera__permission p { color: var(--muted); line-height: 1.6; margin-bottom: 24px; font-size: 16px; }
+
+.camera__hud {
+  position: absolute; inset: 0; z-index: 4;
+  pointer-events: none;
+}
+.camera__hud[hidden] { display: none; }
+.camera__flip {
+  position: absolute;
+  top: calc(16px + var(--safe-top)); right: 18px;
+  pointer-events: auto;
+}
+.icon-btn {
+  width: 46px; height: 46px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,.45); color: #fff;
+  font-size: 22px; cursor: pointer; backdrop-filter: blur(6px);
+}
+.camera__controls {
+  position: absolute;
+  left: 0; right: 0; bottom: calc(6px + var(--safe-bottom));
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  pointer-events: none;
+}
+.camera__controls > * { pointer-events: auto; }
+.btn--upload { width: auto; font-size: 16px; padding: 12px 20px; }
+/* 隱藏「上傳照片」按鈕，快門置中 */
+.btn--upload, .camera__spacer { display: none; }
+.camera__controls { justify-content: center; }
+.shutter {
+  width: 82px; height: 82px;
+  border-radius: 50%;
+  /* 相機快門圈：白色外環 + 半透明底 + 內圈骨架圖示 */
+  border: 4px solid rgba(255,255,255,.95);
+  background-color: rgba(0,0,0,.28);
+  background-image: url("../assets/trex-skeleton.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 58%;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 3px 10px rgba(0,0,0,.7);
+  cursor: pointer;
+  transition: transform .08s ease;
+}
+.shutter:active { transform: scale(.92); }
+
+/* ---------- Screen 4: share ---------- */
+.share__sheet {
+  position: relative; z-index: 2;
+  margin: auto;
+  width: min(92%, 420px);
+  background: #f1f0ea;
+  border-radius: 26px;
+  padding: 22px 22px calc(26px + var(--safe-bottom));
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  margin-top: calc(8vh + var(--safe-top));
+}
+.share__photo-wrap {
+  margin-top: -64px;
+  background: #fff;
+  padding: 10px 10px 14px;
+  border-radius: 6px;
+  box-shadow: 0 14px 30px rgba(0,0,0,.45);
+  transform: rotate(-4deg);
+  max-width: 62%;
+}
+.share__photo { display: block; width: 100%; border-radius: 3px; }
+.share__hint {
+  margin: -8px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b6b64;
+  text-align: center;
+}
+.share__hint--sub { margin-top: -12px; font-size: 12px; }
+.share__sheet .btn { color: #fff; }
+.share__sheet .btn--orange { color: #fff; }
+
+/* ---------- Screen 5: map ---------- */
+/* 滿版不捲動：整欄內容塞進 100dvh，地圖卡片依「剩餘高度」自動縮放。 */
+#screen-map .screen__content {
+  justify-content: flex-start;
+  gap: 12px;
+  overflow: hidden;
+  padding-top: calc(18px + var(--safe-top));
+  padding-bottom: calc(18px + var(--safe-bottom));
+}
+/* 標題、文案、面板、按鈕維持原高度，不被壓縮 */
+#screen-map .screen__content > *:not(.map-board) { flex: none; }
+.map-board {
+  position: relative;
+  /* 固定大小，避免點選 pin 後因版面變動而被縮放 */
+  flex: none;
+  width: min(74%, 300px);
+  margin: 0 auto;
+  aspect-ratio: 528 / 767;
+  /* 藏寶圖底圖 */
+  background: url("../assets/map-taiwan.png") center / contain no-repeat;
+  overflow: visible;
+}
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 76px;
+  /* 由 <button> 改造，清掉預設樣式 */
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  transition: transform .15s ease;
+}
+.map-pin:hover { transform: translate(-50%, -50%) scale(1.08); }
+.map-pin:active { transform: translate(-50%, -50%) scale(.96); }
+/* pin = 恐龍 icon 當地標 + 下方地名標籤；當前/點選加綠色光環 */
+.map-pin__dot {
+  width: 46px; height: 46px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: width .15s ease, height .15s ease, box-shadow .15s ease;
+}
+.map-pin__dot img {
+  display: block; width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.55));
+}
+.map-pin__label {
+  /* 絕對定位掛在 icon 下方，讓 icon 本身對準座標點 */
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  margin-top: 1px; white-space: nowrap;
+  font-size: 12px; font-weight: 800; color: #2e2410;
+  text-shadow: 0 1px 2px rgba(240,228,200,.85);
+}
+.map-pin.is-selected .map-pin__dot,
+.map-pin.is-current .map-pin__dot {
+  background: radial-gradient(circle, rgba(139,224,78,.35), rgba(139,224,78,0) 70%);
+  box-shadow: 0 0 16px var(--lime), 0 0 34px rgba(139,224,78,.55);
+}
+.map-pin.is-current .map-pin__dot {
+  width: 60px; height: 60px;
+  box-shadow: 0 0 22px var(--lime), 0 0 46px rgba(139,224,78,.6);
+}
+.map-pin.is-current .map-pin__label,
+.map-pin.is-selected .map-pin__label { color: #1f2a14; }
+
+/* 點選據點後的恐龍 icon + 科博館資訊面板 */
+.map-select {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px auto 2px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  background: rgba(20,30,15,.55);
+  border: 1px solid rgba(139,224,78,.45);
+  animation: map-select-in .25s ease;
+  /* 固定大小，不隨地名/館名長短伸縮 */
+  width: min(86%, 340px);
+  box-sizing: border-box;
+  min-height: 76px;
+}
+/* hidden 屬性需蓋過 display:flex，未選取時才會真的隱藏 */
+.map-select[hidden] { display: none; }
+.map-select__icon {
+  width: 56px; height: 56px;
+  flex: none;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px var(--lime));
+}
+.map-select__text { flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; gap: 2px; }
+.map-select__region { font-size: 17px; font-weight: 800; color: var(--text); }
+.map-select__museum {
+  font-size: 14px; color: var(--stone);
+  /* 過長館名以省略號收尾，維持單行高度 */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.map-hint { opacity: .8; }
+@keyframes map-select-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  /* 提示訊息固定在頂端，避免擋住下方任何按鈕 */
+  position: fixed; left: 50%; top: calc(20px + var(--safe-top));
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(12,18,12,.95);
+  color: var(--text);
+  padding: 12px 22px; border-radius: 999px;
+  font-size: clamp(13px, 3.8vw, 15px); font-weight: 600;
+  border: 1px solid rgba(139,224,78,.4);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 100; text-align: center;
+  /* 單行顯示、寬度依內容縮放，不讓中文在中間亂斷行 */
+  white-space: nowrap;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+}
+.toast.is-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* 出現時從頂端滑入 */
+.toast { will-change: transform, opacity; }
+
+/* ---------- Spinner on GPS btn ---------- */
+.btn.is-loading { position: relative; color: transparent !important; }
+.btn.is-loading::after {
+  content: ""; position: absolute; inset: 0; margin: auto;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid rgba(0,0,0,.25); border-top-color: #08210a;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

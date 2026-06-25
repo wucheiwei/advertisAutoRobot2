@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<title>賽博月老・電子擲筊問事所</title>
+<meta name="description" content="向 24 小時不打烊的賽博月老請示，連擲三筊問出你的本月運勢，領取限定開運優惠券。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --bg:#170406; --bg2:#2a0810; --gold:#f4c95d; --gold2:#ffe9a8;
+    --red:#e23b4e; --cyan:#5cf2e8; --ink:#fff4e6; --dim:#caa98f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #4a0c1a 0%, var(--bg2) 45%, var(--bg) 100%);
+    min-height:100dvh; overflow-x:hidden; position:relative;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  /* 環境光與線香煙霧層 */
+  #smoke{position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:.55}
+  .glowframe{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(60% 40% at 50% 18%, rgba(244,201,93,.16), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 3px, rgba(0,0,0,.07) 3px 4px);
+    mix-blend-mode:screen;
+  }
+  .wrap{position:relative; z-index:2; width:100%; max-width:480px; padding:22px 18px 40px; flex:1;
+    display:flex; flex-direction:column; align-items:center; text-align:center}
+
+  .brand{display:flex; align-items:center; gap:8px; font-family:"Noto Serif TC",serif;
+    letter-spacing:.18em; font-size:13px; color:var(--gold); margin-top:6px}
+  .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .lantern{font-size:11px;color:var(--dim);letter-spacing:.3em;margin-top:4px}
+
+  h1{font-family:"Noto Serif TC",serif; font-weight:900; line-height:1.18; margin:14px 0 4px;
+    font-size:clamp(30px,9vw,42px); color:var(--gold2);
+    text-shadow:0 0 22px rgba(244,201,93,.35), 0 2px 0 #5c0d12}
+  h1 .sub{display:block; font-size:15px; font-weight:500; letter-spacing:.35em; color:var(--cyan);
+    margin-top:8px; text-shadow:0 0 12px rgba(92,242,232,.5)}
+  .lead{font-size:13.5px; color:var(--dim); line-height:1.8; margin:10px 4px 0; max-width:340px}
+
+  /* 神龕 / 神尊 */
+  .shrine{margin:22px auto 6px; width:170px; height:170px; position:relative}
+  .halo{position:absolute; inset:-6px; border-radius:50%;
+    background:radial-gradient(circle, rgba(244,201,93,.45), rgba(244,201,93,0) 68%);
+    animation:halo 4s ease-in-out infinite}
+  @keyframes halo{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.08);opacity:1}}
+  .deity{position:absolute; inset:0; display:grid; place-items:center; font-size:88px;
+    filter:drop-shadow(0 0 16px rgba(255,233,168,.6)); animation:float 5s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .deity .eyes{position:absolute; top:54px; display:flex; gap:26px}
+  .deity .eyes i{width:7px;height:7px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 12px var(--cyan); animation:blink 4.5s infinite}
+  @keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+
+  /* 問事輸入 */
+  .ask{width:100%; margin-top:10px}
+  .field{display:flex; gap:8px; background:rgba(255,255,255,.05); border:1px solid rgba(244,201,93,.35);
+    border-radius:14px; padding:6px 6px 6px 14px; align-items:center; backdrop-filter:blur(4px)}
+  .field input{flex:1; background:none; border:none; outline:none; color:var(--ink); font-size:15px;
+    font-family:inherit}
+  .field input::placeholder{color:#9c7a66}
+  .chips{display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-top:12px}
+  .chip{font-size:12px; color:var(--gold); border:1px solid rgba(244,201,93,.4);
+    background:rgba(244,201,93,.06); padding:6px 11px; border-radius:999px; cursor:pointer;
+    transition:.18s}
+  .chip:active{transform:scale(.94)} .chip.on{background:var(--gold);color:#3a0a10;border-color:var(--gold)}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+    font-family:"Noto Serif TC",serif; font-weight:700; letter-spacing:.12em; border:none;
+    color:#3a0a10; background:linear-gradient(180deg,var(--gold2),var(--gold));
+    padding:15px 26px; border-radius:14px; font-size:17px; width:100%; margin-top:18px;
+    box-shadow:0 8px 26px rgba(244,201,93,.28), inset 0 1px 0 rgba(255,255,255,.6);
+    transition:transform .12s}
+  .btn:active{transform:translateY(2px) scale(.99)}
+  .btn.ghost{background:transparent;color:var(--gold);border:1px solid rgba(244,201,93,.5);
+    box-shadow:none}
+  .btn[disabled]{filter:grayscale(.5) brightness(.8); pointer-events:none}
+
+  /* 擲筊舞台 */
+  .stage{display:none; width:100%; flex-direction:column; align-items:center}
+  .stage.show{display:flex}
+  .qline{font-family:"Noto Serif TC",serif; font-size:16px; color:var(--gold2); margin:4px 0 2px}
+  .qline small{display:block; color:var(--dim); font-size:12px; font-weight:400; margin-top:3px; letter-spacing:.1em}
+  #poe{display:block; margin:6px auto 0; touch-action:none; cursor:pointer;
+    border-radius:18px;
+    background:radial-gradient(120% 90% at 50% 100%, rgba(244,201,93,.10), transparent 60%)}
+  .tally{display:flex; gap:10px; justify-content:center; margin:10px 0 2px}
+  .tslot{width:42px;height:42px;border-radius:50%;border:1px dashed rgba(244,201,93,.4);
+    display:grid;place-items:center;font-size:20px;color:var(--dim);transition:.25s}
+  .tslot.win{border-style:solid;border-color:var(--gold);background:rgba(244,201,93,.12);
+    color:var(--gold2);box-shadow:0 0 14px rgba(244,201,93,.3)}
+  .tslot.lose{border-color:rgba(226,59,78,.5)}
+  .verdict{min-height:30px; font-family:"Noto Serif TC",serif; font-size:20px; font-weight:700;
+    margin-top:8px; letter-spacing:.18em}
+  .verdict small{display:block;font-size:12.5px;color:var(--dim);font-weight:400;letter-spacing:.05em;margin-top:4px}
+  .v-sheng{color:var(--gold2)} .v-xiao{color:var(--cyan)} .v-yin{color:var(--red)}
+  .hint{font-size:12px;color:#a98; margin-top:6px; letter-spacing:.06em; animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+  /* 結果卡 / 開運券 */
+  .result{display:none; width:100%; flex-direction:column; align-items:center}
+  .result.show{display:flex; animation:rise .6s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  .card{width:100%; border-radius:20px; padding:22px 20px 20px; margin-top:6px; position:relative;
+    background:linear-gradient(160deg, rgba(74,12,26,.9), rgba(23,4,6,.95));
+    border:1px solid rgba(244,201,93,.45);
+    box-shadow:0 18px 50px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04)}
+  .stamp{position:absolute; top:14px; right:14px; width:62px;height:62px;border-radius:50%;
+    border:2px solid var(--red); color:var(--red); display:grid;place-items:center;
+    font-family:"Noto Serif TC",serif; font-weight:900; font-size:12px; line-height:1.15;
+    transform:rotate(-12deg); opacity:.9; text-align:center}
+  .fortune-no{font-size:12px;letter-spacing:.3em;color:var(--cyan)}
+  .fortune-tier{font-family:"Noto Serif TC",serif;font-weight:900;font-size:40px;color:var(--gold2);
+    margin:2px 0 6px; text-shadow:0 0 20px rgba(244,201,93,.4)}
+  .poem{font-family:"Noto Serif TC",serif; font-size:17px; line-height:2; color:var(--ink);
+    border-top:1px dashed rgba(244,201,93,.3); border-bottom:1px dashed rgba(244,201,93,.3);
+    padding:12px 0; margin:8px 0}
+  .meta{display:flex; gap:10px; justify-content:center; margin:14px 0 4px; flex-wrap:wrap}
+  .pill{font-size:12px;background:rgba(92,242,232,.1);border:1px solid rgba(92,242,232,.4);
+    color:var(--cyan);padding:6px 12px;border-radius:999px}
+  .pill b{color:var(--gold2)}
+  .coupon{margin-top:16px; width:100%; background:repeating-linear-gradient(90deg,#3a0a10 0 10px,#2a0810 10px 20px);
+    border:1.5px dashed var(--gold); border-radius:14px; padding:14px; position:relative}
+  .coupon .lbl{font-size:11px;color:var(--dim);letter-spacing:.25em}
+  .coupon .code{font-family:"Noto Serif TC",serif;font-weight:900;font-size:26px;color:var(--gold2);
+    letter-spacing:.18em; margin-top:2px}
+  .coupon .desc{font-size:12.5px;color:var(--dim);margin-top:4px}
+  footer{z-index:2; position:relative; font-size:11px; color:#7a5c4e; letter-spacing:.08em;
+    padding:8px 16px 22px; text-align:center; line-height:1.7}
+  .row{display:flex;gap:10px;width:100%}
+  .row .btn{margin-top:14px}
+</style>
+</head>
+<body>
+<canvas id="smoke"></canvas>
+<div class="glowframe"></div>
+
+<div class="wrap">
+  <div class="brand"><span class="dot"></span>神來一筊 SHENLAI ・ 機能青草飲</div>
+  <div class="lantern">＝ 24 小時不打烊的賽博月老 ＝</div>
+
+  <!-- 第一幕：問事 -->
+  <section id="intro" class="ask" aria-label="問事">
+    <h1>賽博月老<span class="sub">電子擲筊問事所</span></h1>
+    <div class="shrine" aria-hidden="true">
+      <div class="halo"></div>
+      <div class="deity">🧧<div class="eyes"><i></i><i></i></div></div>
+    </div>
+    <p class="lead">心誠則靈。在心中默念你想問的事，連擲三筊，讓賽博月老為你斷出本月運勢——擲到聖筊越多，運越旺。</p>
+
+    <div class="field" style="margin-top:18px">
+      <input id="q" maxlength="20" placeholder="輸入你想問的事…（例：這杯喝了會脫單嗎）" />
+    </div>
+    <div class="chips" id="chips">
+      <span class="chip">這個月會脫單嗎</span>
+      <span class="chip">該換工作嗎</span>
+      <span class="chip">今天適合表白嗎</span>
+      <span class="chip">財運會旺嗎</span>
+    </div>
+    <button class="btn" id="go">🙏　向賽博月老請示</button>
+  </section>
+
+  <!-- 第二幕：擲筊 -->
+  <section id="stage" class="stage" aria-label="擲筊">
+    <div class="qline" id="qShow">　<small>誠心默念後，輕觸筊杯擲出</small></div>
+    <canvas id="poe" width="340" height="300"></canvas>
+    <div class="tally" id="tally">
+      <div class="tslot">？</div><div class="tslot">？</div><div class="tslot">？</div>
+    </div>
+    <div class="verdict" id="verdict">第 1 擲</div>
+    <div class="hint" id="hint">👆 點擊／搖動手機　擲出筊杯</div>
+    <button class="btn ghost" id="reset1" style="margin-top:14px;display:none">重新問事</button>
+  </section>
+
+  <!-- 第三幕：結果 + 開運券 -->
+  <section id="result" class="result" aria-label="結果">
+    <div class="card">
+      <div class="stamp" id="stamp">賽博<br>月老<br>敕令</div>
+      <div class="fortune-no" id="fno">第 ○○ 籤</div>
+      <div class="fortune-tier" id="ftier">上上籤</div>
+      <div class="poem" id="poem"></div>
+      <div class="meta">
+        <span class="pill">幸運色 <b id="luckyColor">石榴紅</b></span>
+        <span class="pill">幸運物 <b id="luckyItem">罐裝青草飲</b></span>
+        <span class="pill">宜 <b id="luckyDo">主動出擊</b></span>
+      </div>
+      <div class="coupon">
+        <div class="lbl">SHENLAI 限定開運優惠券</div>
+        <div class="code" id="code">LUCK-0000</div>
+        <div class="desc" id="cdesc">出示本券，神來一筊機能青草飲｜第二件 6 折</div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="reset2">再問一次</button>
+      <button class="btn" id="cta">🧋 領券去喝一罐</button>
+    </div>
+  </section>
+</div>
+
+<footer>
+  本頁為虛構品牌「神來一筊」之互動廣告示意，娛樂用途，運勢結果隨機產生，不具命理效力。<br>
+  © SHENLAI 賽博月老問事所 ・ Cyber Poe Divination
+</footer>
+
+<script>
+/* ===================== 線香煙霧背景（自繪粒子，無外部素材） ===================== */
+(function(){
+  const c = document.getElementById('smoke'), x = c.getContext('2d');
+  let W,H,parts=[];
+  function size(){ W=c.width=innerWidth; H=c.height=innerHeight; }
+  size(); addEventListener('resize', size);
+  function spawn(){
+    return { x: W*0.5 + (Math.random()-.5)*W*0.5, y: H+20,
+      r: 24+Math.random()*40, vy:-(0.25+Math.random()*0.5),
+      vx:(Math.random()-.5)*0.3, a:0, life:0, max:260+Math.random()*200,
+      hue: Math.random()<.5? '244,201,93':'92,242,232' };
+  }
+  for(let i=0;i<26;i++){ const p=spawn(); p.y=Math.random()*H; p.life=Math.random()*p.max; parts.push(p); }
+  function tick(){
+    x.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.life++; p.y+=p.vy; p.x+=p.vx; p.vx+=(Math.random()-.5)*0.04; p.r+=0.12;
+      const t=p.life/p.max; p.a=Math.sin(Math.min(t,1)*Math.PI)*0.10;
+      const g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      g.addColorStop(0,`rgba(${p.hue},${p.a})`); g.addColorStop(1,`rgba(${p.hue},0)`);
+      x.fillStyle=g; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill();
+      if(p.life>p.max||p.y<-60){ Object.assign(p, spawn()); }
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ===================== 音效（WebAudio 自合成，木質叩擊聲，無外部素材） ===================== */
+const Sfx = (function(){
+  let ctx;
+  function ensure(){ if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return ctx; }
+  function clack(){
+    const a=ensure(); if(!a) return;
+    const t=a.currentTime;
+    const o=a.createOscillator(), g=a.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(220,t);
+    o.frequency.exponentialRampToValueAtTime(90,t+0.12);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    // 一點木頭噪音
+    const n=a.createBufferSource(), buf=a.createBuffer(1,1600,a.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+    n.buffer=buf; const ng=a.createGain(); ng.gain.value=0.18;
+    o.connect(g).connect(a.destination); n.connect(ng).connect(a.destination);
+    o.start(t); o.stop(t+0.2); n.start(t);
+  }
+  function chime(){
+    const a=ensure(); if(!a) return; const t=a.currentTime;
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=a.createOscillator(), g=a.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t+i*0.08); g.gain.exponentialRampToValueAtTime(0.25,t+i*0.08+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.08+0.6);
+      o.connect(g).connect(a.destination); o.start(t+i*0.08); o.stop(t+i*0.08+0.7);
+    });
+  }
+  return { clack, chime, ensure };
+})();
+
+/* ===================== 擲筊核心 ===================== */
+const poe = document.getElementById('poe');
+const pctx = poe.getContext('2d');
+const DPR = Math.min(2, window.devicePixelRatio||1);
+function fitCanvas(){
+  const cssW = Math.min(360, document.querySelector('.wrap').clientWidth - 4);
+  const cssH = Math.round(cssW*0.82);
+  poe.style.width=cssW+'px'; poe.style.height=cssH+'px';
+  poe.width=cssW*DPR; poe.height=cssH*DPR;
+  pctx.setTransform(DPR,0,0,DPR,0,0);
+  return {w:cssW,h:cssH};
+}
+let DIM = {w:340,h:280};
+
+/* 兩枚筊杯。face: 1=平面朝上(聖面)、0=凸面朝上。 */
+function makeBlock(i){
+  return { x:0,y:0, vx:0,vy:0, ang:0, va:0, flip:0, vflip:0,
+    targetFace:0, faceShown:0, settled:false, idx:i, baseX:0 };
+}
+let blocks=[makeBlock(0), makeBlock(1)];
+let throwing=false, throwCount=0, results=[], running=false;
+
+function resetBlocksRest(){
+  const {w,h}=DIM;
+  blocks.forEach((b,i)=>{
+    b.baseX = w*(i?0.62:0.38);
+    b.x=b.baseX; b.y=h*0.62; b.vx=0; b.vy=0; b.ang=(i?0.15:-0.15);
+    b.va=0; b.flip=0; b.vflip=0; b.settled=true; b.faceShown=1;
+  });
+}
+
+/* 畫一枚筊杯：以 flip 的 cos 模擬翻面的厚薄變化，face 決定正反配色 */
+function drawBlock(b){
+  const {w,h}=DIM;
+  pctx.save();
+  pctx.translate(b.x,b.y);
+  pctx.rotate(b.ang);
+  const sc = Math.abs(Math.cos(b.flip));        // 0~1，越小代表側立(翻面瞬間)
+  const W=54, H=78;
+  // 影子
+  pctx.save();
+  pctx.setTransform(DPR,0,0,DPR,0,0);
+  pctx.translate(b.x, h*0.78); pctx.scale(1,0.32);
+  const sg=pctx.createRadialGradient(0,0,0,0,0,40);
+  sg.addColorStop(0,'rgba(0,0,0,.45)'); sg.addColorStop(1,'rgba(0,0,0,0)');
+  pctx.fillStyle=sg; pctx.beginPath(); pctx.arc(0,0,40,0,7); pctx.fill();
+  pctx.restore();
+
+  pctx.scale(1, Math.max(0.12, sc));            // 翻面時壓扁
+  // 哪一面朝上：在翻面途中(由 flip 區段)決定
+  const showFlat = b.faceShown===1;
+  // 筊杯外形：半月（D 形）
+  pctx.beginPath();
+  pctx.moveTo(-W/2, -H*0.18);
+  pctx.quadraticCurveTo(-W/2, -H*0.6, 0, -H*0.6);
+  pctx.quadraticCurveTo(W/2, -H*0.6, W/2, -H*0.18);
+  pctx.quadraticCurveTo(W*0.42, H*0.62, 0, H*0.62);
+  pctx.quadraticCurveTo(-W*0.42, H*0.62, -W/2, -H*0.18);
+  pctx.closePath();
+  let grad;
+  if(showFlat){ // 聖面（平面朝上）— 金紅、刻有「聖」
+    grad=pctx.createLinearGradient(0,-H*0.6,0,H*0.62);
+    grad.addColorStop(0,'#ffe9a8'); grad.addColorStop(.5,'#e8b24a'); grad.addColorStop(1,'#a8761f');
+  }else{        // 凸面朝上 — 暗紅
+    grad=pctx.createLinearGradient(0,-H*0.6,0,H*0.62);
+    grad.addColorStop(0,'#a0202e'); grad.addColorStop(.5,'#7a0f1c'); grad.addColorStop(1,'#4a070f');
+  }
+  pctx.fillStyle=grad; pctx.shadowColor='rgba(0,0,0,.5)'; pctx.shadowBlur=8; pctx.shadowOffsetY=4;
+  pctx.fill(); pctx.shadowBlur=0; pctx.shadowOffsetY=0;
+  pctx.lineWidth=2; pctx.strokeStyle=showFlat?'#fff3cf':'#d4495a'; pctx.globalAlpha=.6; pctx.stroke(); pctx.globalAlpha=1;
+  // 面上的字
+  if(sc>0.35){
+    pctx.fillStyle=showFlat?'#5c0d12':'#ffd9c2';
+    pctx.font='900 22px "Noto Serif TC", serif';
+    pctx.textAlign='center'; pctx.textBaseline='middle';
+    pctx.fillText(showFlat?'聖':'陰', 0, -2);
+  }
+  pctx.restore();
+}
+
+function render(){
+  const {w,h}=DIM;
+  pctx.clearRect(0,0,w,h);
+  // 地台
+  const g=pctx.createLinearGradient(0,h*0.7,0,h);
+  g.addColorStop(0,'rgba(244,201,93,.05)'); g.addColorStop(1,'rgba(244,201,93,0)');
+  pctx.fillStyle=g; pctx.fillRect(0,h*0.7,w,h*0.3);
+  blocks.forEach(drawBlock);
+}
+
+function classify(){
+  const flats = blocks.filter(b=>b.faceShown===1).length;
+  if(flats===1) return {key:'sheng', name:'聖筊', cls:'v-sheng', desc:'一平一凸・神明應允，順！'};
+  if(flats===2) return {key:'xiao', name:'笑筊', cls:'v-xiao', desc:'兩平面・神明微笑，再想清楚'};
+  return {key:'yin', name:'陰筊', cls:'v-yin', desc:'兩凸面・神明搖頭，緩一緩'};
+}
+
+const verdictEl=document.getElementById('verdict');
+const hintEl=document.getElementById('hint');
+const tallyEl=document.getElementById('tally').children;
+
+function doThrow(){
+  if(throwing || throwCount>=3) return;
+  Sfx.ensure();
+  throwing=true; hintEl.style.display='none';
+  verdictEl.textContent='擲筊中…'; verdictEl.className='verdict';
+  const {w,h}=DIM;
+  blocks.forEach((b,i)=>{
+    b.settled=false;
+    b.x=b.baseX + (Math.random()-.5)*20;
+    b.y=h*0.18;
+    b.vx=(i?1:-1)*(0.6+Math.random()*0.8);
+    b.vy=-(2+Math.random()*1.5);
+    b.va=(Math.random()-.5)*0.5;
+    b.vflip=0.5+Math.random()*0.45;
+    b.flip=Math.random()*Math.PI;
+    b.targetFace=Math.random()<0.5?1:0;   // 各自 50% 平/凸 → 聖50% 笑25% 陰25%
+    b.faceShown=b.targetFace;
+  });
+  Sfx.clack();
+}
+
+function physics(){
+  const {w,h}=DIM, ground=h*0.62, g=0.42;
+  let allRest=true;
+  for(const b of blocks){
+    if(b.settled) continue;
+    allRest=false;
+    b.vy+=g; b.x+=b.vx; b.y+=b.vy; b.ang+=b.va; b.flip+=b.vflip;
+    // 牆
+    if(b.x<30){b.x=30;b.vx*=-0.6;} if(b.x>w-30){b.x=w-30;b.vx*=-0.6;}
+    // 落地彈跳
+    if(b.y>=ground){
+      b.y=ground;
+      if(Math.abs(b.vy)>1.2){ b.vy*=-0.42; b.vx*=0.7; b.va*=0.6; b.vflip*=0.55; Sfx.clack(); }
+      else { b.vy=0; b.vx*=0.8; b.va*=0.7; b.vflip*=0.5; }
+      // 慢下來後鎖定到 targetFace
+      if(Math.abs(b.vy)<1.2 && Math.abs(b.vflip)<0.06){
+        b.vflip=0; b.flip = b.targetFace? 0 : 0;  // cos(0)=1 → 完整顯示
+        b.faceShown=b.targetFace; b.va*=0.5;
+        if(Math.abs(b.va)<0.01){ b.ang*= -0; b.va=0; b.settled=true; }
+      }
+    }
+    // 翻面途中即時更新顯示面（依 flip 半圈切換感）
+    if(!b.settled){
+      const phase = Math.floor(b.flip/Math.PI)%2;
+      b.faceShown = phase===0? b.targetFace : (1-b.targetFace);
+    }
+  }
+  if(allRest && throwing){
+    throwing=false;
+    blocks.forEach(b=>b.faceShown=b.targetFace);
+    onThrowDone();
+  }
+}
+
+function onThrowDone(){
+  const r=classify();
+  results.push(r);
+  // tally 顯示
+  const slot=tallyEl[throwCount];
+  slot.textContent = r.key==='sheng'?'聖':(r.key==='xiao'?'笑':'陰');
+  slot.classList.add(r.key==='sheng'?'win':'lose');
+  throwCount++;
+  verdictEl.innerHTML = `<span class="${r.cls}">${r.name}</span><small>${r.desc}</small>`;
+  if(r.key==='sheng'){ confetti({particleCount:36, spread:60, origin:{y:0.7}, colors:['#f4c95d','#ffe9a8','#5cf2e8']}); }
+  if(throwCount<3){
+    setTimeout(()=>{ hintEl.style.display='block';
+      hintEl.textContent = `👆 再擲第 ${throwCount+1} 筊`; }, 700);
+  }else{
+    document.getElementById('reset1').style.display='inline-flex';
+    setTimeout(showResult, 1100);
+  }
+}
+
+/* ===================== 籤詩 / 結果產生 ===================== */
+const TIERS = [
+  { min:3, no:'第 八十一 籤', tier:'天作之合・上上籤', poem:'月老紅線繞指間，三聖齊鳴喜事connected。<br>心之所向皆順遂，今朝請你喝一罐。',
+    color:'石榴紅', item:'罐裝青草飲', act:'主動出擊', code:'LUCK-SAN', disc:'神來一筊機能青草飲｜買一送一' },
+  { min:2, no:'第 六十六 籤', tier:'漸入佳境・上吉籤', poem:'兩聖一笑路漸明，火候未到莫心急。<br>補一罐沁涼好運氣，水到渠成自然成。',
+    color:'琥珀金', item:'冰塊與檸檬', act:'再加把勁', code:'LUCK-LIANG', disc:'神來一筊機能青草飲｜第二件 5 折' },
+  { min:1, no:'第 三十三 籤', tier:'柳暗花明・中吉籤', poem:'一聖點頭天微亮，曲折之後見坦途。<br>沉住氣來慢慢走，回甘總在苦之後。',
+    color:'青草綠', item:'一句好話', act:'保持耐心', code:'LUCK-YI', disc:'神來一筊機能青草飲｜第二件 6 折' },
+  { min:0, no:'第 一 籤', tier:'重整旗鼓・平籤', poem:'神明搖頭非絕路，是要你停下喘口氣。<br>先喝一罐定定神，明日再來運自開。',
+    color:'靜心藍', item:'好好睡一覺', act:'休養生息', code:'LUCK-LING', disc:'神來一筊機能青草飲｜首購 77 折' },
+];
+function pickTier(){
+  const sheng=results.filter(r=>r.key==='sheng').length;
+  return TIERS.find(t=>sheng>=t.min);
+}
+
+function showResult(){
+  const t=pickTier();
+  document.getElementById('fno').textContent=t.no;
+  document.getElementById('ftier').textContent=t.tier;
+  document.getElementById('poem').innerHTML=t.poem;
+  document.getElementById('luckyColor').textContent=t.color;
+  document.getElementById('luckyItem').textContent=t.item;
+  document.getElementById('luckyDo').textContent=t.act;
+  document.getElementById('code').textContent=t.code;
+  document.getElementById('cdesc').textContent=t.disc;
+  document.getElementById('stage').classList.remove('show');
+  const res=document.getElementById('result'); res.classList.add('show');
+  res.scrollIntoView({behavior:'smooth', block:'center'});
+  Sfx.chime();
+  confetti({particleCount:140, spread:95, origin:{y:0.55}, colors:['#f4c95d','#ffe9a8','#5cf2e8','#e23b4e']});
+  setTimeout(()=>confetti({particleCount:80, angle:60, spread:70, origin:{x:0,y:0.6}}),250);
+  setTimeout(()=>confetti({particleCount:80, angle:120, spread:70, origin:{x:1,y:0.6}}),250);
+}
+
+/* ===================== 流程切換 ===================== */
+const intro=document.getElementById('intro'), stage=document.getElementById('stage');
+const qInput=document.getElementById('q'), qShow=document.getElementById('qShow');
+
+document.getElementById('chips').addEventListener('click', e=>{
+  if(!e.target.classList.contains('chip')) return;
+  qInput.value=e.target.textContent;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('on'));
+  e.target.classList.add('on');
+});
+
+function startDivination(){
+  const q=(qInput.value||'我這個月的整體運勢').trim();
+  qShow.innerHTML = `「${q}」<small>誠心默念後，輕觸筊杯擲出</small>`;
+  intro.style.display='none';
+  stage.classList.add('show');
+  DIM=fitCanvas(); resetBlocksRest(); render();
+  if(!running){ running=true; loop(); }
+  stage.scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('go').addEventListener('click', startDivination);
+
+function fullReset(){
+  throwCount=0; results=[]; throwing=false;
+  [...tallyEl].forEach(s=>{s.textContent='？'; s.className='tslot';});
+  verdictEl.textContent='第 1 擲'; verdictEl.className='verdict';
+  hintEl.style.display='block'; hintEl.textContent='👆 點擊／搖動手機　擲出筊杯';
+  document.getElementById('reset1').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  stage.classList.add('show');
+  DIM=fitCanvas(); resetBlocksRest(); render();
+  stage.scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('reset1').addEventListener('click', fullReset);
+document.getElementById('reset2').addEventListener('click', fullReset);
+document.getElementById('cta').addEventListener('click', ()=>{
+  confetti({particleCount:60, spread:70, origin:{y:0.4}, colors:['#f4c95d','#5cf2e8']});
+  const c=document.getElementById('cta'); const old=c.textContent;
+  c.textContent='🎉 已存入會員卡，記得來喝！'; c.disabled=true;
+  setTimeout(()=>{c.textContent=old; c.disabled=false;}, 2600);
+});
+
+/* 擲筊互動：點擊畫布 / 搖手機 */
+poe.addEventListener('click', doThrow);
+poe.addEventListener('touchstart', e=>{ e.preventDefault(); doThrow(); }, {passive:false});
+let lastShake=0;
+addEventListener('devicemotion', e=>{
+  const a=e.accelerationIncludingGravity; if(!a) return;
+  const mag=Math.abs(a.x||0)+Math.abs(a.y||0)+Math.abs(a.z||0);
+  const now=Date.now();
+  if(mag>34 && now-lastShake>900 && stage.classList.contains('show')){ lastShake=now; doThrow(); }
+});
+
+/* 主迴圈 */
+function loop(){ physics(); render(); requestAnimationFrame(loop); }
+
+/* 初始化 */
+DIM=fitCanvas(); resetBlocksRest(); render();
+addEventListener('resize', ()=>{ DIM=fitCanvas(); if(!throwing){ resetBlocksRest(); } render(); });
+</script>
+<script>
+  /* 防止手機連點兩下(double-tap)縮放畫面 — iOS Safari 會忽略 user-scalable=no */
+  (function(){
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e){
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive:false });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+  })();
+</script>
+</body>
+</html>
